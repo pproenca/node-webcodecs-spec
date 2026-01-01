@@ -50,13 +50,16 @@ function parseIdlType(idlType: webidl2.IDLTypeDescription | null): string {
 }
 
 function getExtendedAttributes(node: webidl2.InterfaceType): string[] {
-  return node.extAttrs?.map(attr => {
-    if (attr.rhs) {
-      const rhsValue = typeof attr.rhs.value === 'string' ? attr.rhs.value : JSON.stringify(attr.rhs.value);
-      return `${attr.name}=${rhsValue}`;
-    }
-    return attr.name;
-  }) || [];
+  return (
+    node.extAttrs?.map((attr) => {
+      if (attr.rhs) {
+        const rhsValue =
+          typeof attr.rhs.value === 'string' ? attr.rhs.value : JSON.stringify(attr.rhs.value);
+        return `${attr.name}=${rhsValue}`;
+      }
+      return attr.name;
+    }) || []
+  );
 }
 
 function getIdlLineRange(content: string, nodeName: string): string {
@@ -67,7 +70,10 @@ function getIdlLineRange(content: string, nodeName: string): string {
       let braceCount = 0;
       let started = false;
       for (let j = i; j < lines.length; j++) {
-        if (lines[j].includes('{')) { braceCount++; started = true; }
+        if (lines[j].includes('{')) {
+          braceCount++;
+          started = true;
+        }
         if (lines[j].includes('}')) braceCount--;
         if (started && braceCount === 0) {
           return `spec/context/_webcodecs.idl#L${i + 1}-L${j + 1}`;
@@ -153,11 +159,15 @@ async function generateInterfaceTask(
             description: `C++: Implement Get${capitalize(attrName)}() returning ${parseIdlType(member.idlType)}`,
             passes: false,
           },
-          ...(member.readonly ? [] : [{
-            id: `${interfaceName}.${attrName}.cpp-setter`,
-            description: `C++: Implement Set${capitalize(attrName)}()`,
-            passes: false,
-          }]),
+          ...(member.readonly
+            ? []
+            : [
+                {
+                  id: `${interfaceName}.${attrName}.cpp-setter`,
+                  description: `C++: Implement Set${capitalize(attrName)}()`,
+                  passes: false,
+                },
+              ]),
           {
             id: `${interfaceName}.${attrName}.ts-binding`,
             description: `TS: Wire getter${member.readonly ? '' : ' and setter'} to native`,
@@ -178,7 +188,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'attribute', name: attrName, readonly: member.readonly },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -191,13 +204,14 @@ async function generateInterfaceTask(
       const methodName = member.name;
       const isStatic = member.special === 'static';
       const specMethod = specData?.methods.get(methodName);
-      const params = member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`);
+      const params = member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`);
 
       feature = {
         id: `${interfaceName}.${methodName}`,
         category: isStatic ? 'static-method' : 'method',
         name: `${methodName}(${params.join(', ')})`,
-        description: specMethod?.algorithmSteps[0] || `${isStatic ? 'Static method' : 'Method'} ${methodName}`,
+        description:
+          specMethod?.algorithmSteps[0] || `${isStatic ? 'Static method' : 'Method'} ${methodName}`,
         returnType: parseIdlType(member.idlType),
         codeLinks: {},
         algorithmRef: `spec/context/${interfaceName}.md#${methodName.toLowerCase()}`,
@@ -208,11 +222,15 @@ async function generateInterfaceTask(
             description: 'C++: Implement method logic per W3C spec algorithm',
             passes: false,
           },
-          ...(parseIdlType(member.idlType).includes('Promise') ? [{
-            id: `${interfaceName}.${methodName}.cpp-async`,
-            description: 'C++: Use AsyncWorker for non-blocking execution',
-            passes: false,
-          }] : []),
+          ...(parseIdlType(member.idlType).includes('Promise')
+            ? [
+                {
+                  id: `${interfaceName}.${methodName}.cpp-async`,
+                  description: 'C++: Use AsyncWorker for non-blocking execution',
+                  passes: false,
+                },
+              ]
+            : []),
           {
             id: `${interfaceName}.${methodName}.cpp-errors`,
             description: 'C++: Handle error cases with proper DOMException types',
@@ -243,7 +261,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'operation', name: methodName, special: member.special },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -253,7 +274,7 @@ async function generateInterfaceTask(
         }
       }
     } else if (member.type === 'constructor') {
-      const params = member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`);
+      const params = member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`);
 
       feature = {
         id: `${interfaceName}.constructor`,
@@ -262,7 +283,9 @@ async function generateInterfaceTask(
         description: `Create ${interfaceName} instance`,
         codeLinks: {},
         algorithmRef: `spec/context/${interfaceName}.md#constructor`,
-        algorithmSteps: specData?.methods.get('constructor')?.algorithmSteps || ['Initialize internal slots'],
+        algorithmSteps: specData?.methods.get('constructor')?.algorithmSteps || [
+          'Initialize internal slots',
+        ],
         steps: [
           {
             id: `${interfaceName}.constructor.cpp-impl`,
@@ -294,7 +317,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'constructor', name: 'constructor' },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -314,7 +340,9 @@ async function generateInterfaceTask(
   if (errors.length > 0) {
     console.warn(`\nWarning: Missing symbols for ${interfaceName}:`);
     for (const err of errors) {
-      console.warn(`  - ${err.memberName} (${err.memberType}): expected ${err.expectedSymbol} in ${err.expectedIn}`);
+      console.warn(
+        `  - ${err.memberName} (${err.memberType}): expected ${err.expectedSymbol} in ${err.expectedIn}`
+      );
     }
   }
 
@@ -325,7 +353,7 @@ async function generateInterfaceTask(
     type: 'interface',
     source: {
       idl: getIdlLineRange(idlContent, interfaceName),
-      spec: await fileExists(specPath) ? `spec/context/${interfaceName}.md` : undefined,
+      spec: (await fileExists(specPath)) ? `spec/context/${interfaceName}.md` : undefined,
     },
     inheritance,
     extendedAttributes: getExtendedAttributes(node),
@@ -343,7 +371,7 @@ function generateTypesFile(ast: webidl2.IDLRootType[]): TypesFile {
       dictionaries.push({
         name: node.name,
         source: { idl: `spec/context/_webcodecs.idl` },
-        fields: node.members.map(m => ({
+        fields: node.members.map((m) => ({
           name: m.name,
           type: parseIdlType(m.idlType),
           required: m.required,
@@ -354,7 +382,7 @@ function generateTypesFile(ast: webidl2.IDLRootType[]): TypesFile {
       enums.push({
         name: node.name,
         source: { idl: `spec/context/_webcodecs.idl` },
-        values: node.values.map(v => v.value),
+        values: node.values.map((v) => v.value),
       });
     }
   }
@@ -389,9 +417,13 @@ export async function main(): Promise<void> {
   const typesFile = generateTypesFile(ast);
   const typesPath = path.join(OUTPUT_DIR, 'types.json');
   await fs.writeFile(typesPath, JSON.stringify(typesFile, null, 2));
-  console.log(`Generated: ${typesPath} (${typesFile.dictionaries.length} dictionaries, ${typesFile.enums.length} enums)`);
+  console.log(
+    `Generated: ${typesPath} (${typesFile.dictionaries.length} dictionaries, ${typesFile.enums.length} enums)`
+  );
 
-  console.log(`\nDone! Generated ${interfaceCount} interface files with ${featureCount} total features.`);
+  console.log(
+    `\nDone! Generated ${interfaceCount} interface files with ${featureCount} total features.`
+  );
 }
 
 // Run if executed directly

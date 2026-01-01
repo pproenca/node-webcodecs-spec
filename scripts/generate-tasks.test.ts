@@ -24,7 +24,9 @@ describe('generate-tasks', () => {
     const content = await fs.readFile(path.join(outputDir, 'VideoDecoder.json'), 'utf-8');
     const data = JSON.parse(content);
 
-    const configureFeature = data.features.find((f: { id: string }) => f.id === 'VideoDecoder.configure');
+    const configureFeature = data.features.find(
+      (f: { id: string }) => f.id === 'VideoDecoder.configure'
+    );
     expect(configureFeature).toBeDefined();
     expect(configureFeature.codeLinks.declaration?.file).toContain('VideoDecoder.h');
     expect(configureFeature.codeLinks.implementation?.line).toBeGreaterThan(0);

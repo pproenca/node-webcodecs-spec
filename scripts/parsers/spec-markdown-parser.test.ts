@@ -17,7 +17,9 @@ describe('parseSpecMarkdown', () => {
     const result = parseSpecMarkdown(markdown);
 
     expect(result.methods.get('configure')).toBeDefined();
-    expect(result.methods.get('configure')?.signature).toBe('void configure(VideoDecoderConfig* config)');
+    expect(result.methods.get('configure')?.signature).toBe(
+      'void configure(VideoDecoderConfig* config)'
+    );
     expect(result.methods.get('configure')?.algorithmSteps).toHaveLength(3);
     expect(result.methods.get('configure')?.algorithmSteps[0]).toContain('TypeError');
   });

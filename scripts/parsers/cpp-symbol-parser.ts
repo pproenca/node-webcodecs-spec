@@ -58,7 +58,10 @@ export async function parseCppHeader(filePath: string): Promise<CppHeaderParseRe
   return result;
 }
 
-export async function parseCppImpl(filePath: string, className: string): Promise<CppImplParseResult> {
+export async function parseCppImpl(
+  filePath: string,
+  className: string
+): Promise<CppImplParseResult> {
   const content = await fs.readFile(filePath, 'utf-8');
   const lines = content.split('\n');
 
@@ -101,9 +104,7 @@ export async function parseCppImpl(filePath: string, className: string): Promise
       braceCount -= (line.match(/\}/g) || []).length;
 
       if (braceCount === 0 && line.includes('}')) {
-        const location = currentMethod === 'ctor'
-          ? result.ctor
-          : result.methods.get(currentMethod);
+        const location = currentMethod === 'ctor' ? result.ctor : result.methods.get(currentMethod);
         if (location) {
           location.endLine = lineNum;
         }

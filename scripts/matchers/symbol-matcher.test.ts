@@ -45,8 +45,9 @@ describe('matchIdlToCode', () => {
       staticMethods: new Map(),
     };
 
-    expect(() => matchIdlToCode('VideoDecoder', idlMember, cppHeader, cppImpl, tsClass))
-      .toThrow(MissingSymbolError);
+    expect(() => matchIdlToCode('VideoDecoder', idlMember, cppHeader, cppImpl, tsClass)).toThrow(
+      MissingSymbolError
+    );
   });
 
   it('should match IDL operation to C++ method', () => {

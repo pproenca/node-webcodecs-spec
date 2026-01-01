@@ -146,22 +146,24 @@ async function buildWithBikeshed(source: string, timeoutMs = 60000): Promise<str
  * @returns Cleaned text with markup converted to plain text
  */
 function cleanBikeshedMarkup(text: string): string {
-  return text
-    // [=term=] -> term
-    .replace(/\[=([^\]]+)=\]/g, '$1')
-    // {{Type}} -> Type
-    .replace(/\{\{([^}]+)\}\}/g, '$1')
-    // |variable| -> variable
-    .replace(/\|([^|]+)\|/g, '$1')
-    // [[internal slot]] -> [internal slot]
-    .replace(/\[\[([^\]]+)\]\]/g, '[$1]')
-    // `"value"` -> "value"
-    .replace(/`"([^"]+)"`/g, '"$1"')
-    // Clean up escaped brackets
-    .replace(/\\?\[=/g, '')
-    .replace(/=\\?\]/g, '')
-    .replace(/\\\[/g, '[')
-    .replace(/\\\]/g, ']');
+  return (
+    text
+      // [=term=] -> term
+      .replace(/\[=([^\]]+)=\]/g, '$1')
+      // {{Type}} -> Type
+      .replace(/\{\{([^}]+)\}\}/g, '$1')
+      // |variable| -> variable
+      .replace(/\|([^|]+)\|/g, '$1')
+      // [[internal slot]] -> [internal slot]
+      .replace(/\[\[([^\]]+)\]\]/g, '[$1]')
+      // `"value"` -> "value"
+      .replace(/`"([^"]+)"`/g, '"$1"')
+      // Clean up escaped brackets
+      .replace(/\\?\[=/g, '')
+      .replace(/=\\?\]/g, '')
+      .replace(/\\\[/g, '[')
+      .replace(/\\\]/g, ']')
+  );
 }
 
 /**
@@ -196,7 +198,9 @@ async function main() {
     throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
   }
   const rawBikeshedSource = await response.text();
-  console.log(`[Scaffold] Fetched raw Bikeshed source (${(rawBikeshedSource.length / 1024).toFixed(1)} KB)`);
+  console.log(
+    `[Scaffold] Fetched raw Bikeshed source (${(rawBikeshedSource.length / 1024).toFixed(1)} KB)`
+  );
 
   // 2. Build with Bikeshed API
   console.log('[Scaffold] Building spec with Bikeshed API...');
@@ -381,10 +385,10 @@ function buildInterfaceContext(
       let steps = algoMap.get(key);
       if (!steps || steps.length === 0 || steps[0] === 'See spec/context file.') {
         // Try alternate key formats
-        steps =
-          algoMap.get(`${iface.name}.${opName}()`) ||
-          algoMap.get(opName) ||
-          [`Implementation follows W3C WebCodecs ${iface.name}.${opName}() specification.`];
+        steps = algoMap.get(`${iface.name}.${opName}()`) ||
+          algoMap.get(opName) || [
+            `Implementation follows W3C WebCodecs ${iface.name}.${opName}() specification.`,
+          ];
       }
 
       methods.push({
@@ -434,7 +438,8 @@ function buildInterfaceContext(
 
   return {
     name: iface.name,
-    desc: descMap.get(iface.name) || `${iface.name} interface from the W3C WebCodecs specification.`,
+    desc:
+      descMap.get(iface.name) || `${iface.name} interface from the W3C WebCodecs specification.`,
     methods,
     attributes,
     hasConstructor,
@@ -490,14 +495,16 @@ ${m.isStatic ? '**Static Method**\n\n' : ''}**Signature:** \`${m.signature}\`
 
 **Algorithm:**
 
-${m.steps.map((s, i) => {
-  const cleanStep = cleanBikeshedMarkup(s);
-  // Check if step already has a number prefix
-  if (/^\d+\./.test(cleanStep)) {
-    return cleanStep;
-  }
-  return `${i + 1}. ${cleanStep}`;
-}).join('\n')}
+${m.steps
+  .map((s, i) => {
+    const cleanStep = cleanBikeshedMarkup(s);
+    // Check if step already has a number prefix
+    if (/^\d+\./.test(cleanStep)) {
+      return cleanStep;
+    }
+    return `${i + 1}. ${cleanStep}`;
+  })
+  .join('\n')}
 `
   )
   .join('\n')}
@@ -1256,9 +1263,7 @@ function parseBikeshed(html: string): {
 
     if (forAttr && (dfnType === 'method' || dfnType === 'constructor')) {
       const methodName =
-        dfnType === 'constructor'
-          ? 'constructor'
-          : dfn.textContent?.split('(')[0].trim() || '';
+        dfnType === 'constructor' ? 'constructor' : dfn.textContent?.split('(')[0].trim() || '';
       const key = `${forAttr}.${methodName}`;
 
       // Find the containing <dt> and get the next <dd>

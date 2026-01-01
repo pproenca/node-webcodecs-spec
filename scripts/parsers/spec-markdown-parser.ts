@@ -42,7 +42,8 @@ export function parseSpecMarkdown(content: string): SpecParseResult {
   }
 
   // Extract methods from ### headers
-  const methodRegex = /### (\w+)\n\n(?:\*\*Static Method\*\*\n\n)?\*\*Signature:\*\* `([^`]+)`\n\n\*\*Algorithm:\*\*\n\n([\s\S]*?)(?=\n### |\n## |$)/g;
+  const methodRegex =
+    /### (\w+)\n\n(?:\*\*Static Method\*\*\n\n)?\*\*Signature:\*\* `([^`]+)`\n\n\*\*Algorithm:\*\*\n\n([\s\S]*?)(?=\n### |\n## |$)/g;
   let match;
   while ((match = methodRegex.exec(content)) !== null) {
     const name = match[1];

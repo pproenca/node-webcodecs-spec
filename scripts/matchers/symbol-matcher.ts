@@ -13,7 +13,9 @@ export class MissingSymbolError extends Error {
     public expectedIn: string,
     public expectedSymbol: string
   ) {
-    super(`Missing symbol: ${interfaceName}.${memberName} (${memberType}) - expected ${expectedSymbol} in ${expectedIn}`);
+    super(
+      `Missing symbol: ${interfaceName}.${memberName} (${memberType}) - expected ${expectedSymbol} in ${expectedIn}`
+    );
     this.name = 'MissingSymbolError';
   }
 }
@@ -63,8 +65,11 @@ export function matchIdlToCode(
     const headerLoc = cppHeader.methods.get(cppGetterName);
     if (!headerLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.cppHeader, cppGetterName
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.cppHeader,
+        cppGetterName
       );
     }
     codeLinks.declaration = { file: filePrefix.cppHeader, line: headerLoc.line };
@@ -73,8 +78,11 @@ export function matchIdlToCode(
     const implLoc = cppImpl.methods.get(cppGetterName);
     if (!implLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.cppImpl, `${interfaceName}::${cppGetterName}`
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.cppImpl,
+        `${interfaceName}::${cppGetterName}`
       );
     }
     codeLinks.implementation = {
@@ -87,8 +95,11 @@ export function matchIdlToCode(
     const tsLoc = tsClass.getters.get(idlMember.name);
     if (!tsLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.tsWrapper, `get ${idlMember.name}()`
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.tsWrapper,
+        `get ${idlMember.name}()`
       );
     }
     codeLinks.tsBinding = {
@@ -105,8 +116,11 @@ export function matchIdlToCode(
     const headerLoc = methodsMap.get(cppMethodName);
     if (!headerLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.cppHeader, cppMethodName
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.cppHeader,
+        cppMethodName
       );
     }
     codeLinks.declaration = { file: filePrefix.cppHeader, line: headerLoc.line };
@@ -115,8 +129,11 @@ export function matchIdlToCode(
     const implLoc = cppImpl.methods.get(cppMethodName);
     if (!implLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.cppImpl, `${interfaceName}::${cppMethodName}`
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.cppImpl,
+        `${interfaceName}::${cppMethodName}`
       );
     }
     codeLinks.implementation = {
@@ -130,8 +147,11 @@ export function matchIdlToCode(
     const tsLoc = tsMap.get(idlMember.name);
     if (!tsLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.tsWrapper, `${isStatic ? 'static ' : ''}${idlMember.name}()`
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.tsWrapper,
+        `${isStatic ? 'static ' : ''}${idlMember.name}()`
       );
     }
     codeLinks.tsBinding = {
