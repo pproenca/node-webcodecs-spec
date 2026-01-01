@@ -106,6 +106,31 @@ const TYPE_MAP: Record<string, string> = {
 };
 
 /**
+ * Builds Bikeshed source using the CSSWG API.
+ * @param source - Raw Bikeshed source HTML content
+ * @returns Rendered HTML with resolved cross-references
+ * @throws Error if API request fails
+ */
+async function buildWithBikeshed(source: string): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', new Blob([source], { type: 'text/plain' }), 'spec.bs');
+  formData.append('force', '1'); // Force build even with warnings
+  formData.append('output', 'html');
+
+  const response = await fetch('https://api.csswg.org/bikeshed/', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Bikeshed API failed: ${response.status} - ${errorText}`);
+  }
+
+  return response.text();
+}
+
+/**
  * Converts a WebIDL type to its C++ equivalent.
  * @param idlType - WebIDL type (string or IDLTypeDescription)
  * @returns C++ type string (e.g., 'std::string', 'Napi::Value')
