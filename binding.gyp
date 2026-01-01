@@ -19,7 +19,7 @@
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/include"
+        "<!@(pkg-config --cflags-only-I libavcodec 2>/dev/null | sed 's/-I//g' || echo '')"
       ],
       "defines": [
         "NAPI_VERSION=8",
@@ -38,16 +38,19 @@
         [
           "OS=='mac'",
           {
+            "variables": {
+              "ffmpeg_libdir": "<!(pkg-config --variable=libdir libavcodec 2>/dev/null || brew --prefix ffmpeg 2>/dev/null | xargs -I{} echo {}/lib || echo /usr/local/lib)"
+            },
             "xcode_settings": {
               "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
               "CLANG_CXX_LANGUAGE_STANDARD": "c++17",
               "MACOSX_DEPLOYMENT_TARGET": "10.15"
             },
             "libraries": [
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavformat.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavcodec.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libswscale.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavutil.a",
+              "<(ffmpeg_libdir)/libavformat.a",
+              "<(ffmpeg_libdir)/libavcodec.a",
+              "<(ffmpeg_libdir)/libswscale.a",
+              "<(ffmpeg_libdir)/libavutil.a",
               "-framework CoreFoundation",
               "-framework CoreMedia",
               "-framework CoreVideo",
@@ -63,15 +66,18 @@
         [
           "OS=='linux'",
           {
+            "variables": {
+              "ffmpeg_libdir": "<!(pkg-config --variable=libdir libavcodec 2>/dev/null || echo /usr/local/lib)"
+            },
             "cflags_cc": [
               "-std=c++17",
               "-fPIC"
             ],
             "libraries": [
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavformat.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavcodec.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libswscale.a",
-              "<!(echo ${FFMPEG_ROOT:-/usr/local/ffmpeg})/lib/libavutil.a",
+              "<(ffmpeg_libdir)/libavformat.a",
+              "<(ffmpeg_libdir)/libavcodec.a",
+              "<(ffmpeg_libdir)/libswscale.a",
+              "<(ffmpeg_libdir)/libavutil.a",
               "-lpthread",
               "-ldl",
               "-lz",
@@ -82,6 +88,12 @@
         [
           "OS=='win'",
           {
+            "variables": {
+              "ffmpeg_root": "<!(echo %FFMPEG_ROOT%)"
+            },
+            "include_dirs": [
+              "<(ffmpeg_root)/include"
+            ],
             "msvs_settings": {
               "VCCLCompilerTool": {
                 "ExceptionHandling": 1,
@@ -91,10 +103,10 @@
               }
             },
             "libraries": [
-              "<!(echo %FFMPEG_ROOT%)/lib/avformat.lib",
-              "<!(echo %FFMPEG_ROOT%)/lib/avcodec.lib",
-              "<!(echo %FFMPEG_ROOT%)/lib/swscale.lib",
-              "<!(echo %FFMPEG_ROOT%)/lib/avutil.lib"
+              "<(ffmpeg_root)/lib/avformat.lib",
+              "<(ffmpeg_root)/lib/avcodec.lib",
+              "<(ffmpeg_root)/lib/swscale.lib",
+              "<(ffmpeg_root)/lib/avutil.lib"
             ]
           }
         ]
