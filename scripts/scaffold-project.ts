@@ -4,7 +4,9 @@
  * Clones w3c/webcodecs, parses Bikeshed HTML + WebIDL,
  * generates C++ headers/sources, TypeScript wrappers, and spec context docs.
  *
- * Usage: npm run scaffold
+ * Usage:
+ *   npm run scaffold           # Generate files, warn about binding.gyp
+ *   npm run scaffold -- --write  # Also update binding.gyp sources
  */
 
 import * as fs from 'node:fs/promises';
@@ -14,6 +16,10 @@ import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
 import { parse as parseIDL, type InterfaceType, type OperationMemberType, type AttributeMemberType, type IDLRootType } from 'webidl2';
 
+// --- CLI Arguments ---
+const args = process.argv.slice(2);
+const WRITE_BINDING_GYP = args.includes('--write');
+
 // --- Configuration ---
 const REPO_URL = 'https://github.com/w3c/webcodecs.git';
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -21,6 +27,7 @@ const CACHE_DIR = path.join(ROOT_DIR, '.spec-cache');
 const CONTEXT_DIR = path.join(ROOT_DIR, 'spec', 'context');
 const SRC_DIR = path.join(ROOT_DIR, 'src', 'generated');
 const LIB_DIR = path.join(ROOT_DIR, 'lib');
+const BINDING_GYP_PATH = path.join(ROOT_DIR, 'binding.gyp');
 
 // --- Type Definitions ---
 interface MethodContext {
@@ -161,16 +168,64 @@ async function main() {
     generatedClasses.map(c => `export { ${c} } from './${c}';`).join('\n') + '\n'
   );
 
-  // 6. Summary
+  // 6. Update or warn about binding.gyp
+  const generatedSources = generatedClasses.map(c => `src/generated/${c}.cpp`);
+
+  if (WRITE_BINDING_GYP) {
+    await updateBindingGyp(generatedSources);
+  } else {
+    console.log('\n⚠️  Ensure the following files are in your binding.gyp "sources" list:');
+    generatedClasses.forEach(c => console.log(`      "src/generated/${c}.cpp",`));
+    console.log('\n💡 Run with --write to auto-update binding.gyp:');
+    console.log('   npm run scaffold -- --write');
+  }
+
+  // 7. Summary
   console.log('\n[Scaffold] ✅ Generation complete!');
   console.log(`\n📁 Generated ${generatedClasses.length} interfaces:`);
   generatedClasses.forEach(c => console.log(`   - ${c}`));
 
-  console.log('\n⚠️  Ensure the following files are in your binding.gyp "sources" list:');
-  generatedClasses.forEach(c => console.log(`      "src/generated/${c}.cpp",`));
-
   console.log('\n📝 Spec context written to: spec/context/');
   console.log('📝 Raw IDL written to: spec/context/_webcodecs.idl');
+}
+
+/**
+ * Update binding.gyp to include generated source files
+ */
+async function updateBindingGyp(generatedSources: string[]): Promise<void> {
+  if (!await fileExists(BINDING_GYP_PATH)) {
+    console.warn('[Scaffold] ⚠️  binding.gyp not found, skipping update');
+    return;
+  }
+
+  const content = await fs.readFile(BINDING_GYP_PATH, 'utf-8');
+  let gyp: { targets: Array<{ target_name: string; sources: string[] }> };
+
+  try {
+    // binding.gyp is JSON (or JSON5-ish), parse it
+    gyp = JSON.parse(content);
+  } catch {
+    console.error('[Scaffold] ❌ Failed to parse binding.gyp as JSON');
+    return;
+  }
+
+  const target = gyp.targets?.find(t => t.target_name === 'webcodecs');
+  if (!target) {
+    console.error('[Scaffold] ❌ No "webcodecs" target found in binding.gyp');
+    return;
+  }
+
+  // Get existing non-generated sources
+  const existingSources = target.sources.filter(
+    s => !s.startsWith('src/generated/')
+  );
+
+  // Merge: existing manual sources + generated sources
+  target.sources = [...existingSources, ...generatedSources];
+
+  // Write back with pretty formatting
+  await fs.writeFile(BINDING_GYP_PATH, JSON.stringify(gyp, null, 2) + '\n');
+  console.log('[Scaffold] ✅ Updated binding.gyp with generated sources');
 }
 
 // --- Helpers ---
