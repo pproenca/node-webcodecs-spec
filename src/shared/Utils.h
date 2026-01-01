@@ -5,6 +5,63 @@
 #include <string>
 #include <memory>
 
+// FFmpeg headers are required here because AsyncDecodeContext uses them
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/frame.h>
+#include <libswscale/swscale.h>
+}
+
+namespace webcodecs {
+
+// --- ASYNC CONTEXT STRUCT ---
+/**
+ * AsyncDecodeContext - RAII container for async decode operations.
+ *
+ * Owns:
+ * - TypedThreadSafeFunction for main thread callbacks
+ * - AVCodecContext for FFmpeg decode state
+ * - Worker thread for non-blocking decode
+ *
+ * Cleanup is triggered by the TSFN finalizer when all threads Release().
+ */
+struct AsyncDecodeContext {
+  using TSFN = Napi::TypedThreadSafeFunction<AsyncDecodeContext, AVFrame*>;
+
+  TSFN tsfn;
+  AVCodecContext* codecCtx = nullptr;
+  std::thread workerThread;
+  bool shouldExit = false;
+
+  AsyncDecodeContext() = default;
+
+  // Move-only (no copy)
+  AsyncDecodeContext(const AsyncDecodeContext&) = delete;
+  AsyncDecodeContext& operator=(const AsyncDecodeContext&) = delete;
+  AsyncDecodeContext(AsyncDecodeContext&&) = default;
+  AsyncDecodeContext& operator=(AsyncDecodeContext&&) = default;
+
+  ~AsyncDecodeContext() {
+    shouldExit = true;
+
+    if (tsfn) {
+      tsfn.Release();
+    }
+
+    if (codecCtx) {
+      avcodec_free_context(&codecCtx);
+      codecCtx = nullptr;
+    }
+
+    if (workerThread.joinable()) {
+      workerThread.join();
+    }
+  }
+};
+
+}  // namespace webcodecs
+
 // --- ENGINEERING EXCELLENCE: Guardrails ---
 
 // Macro: Ensure condition is met or throw JS Error
