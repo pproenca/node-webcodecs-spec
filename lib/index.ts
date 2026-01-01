@@ -3,6 +3,15 @@
 export type * from '../types/webcodecs.js';
 
 // Export class implementations
+export { AudioDecoder } from './AudioDecoder.js';
+export { VideoDecoder } from './VideoDecoder.js';
+export { AudioEncoder } from './AudioEncoder.js';
+export { VideoEncoder } from './VideoEncoder.js';
+export { EncodedAudioChunk } from './EncodedAudioChunk.js';
+export { EncodedVideoChunk } from './EncodedVideoChunk.js';
+export { AudioData } from './AudioData.js';
+export { VideoFrame } from './VideoFrame.js';
+export { VideoColorSpace } from './VideoColorSpace.js';
 export { ImageDecoder } from './ImageDecoder.js';
 export { ImageTrackList } from './ImageTrackList.js';
 export { ImageTrack } from './ImageTrack.js';
@@ -15,3 +24,6 @@ export { EncodedVideoChunk } from './EncodedVideoChunk.js';
 export { AudioData } from './AudioData.js';
 export { VideoFrame } from './VideoFrame.js';
 export { VideoColorSpace } from './VideoColorSpace.js';
+export { ImageDecoder } from './ImageDecoder.js';
+export { ImageTrackList } from './ImageTrackList.js';
+export { ImageTrack } from './ImageTrack.js';
