@@ -1,0 +1,37 @@
+{
+  "name": "node-webcodecs-spec",
+  "version": "0.1.0",
+  "description": "WebCodecs API implementation for Node.js backed by FFmpeg",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp build",
+    "clean": "node-gyp clean",
+    "rebuild": "node-gyp rebuild",
+    "test": "node --test"
+  },
+  "gypfile": true,
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "webcodecs",
+    "video",
+    "codec",
+    "ffmpeg",
+    "napi",
+    "native"
+  ],
+  "license": "MIT"
+}
