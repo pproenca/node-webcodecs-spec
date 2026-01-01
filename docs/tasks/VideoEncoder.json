@@ -1,0 +1,608 @@
+{
+  "interface": "VideoEncoder",
+  "type": "interface",
+  "source": {
+    "idl": "spec/context/_webcodecs.idl#L84-L98",
+    "spec": "spec/context/VideoEncoder.md"
+  },
+  "extendedAttributes": [
+    "Exposed=[{\"value\":\"Window\"},{\"value\":\"DedicatedWorker\"}]",
+    "SecureContext"
+  ],
+  "files": {
+    "cppHeader": "src/VideoEncoder.h",
+    "cppImpl": "src/VideoEncoder.cpp",
+    "tsWrapper": "lib/VideoEncoder.ts",
+    "tests": "test/videoencoder.test.ts"
+  },
+  "features": [
+    {
+      "id": "VideoEncoder.constructor",
+      "category": "constructor",
+      "name": "constructor(init: VideoEncoderInit)",
+      "description": "Create VideoEncoder instance",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 1
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 26,
+          "endLine": 36
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 43,
+          "endLine": 46
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#constructor",
+      "algorithmSteps": [
+        "Initialize internal slots."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.constructor.cpp-impl",
+          "description": "C++: Implement constructor with parameter validation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.constructor.cpp-init",
+          "description": "C++: Initialize internal state slots",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.constructor.ts-binding",
+          "description": "TS: Wire TypeScript wrapper to native constructor",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.constructor.test",
+          "description": "Test: Verify constructor creates valid instance",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.state",
+      "category": "attribute",
+      "name": "state",
+      "description": "Readonly attribute",
+      "returnType": "CodecState",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 28
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 49,
+          "endLine": 52
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 48,
+          "endLine": 50
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "VideoEncoder.state.cpp-getter",
+          "description": "C++: Implement GetState() returning CodecState",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.state.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.state.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.encodeQueueSize",
+      "category": "attribute",
+      "name": "encodeQueueSize",
+      "description": "Readonly attribute",
+      "returnType": "unsigned long",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 29
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 54,
+          "endLine": 57
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 51,
+          "endLine": 53
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "VideoEncoder.encodeQueueSize.cpp-getter",
+          "description": "C++: Implement GetEncodeQueueSize() returning unsigned long",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encodeQueueSize.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encodeQueueSize.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.ondequeue",
+      "category": "attribute",
+      "name": "ondequeue",
+      "description": "Read/write attribute",
+      "returnType": "EventHandler",
+      "readonly": false,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 30
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 59,
+          "endLine": 62
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 54,
+          "endLine": 56
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "VideoEncoder.ondequeue.cpp-getter",
+          "description": "C++: Implement GetOndequeue() returning EventHandler",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.ondequeue.cpp-setter",
+          "description": "C++: Implement SetOndequeue()",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.ondequeue.ts-binding",
+          "description": "TS: Wire getter and setter to native",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.ondequeue.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.configure",
+      "category": "method",
+      "name": "configure(config: VideoEncoderConfig)",
+      "description": "[Enqueues a control message](#enqueues-a-control-message) to configure the video encoder for encoding video frames as described by config.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 34
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 71,
+          "endLine": 81
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 62,
+          "endLine": 64
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#configure",
+      "algorithmSteps": [
+        "[Enqueues a control message](#enqueues-a-control-message) to configure the video encoder for encoding video frames as described by config.",
+        "NOTE: This method will trigger a `[NotSupportedError](https://webidl.spec.whatwg.org/#notsupportederror)` if the User Agent does not support config. Authors are encouraged to first check support by calling `[isConfigSupported()](#dom-videoencoder-isconfigsupported)` with config. User Agents don’t have to support any particular codec type or configuration.",
+        "When invoked, run these steps:",
+        "If config is not a [valid VideoEncoderConfig](#valid-videoencoderconfig), throw a `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "If `[state](#dom-videoencoder-state-slot)` is \"closed\", throw an `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)`.",
+        "Set `[state](#dom-videoencoder-state-slot)` to \"configured\".",
+        "Set `[active orientation](#dom-videoencoder-active-orientation-slot)` to `null`.",
+        "[Queue a control message](#enqueues-a-control-message) to configure the encoder using config.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "[Running a control message](#running-a-control-message) to configure the encoder means performing these steps:",
+        "Assign `true` to `[message queue blocked](#dom-videoencoder-message-queue-blocked-slot)`.",
+        "Enqueue the following steps to `[codec work queue](#dom-videoencoder-codec-work-queue-slot)`:",
+        "Let supported be the result of running the [Check Configuration Support](#check-configuration-support) algorithm with config.",
+        "If supported is `false`, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close VideoEncoder](#close-videoencoder) algorithm with `[NotSupportedError](https://webidl.spec.whatwg.org/#notsupportederror)` and abort these steps.",
+        "If needed, assign `[codec implementation](#dom-videoencoder-codec-implementation-slot)` with an implementation supporting config.",
+        "Configure `[codec implementation](#dom-videoencoder-codec-implementation-slot)` with config.",
+        "[queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the following steps:",
+        "Assign `false` to `[message queue blocked](#dom-videoencoder-message-queue-blocked-slot)`.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to [Process the control message queue](#process-the-control-message-queue).",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.configure.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.configure.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.configure.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.configure.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.configure.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.encode",
+      "category": "method",
+      "name": "encode(frame: VideoFrame, options: VideoEncoderEncodeOptions)",
+      "description": "[Enqueues a control message](#enqueues-a-control-message) to encode the given frame.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 35
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 83,
+          "endLine": 93
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 65,
+          "endLine": 67
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#encode",
+      "algorithmSteps": [
+        "[Enqueues a control message](#enqueues-a-control-message) to encode the given frame.",
+        "When invoked, run these steps:",
+        "If the value of frame’s `[Detached](https://html.spec.whatwg.org/multipage/structured-data.html#detached)` internal slot is `true`, throw a `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "If `[state](#dom-videoencoder-state-slot)` is not \"configured\", throw an `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)`.",
+        "If `[active orientation](#dom-videoencoder-active-orientation-slot)` is not `null` and does not match frame’s `[rotation](#dom-videoframe-rotation-slot)` and `[flip](#dom-videoframe-flip-slot)` throw a `[DataError](https://webidl.spec.whatwg.org/#dataerror)`.",
+        "If `[active orientation](#dom-videoencoder-active-orientation-slot)` is `null`, set it to frame’s `[rotation](#dom-videoframe-rotation-slot)` and `[flip](#dom-videoframe-flip-slot)`.",
+        "Let frameClone hold the result of running the [Clone VideoFrame](#clone-videoframe) algorithm with frame.",
+        "Increment `[encodeQueueSize](#dom-videoencoder-encodequeuesize-slot)`.",
+        "[Queue a control message](#enqueues-a-control-message) to encode frameClone.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "[Running a control message](#running-a-control-message) to encode the frame means performing these steps:",
+        "If `[codec saturated](#dom-videoencoder-codec-saturated-slot)` equals `true`, return \"not processed\".",
+        "If encoding frame will cause the `[codec implementation](#dom-videoencoder-codec-implementation-slot)` to become [saturated](#saturated), assign `true` to `[codec saturated](#dom-videoencoder-codec-saturated-slot)`.",
+        "Decrement `[encodeQueueSize](#dom-videoencoder-encodequeuesize-slot)` and run the [Schedule Dequeue Event](#videoencoder-schedule-dequeue-event) algorithm.",
+        "Enqueue the following steps to the `[codec work queue](#dom-videoencoder-codec-work-queue-slot)`:",
+        "Attempt to use `[codec implementation](#dom-videoencoder-codec-implementation-slot)` to encode the frameClone according to options.",
+        "If encoding results in an error, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close VideoEncoder](#close-videoencoder) algorithm with `[EncodingError](https://webidl.spec.whatwg.org/#encodingerror)` and return.",
+        "If `[codec saturated](#dom-videoencoder-codec-saturated-slot)` equals `true` and `[codec implementation](#dom-videoencoder-codec-implementation-slot)` is no longer [saturated](#saturated), [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform the following steps:",
+        "Assign `false` to `[codec saturated](#dom-videoencoder-codec-saturated-slot)`.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "Let encoded outputs be a [list](https://infra.spec.whatwg.org/#list) of encoded video data outputs emitted by `[codec implementation](#dom-videoencoder-codec-implementation-slot)`.",
+        "If encoded outputs is not empty, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Output EncodedVideoChunks](#output-encodedvideochunks) algorithm with encoded outputs.",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.encode.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encode.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encode.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encode.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.encode.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.flush",
+      "category": "method",
+      "name": "flush()",
+      "description": "Completes all [control messages](#control-message) in the [control message queue](#control-message-queue) and emits all outputs.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 36
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 95,
+          "endLine": 105
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 68,
+          "endLine": 70
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#flush",
+      "algorithmSteps": [
+        "Completes all [control messages](#control-message) in the [control message queue](#control-message-queue) and emits all outputs.",
+        "When invoked, run these steps:",
+        "If `[state](#dom-videoencoder-state-slot)` is not \"configured\", return [a promise rejected with](https://webidl.spec.whatwg.org/#a-promise-rejected-with) `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`.",
+        "Let promise be a new Promise.",
+        "Append promise to `[pending flush promises](#dom-videoencoder-pending-flush-promises-slot)`.",
+        "[Queue a control message](#enqueues-a-control-message) to flush the codec with promise.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "Return promise.",
+        "[Running a control message](#running-a-control-message) to flush the codec means performing these steps with promise:",
+        "Enqueue the following steps to the `[codec work queue](#dom-videoencoder-codec-work-queue-slot)`:",
+        "Signal `[codec implementation](#dom-videoencoder-codec-implementation-slot)` to emit all [internal pending outputs](#internal-pending-output).",
+        "Let encoded outputs be a [list](https://infra.spec.whatwg.org/#list) of encoded video data outputs emitted by `[codec implementation](#dom-videoencoder-codec-implementation-slot)`.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform these steps:",
+        "If encoded outputs is not empty, run the [Output EncodedVideoChunks](#output-encodedvideochunks) algorithm with encoded outputs.",
+        "Remove promise from `[pending flush promises](#dom-videoencoder-pending-flush-promises-slot)`.",
+        "Resolve promise.",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.flush.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.flush.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.flush.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.flush.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.flush.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.reset",
+      "category": "method",
+      "name": "reset()",
+      "description": "Immediately resets all state including configuration, [control messages](#control-message) in the [control message queue](#control-message-queue), and all pending callbacks.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 37
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 107,
+          "endLine": 117
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 71,
+          "endLine": 73
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#reset",
+      "algorithmSteps": [
+        "Immediately resets all state including configuration, [control messages](#control-message) in the [control message queue](#control-message-queue), and all pending callbacks.",
+        "When invoked, run the [Reset VideoEncoder](#reset-videoencoder) algorithm with an `[AbortError](https://webidl.spec.whatwg.org/#aborterror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.reset.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.reset.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.reset.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.reset.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.reset.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.close",
+      "category": "method",
+      "name": "close()",
+      "description": "Immediately aborts all pending work and releases [system resources](#system-resources). Close is final.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 38
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 119,
+          "endLine": 129
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 74,
+          "endLine": 76
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#close",
+      "algorithmSteps": [
+        "Immediately aborts all pending work and releases [system resources](#system-resources). Close is final.",
+        "When invoked, run the [Close VideoEncoder](#close-videoencoder) algorithm with an `[AbortError](https://webidl.spec.whatwg.org/#aborterror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.close.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.close.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.close.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.close.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.close.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "VideoEncoder.isConfigSupported",
+      "category": "static-method",
+      "name": "isConfigSupported(config: VideoEncoderConfig)",
+      "description": "Returns a promise indicating whether the provided config is supported by the User Agent.",
+      "returnType": "VideoEncoderSupport",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/VideoEncoder.h",
+          "line": 39
+        },
+        "implementation": {
+          "file": "src/VideoEncoder.cpp",
+          "line": 131,
+          "endLine": 141
+        },
+        "tsBinding": {
+          "file": "lib/VideoEncoder.ts",
+          "line": 78,
+          "endLine": 81
+        }
+      },
+      "algorithmRef": "spec/context/VideoEncoder.md#isconfigsupported",
+      "algorithmSteps": [
+        "Returns a promise indicating whether the provided config is supported by the User Agent.",
+        "NOTE: The returned `[VideoEncoderSupport](#dictdef-videoencodersupport)` `[config](#dom-videoencodersupport-config)` will contain only the dictionary members that User Agent recognized. Unrecognized dictionary members will be ignored. Authors can detect unrecognized dictionary members by comparing `[config](#dom-videoencodersupport-config)` to their provided config.",
+        "When invoked, run these steps:",
+        "If config is not a [valid VideoEncoderConfig](#valid-videoencoderconfig), return [a promise rejected with](https://webidl.spec.whatwg.org/#a-promise-rejected-with) `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "Let p be a new Promise.",
+        "Let checkSupportQueue be the result of starting a new [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue).",
+        "Enqueue the following steps to checkSupportQueue:",
+        "Let supported be the result of running the [Check Configuration Support](#check-configuration-support) algorithm with config.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the following steps:",
+        "Let encoderSupport be a newly constructed `[VideoEncoderSupport](#dictdef-videoencodersupport)`, initialized as follows:",
+        "Set `[config](#dom-videoencodersupport-config)` to the result of running the [Clone Configuration](#clone-configuration) algorithm with config.",
+        "Set `[supported](#dom-videoencodersupport-supported)` to supported.",
+        "Resolve p with encoderSupport.",
+        "Return p."
+      ],
+      "steps": [
+        {
+          "id": "VideoEncoder.isConfigSupported.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.isConfigSupported.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.isConfigSupported.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.isConfigSupported.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "VideoEncoder.isConfigSupported.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    }
+  ]
+}

@@ -1,0 +1,302 @@
+{
+  "interface": "EncodedAudioChunk",
+  "type": "interface",
+  "source": {
+    "idl": "spec/context/_webcodecs.idl#L236-L244",
+    "spec": "spec/context/EncodedAudioChunk.md"
+  },
+  "extendedAttributes": [
+    "Exposed=[{\"value\":\"Window\"},{\"value\":\"DedicatedWorker\"}]",
+    "Serializable"
+  ],
+  "files": {
+    "cppHeader": "src/EncodedAudioChunk.h",
+    "cppImpl": "src/EncodedAudioChunk.cpp",
+    "tsWrapper": "lib/EncodedAudioChunk.ts",
+    "tests": "test/encodedaudiochunk.test.ts"
+  },
+  "features": [
+    {
+      "id": "EncodedAudioChunk.constructor",
+      "category": "constructor",
+      "name": "constructor(init: EncodedAudioChunkInit)",
+      "description": "Create EncodedAudioChunk instance",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 1
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 23,
+          "endLine": 33
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 35,
+          "endLine": 38
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#constructor",
+      "algorithmSteps": [
+        "Initialize internal slots."
+      ],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.constructor.cpp-impl",
+          "description": "C++: Implement constructor with parameter validation",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.constructor.cpp-init",
+          "description": "C++: Initialize internal state slots",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.constructor.ts-binding",
+          "description": "TS: Wire TypeScript wrapper to native constructor",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.constructor.test",
+          "description": "Test: Verify constructor creates valid instance",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "EncodedAudioChunk.type",
+      "category": "attribute",
+      "name": "type",
+      "description": "Readonly attribute",
+      "returnType": "EncodedAudioChunkType",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 43
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 46,
+          "endLine": 49
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 40,
+          "endLine": 42
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.type.cpp-getter",
+          "description": "C++: Implement GetType() returning EncodedAudioChunkType",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.type.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.type.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "EncodedAudioChunk.timestamp",
+      "category": "attribute",
+      "name": "timestamp",
+      "description": "Readonly attribute",
+      "returnType": "long long",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 44
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 51,
+          "endLine": 54
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 43,
+          "endLine": 45
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.timestamp.cpp-getter",
+          "description": "C++: Implement GetTimestamp() returning long long",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.timestamp.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.timestamp.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "EncodedAudioChunk.duration",
+      "category": "attribute",
+      "name": "duration",
+      "description": "Readonly attribute",
+      "returnType": "unsigned long long",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 45
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 56,
+          "endLine": 59
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 46,
+          "endLine": 48
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.duration.cpp-getter",
+          "description": "C++: Implement GetDuration() returning unsigned long long",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.duration.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.duration.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "EncodedAudioChunk.byteLength",
+      "category": "attribute",
+      "name": "byteLength",
+      "description": "Readonly attribute",
+      "returnType": "unsigned long",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 46
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 61,
+          "endLine": 64
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 49,
+          "endLine": 51
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.byteLength.cpp-getter",
+          "description": "C++: Implement GetByteLength() returning unsigned long",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.byteLength.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.byteLength.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "EncodedAudioChunk.copyTo",
+      "category": "method",
+      "name": "copyTo(destination: AllowSharedBufferSource)",
+      "description": "When invoked, run these steps:",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/EncodedAudioChunk.h",
+          "line": 49
+        },
+        "implementation": {
+          "file": "src/EncodedAudioChunk.cpp",
+          "line": 69,
+          "endLine": 79
+        },
+        "tsBinding": {
+          "file": "lib/EncodedAudioChunk.ts",
+          "line": 53,
+          "endLine": 55
+        }
+      },
+      "algorithmRef": "spec/context/EncodedAudioChunk.md#copyto",
+      "algorithmSteps": [
+        "When invoked, run these steps:",
+        "If the `[byte length](#dom-encodedaudiochunk-byte-length-slot)` of this `[EncodedAudioChunk](#encodedaudiochunk)` is greater than in destination, throw a `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "Copy the `[internal data](#dom-encodedaudiochunk-internal-data-slot)` into destination."
+      ],
+      "steps": [
+        {
+          "id": "EncodedAudioChunk.copyTo.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.copyTo.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.copyTo.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.copyTo.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "EncodedAudioChunk.copyTo.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    }
+  ]
+}

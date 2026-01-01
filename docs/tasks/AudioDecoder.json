@@ -1,0 +1,609 @@
+{
+  "interface": "AudioDecoder",
+  "type": "interface",
+  "source": {
+    "idl": "spec/context/_webcodecs.idl#L2-L16",
+    "spec": "spec/context/AudioDecoder.md"
+  },
+  "extendedAttributes": [
+    "Exposed=[{\"value\":\"Window\"},{\"value\":\"DedicatedWorker\"}]",
+    "SecureContext"
+  ],
+  "files": {
+    "cppHeader": "src/AudioDecoder.h",
+    "cppImpl": "src/AudioDecoder.cpp",
+    "tsWrapper": "lib/AudioDecoder.ts",
+    "tests": "test/audiodecoder.test.ts"
+  },
+  "features": [
+    {
+      "id": "AudioDecoder.constructor",
+      "category": "constructor",
+      "name": "constructor(init: AudioDecoderInit)",
+      "description": "Create AudioDecoder instance",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 1
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 26,
+          "endLine": 36
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 42,
+          "endLine": 45
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#constructor",
+      "algorithmSteps": [
+        "Initialize internal slots."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.constructor.cpp-impl",
+          "description": "C++: Implement constructor with parameter validation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.constructor.cpp-init",
+          "description": "C++: Initialize internal state slots",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.constructor.ts-binding",
+          "description": "TS: Wire TypeScript wrapper to native constructor",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.constructor.test",
+          "description": "Test: Verify constructor creates valid instance",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.state",
+      "category": "attribute",
+      "name": "state",
+      "description": "Readonly attribute",
+      "returnType": "CodecState",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 53
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 72,
+          "endLine": 75
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 47,
+          "endLine": 49
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "AudioDecoder.state.cpp-getter",
+          "description": "C++: Implement GetState() returning CodecState",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.state.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.state.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.decodeQueueSize",
+      "category": "attribute",
+      "name": "decodeQueueSize",
+      "description": "Readonly attribute",
+      "returnType": "unsigned long",
+      "readonly": true,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 54
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 77,
+          "endLine": 80
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 50,
+          "endLine": 52
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "AudioDecoder.decodeQueueSize.cpp-getter",
+          "description": "C++: Implement GetDecodeQueueSize() returning unsigned long",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decodeQueueSize.ts-binding",
+          "description": "TS: Wire getter to native",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decodeQueueSize.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.ondequeue",
+      "category": "attribute",
+      "name": "ondequeue",
+      "description": "Read/write attribute",
+      "returnType": "EventHandler",
+      "readonly": false,
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 55
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 82,
+          "endLine": 85
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 53,
+          "endLine": 55
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#attributes",
+      "algorithmSteps": [],
+      "steps": [
+        {
+          "id": "AudioDecoder.ondequeue.cpp-getter",
+          "description": "C++: Implement GetOndequeue() returning EventHandler",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.ondequeue.cpp-setter",
+          "description": "C++: Implement SetOndequeue()",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.ondequeue.ts-binding",
+          "description": "TS: Wire getter and setter to native",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.ondequeue.test",
+          "description": "Test: Verify initial value and behavior",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.configure",
+      "category": "method",
+      "name": "configure(config: AudioDecoderConfig)",
+      "description": "[Enqueues a control message](#enqueues-a-control-message) to configure the audio decoder for decoding chunks as described by config.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 59
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 94,
+          "endLine": 104
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 61,
+          "endLine": 63
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#configure",
+      "algorithmSteps": [
+        "[Enqueues a control message](#enqueues-a-control-message) to configure the audio decoder for decoding chunks as described by config.",
+        "NOTE: This method will trigger a `[NotSupportedError](https://webidl.spec.whatwg.org/#notsupportederror)` if the User Agent does not support config. Authors are encouraged to first check support by calling `[isConfigSupported()](#dom-audiodecoder-isconfigsupported)` with config. User Agents don’t have to support any particular codec type or configuration.",
+        "When invoked, run these steps:",
+        "If config is not a [valid AudioDecoderConfig](#valid-audiodecoderconfig), throw a `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "If `[state](#dom-audiodecoder-state-slot)` is `“closed”`, throw an `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)`.",
+        "Set `[state](#dom-audiodecoder-state-slot)` to \"configured\".",
+        "Set `[key chunk required](#dom-audiodecoder-key-chunk-required-slot)` to `true`.",
+        "[Queue a control message](#enqueues-a-control-message) to configure the decoder with config.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "[Running a control message](#running-a-control-message) to configure the decoder means running these steps:",
+        "Assign `true` to `[message queue blocked](#dom-audiodecoder-message-queue-blocked-slot)`.",
+        "Enqueue the following steps to `[codec work queue](#dom-audiodecoder-codec-work-queue-slot)`:",
+        "Let supported be the result of running the [Check Configuration Support](#check-configuration-support) algorithm with config.",
+        "If supported is `false`, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close AudioDecoder](#close-audiodecoder) algorithm with `[NotSupportedError](https://webidl.spec.whatwg.org/#notsupportederror)` and abort these steps.",
+        "If needed, assign `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` with an implementation supporting config.",
+        "Configure `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` with config.",
+        "[queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the following steps:",
+        "Assign `false` to `[message queue blocked](#dom-audiodecoder-message-queue-blocked-slot)`.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to [Process the control message queue](#process-the-control-message-queue).",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.configure.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.configure.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.configure.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.configure.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.configure.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.decode",
+      "category": "method",
+      "name": "decode(chunk: EncodedAudioChunk)",
+      "description": "[Enqueues a control message](#enqueues-a-control-message) to decode the given chunk.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 60
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 106,
+          "endLine": 116
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 64,
+          "endLine": 66
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#decode",
+      "algorithmSteps": [
+        "[Enqueues a control message](#enqueues-a-control-message) to decode the given chunk.",
+        "When invoked, run these steps:",
+        "If `[state](#dom-audiodecoder-state-slot)` is not \"configured\", throw an `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)`.",
+        "If `[key chunk required](#dom-audiodecoder-key-chunk-required-slot)` is `true`:",
+        "If chunk.`[type](#dom-encodedaudiochunk-type-slot)` is not `[key](#dom-encodedaudiochunktype-key)`, throw a `[DataError](https://webidl.spec.whatwg.org/#dataerror)`.",
+        "Implementers _SHOULD_ inspect the chunk’s `[internal data](#dom-encodedaudiochunk-internal-data-slot)` to verify that it is truly a [key chunk](#key-chunk). If a mismatch is detected, throw a `[DataError](https://webidl.spec.whatwg.org/#dataerror)`.",
+        "Otherwise, assign `false` to `[key chunk required](#dom-audiodecoder-key-chunk-required-slot)`.",
+        "Increment `[decodeQueueSize](#dom-audiodecoder-decodequeuesize-slot)`.",
+        "[Queue a control message](#enqueues-a-control-message) to decode the chunk.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "[Running a control message](#running-a-control-message) to decode the chunk means performing these steps:",
+        "If `[codec saturated](#dom-audiodecoder-codec-saturated-slot)` equals `true`, return \"not processed\".",
+        "If decoding chunk will cause the `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` to become [saturated](#saturated), assign `true` to `[codec saturated](#dom-audiodecoder-codec-saturated-slot)`.",
+        "Decrement `[decodeQueueSize](#dom-audiodecoder-decodequeuesize-slot)` and run the [Schedule Dequeue Event](#audiodecoder-schedule-dequeue-event) algorithm.",
+        "Enqueue the following steps to the `[codec work queue](#dom-audiodecoder-codec-work-queue-slot)`:",
+        "Attempt to use `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` to decode the chunk.",
+        "If decoding results in an error, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close AudioDecoder](#close-audiodecoder) algorithm with `[EncodingError](https://webidl.spec.whatwg.org/#encodingerror)` and return.",
+        "If `[codec saturated](#dom-audiodecoder-codec-saturated-slot)` equals `true` and `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` is no longer [saturated](#saturated), [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform the following steps:",
+        "Assign `false` to `[codec saturated](#dom-audiodecoder-codec-saturated-slot)`.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "Let decoded outputs be a [list](https://infra.spec.whatwg.org/#list) of decoded audio data outputs emitted by `[codec implementation](#dom-audiodecoder-codec-implementation-slot)`.",
+        "If decoded outputs is not empty, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Output AudioData](#output-audiodata) algorithm with decoded outputs.",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.decode.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decode.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decode.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decode.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.decode.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.flush",
+      "category": "method",
+      "name": "flush()",
+      "description": "Completes all [control messages](#control-message) in the [control message queue](#control-message-queue) and emits all outputs.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 61
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 118,
+          "endLine": 128
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 67,
+          "endLine": 69
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#flush",
+      "algorithmSteps": [
+        "Completes all [control messages](#control-message) in the [control message queue](#control-message-queue) and emits all outputs.",
+        "When invoked, run these steps:",
+        "If `[state](#dom-audiodecoder-state-slot)` is not \"configured\", return [a promise rejected with](https://webidl.spec.whatwg.org/#a-promise-rejected-with) `[InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`.",
+        "Set `[key chunk required](#dom-audiodecoder-key-chunk-required-slot)` to `true`.",
+        "Let promise be a new Promise.",
+        "Append promise to `[pending flush promises](#dom-audiodecoder-pending-flush-promises-slot)`.",
+        "[Queue a control message](#enqueues-a-control-message) to flush the codec with promise.",
+        "[Process the control message queue](#process-the-control-message-queue).",
+        "Return promise.",
+        "[Running a control message](#running-a-control-message) to flush the codec means performing these steps with promise.",
+        "Enqueue the following steps to the `[codec work queue](#dom-audiodecoder-codec-work-queue-slot)`:",
+        "Signal `[codec implementation](#dom-audiodecoder-codec-implementation-slot)` to emit all [internal pending outputs](#internal-pending-output).",
+        "Let decoded outputs be a [list](https://infra.spec.whatwg.org/#list) of decoded audio data outputs emitted by `[codec implementation](#dom-audiodecoder-codec-implementation-slot)`.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform these steps:",
+        "If decoded outputs is not empty, run the [Output AudioData](#output-audiodata) algorithm with decoded outputs.",
+        "Remove promise from `[pending flush promises](#dom-audiodecoder-pending-flush-promises-slot)`.",
+        "Resolve promise.",
+        "Return \"processed\"."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.flush.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.flush.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.flush.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.flush.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.flush.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.reset",
+      "category": "method",
+      "name": "reset()",
+      "description": "Immediately resets all state including configuration, [control messages](#control-message) in the [control message queue](#control-message-queue), and all pending callbacks.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 62
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 130,
+          "endLine": 140
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 70,
+          "endLine": 72
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#reset",
+      "algorithmSteps": [
+        "Immediately resets all state including configuration, [control messages](#control-message) in the [control message queue](#control-message-queue), and all pending callbacks.",
+        "When invoked, run the [Reset AudioDecoder](#reset-audiodecoder) algorithm with an `[AbortError](https://webidl.spec.whatwg.org/#aborterror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.reset.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.reset.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.reset.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.reset.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.reset.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.close",
+      "category": "method",
+      "name": "close()",
+      "description": "Immediately aborts all pending work and releases [system resources](#system-resources). Close is final.",
+      "returnType": "undefined",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 63
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 142,
+          "endLine": 152
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 73,
+          "endLine": 75
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#close",
+      "algorithmSteps": [
+        "Immediately aborts all pending work and releases [system resources](#system-resources). Close is final.",
+        "When invoked, run the [Close AudioDecoder](#close-audiodecoder) algorithm with an `[AbortError](https://webidl.spec.whatwg.org/#aborterror)` `[DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)`."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.close.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.close.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.close.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.close.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.close.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    },
+    {
+      "id": "AudioDecoder.isConfigSupported",
+      "category": "static-method",
+      "name": "isConfigSupported(config: AudioDecoderConfig)",
+      "description": "Returns a promise indicating whether the provided config is supported by the User Agent.",
+      "returnType": "AudioDecoderSupport",
+      "codeLinks": {
+        "declaration": {
+          "file": "src/AudioDecoder.h",
+          "line": 64
+        },
+        "implementation": {
+          "file": "src/AudioDecoder.cpp",
+          "line": 154,
+          "endLine": 164
+        },
+        "tsBinding": {
+          "file": "lib/AudioDecoder.ts",
+          "line": 77,
+          "endLine": 80
+        }
+      },
+      "algorithmRef": "spec/context/AudioDecoder.md#isconfigsupported",
+      "algorithmSteps": [
+        "Returns a promise indicating whether the provided config is supported by the User Agent.",
+        "NOTE: The returned `[AudioDecoderSupport](#dictdef-audiodecodersupport)` `[config](#dom-audiodecodersupport-config)` will contain only the dictionary members that User Agent recognized. Unrecognized dictionary members will be ignored. Authors can detect unrecognized dictionary members by comparing `[config](#dom-audiodecodersupport-config)` to their provided config.",
+        "When invoked, run these steps:",
+        "If config is not a [valid AudioDecoderConfig](#valid-audiodecoderconfig), return [a promise rejected with](https://webidl.spec.whatwg.org/#a-promise-rejected-with) `[TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror)`.",
+        "Let p be a new Promise.",
+        "Let checkSupportQueue be the result of starting a new [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue).",
+        "Enqueue the following steps to checkSupportQueue:",
+        "Let supported be the result of running the [Check Configuration Support](#check-configuration-support) algorithm with config.",
+        "[Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the following steps:",
+        "Let decoderSupport be a newly constructed `[AudioDecoderSupport](#dictdef-audiodecodersupport)`, initialized as follows:",
+        "Set `[config](#dom-audiodecodersupport-config)` to the result of running the [Clone Configuration](#clone-configuration) algorithm with config.",
+        "Set `[supported](#dom-audiodecodersupport-supported)` to supported.",
+        "Resolve p with decoderSupport.",
+        "Return p."
+      ],
+      "steps": [
+        {
+          "id": "AudioDecoder.isConfigSupported.cpp-impl",
+          "description": "C++: Implement method logic per W3C spec algorithm",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.isConfigSupported.cpp-errors",
+          "description": "C++: Handle error cases with proper DOMException types",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.isConfigSupported.ts-binding",
+          "description": "TS: Wire method to native implementation",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.isConfigSupported.test-happy",
+          "description": "Test: Write test case for happy path",
+          "passes": false
+        },
+        {
+          "id": "AudioDecoder.isConfigSupported.test-errors",
+          "description": "Test: Write test case for error conditions",
+          "passes": false
+        }
+      ],
+      "passes": false
+    }
+  ]
+}
