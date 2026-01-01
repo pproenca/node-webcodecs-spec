@@ -108,26 +108,36 @@ const TYPE_MAP: Record<string, string> = {
 /**
  * Builds Bikeshed source using the CSSWG API.
  * @param source - Raw Bikeshed source HTML content
+ * @param timeoutMs - Request timeout in milliseconds (default: 60000)
  * @returns Rendered HTML with resolved cross-references
- * @throws Error if API request fails
+ * @throws Error if API request fails or times out
  */
-async function buildWithBikeshed(source: string): Promise<string> {
+async function buildWithBikeshed(source: string, timeoutMs = 60000): Promise<string> {
   const formData = new FormData();
   formData.append('file', new Blob([source], { type: 'text/plain' }), 'spec.bs');
   formData.append('force', '1'); // Force build even with warnings
   formData.append('output', 'html');
 
-  const response = await fetch('https://api.csswg.org/bikeshed/', {
-    method: 'POST',
-    body: formData,
-  });
+  // Add timeout to prevent hanging on slow/unresponsive API
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Bikeshed API failed: ${response.status} - ${errorText}`);
+  try {
+    const response = await fetch('https://api.csswg.org/bikeshed/', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Bikeshed API failed: ${response.status} - ${errorText}`);
+    }
+
+    return response.text();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.text();
 }
 
 /**
