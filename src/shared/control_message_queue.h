@@ -1,0 +1,317 @@
+#pragma once
+/**
+ * control_message_queue.h - Thread-Safe Control Message Queue
+ *
+ * Implements the WebCodecs spec "control message queue" abstraction for
+ * VideoDecoder, AudioDecoder, VideoEncoder, and AudioEncoder.
+ *
+ * Per spec, messages are processed FIFO with specific semantics:
+ * - Configure blocks until complete
+ * - Decode/Encode are queued and processed by worker
+ * - Flush completes when all pending work is done
+ * - Reset clears pending work
+ * - Close terminates the queue
+ *
+ * Thread model:
+ * - JS thread: enqueue() messages
+ * - Worker thread: dequeue() and process
+ * - TSFN callbacks deliver results to JS thread
+ *
+ * @see https://www.w3.org/TR/webcodecs/#control-message-queue
+ */
+
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <variant>
+#include <functional>
+#include <atomic>
+#include <optional>
+#include <vector>
+#include <chrono>
+
+#include "../ffmpeg_raii.h"
+
+namespace webcodecs {
+
+/**
+ * Thread-safe control message queue per WebCodecs spec.
+ *
+ * @tparam PacketType Type for encoded data (e.g., raii::AVPacketPtr)
+ * @tparam FrameType Type for decoded data (e.g., raii::AVFramePtr)
+ */
+template<typename PacketType, typename FrameType>
+class ControlMessageQueue {
+ public:
+  // =========================================================================
+  // MESSAGE TYPES
+  // =========================================================================
+
+  /**
+   * Configure message - blocks processing until codec is configured.
+   * The configure_fn returns true on success, false on failure.
+   */
+  struct ConfigureMessage {
+    std::function<bool()> configure_fn;
+  };
+
+  /**
+   * Decode/Encode message - queued work item.
+   */
+  struct DecodeMessage {
+    PacketType packet;
+  };
+
+  /**
+   * Flush message - complete all pending work before resolving.
+   * promise_id is used to resolve the Promise on the JS side.
+   */
+  struct FlushMessage {
+    uint32_t promise_id;
+  };
+
+  /**
+   * Reset message - clear pending work and reset codec state.
+   */
+  struct ResetMessage {};
+
+  /**
+   * Close message - terminate the queue permanently.
+   */
+  struct CloseMessage {};
+
+  using Message = std::variant<ConfigureMessage, DecodeMessage, FlushMessage,
+                                ResetMessage, CloseMessage>;
+
+  // =========================================================================
+  // CONSTRUCTORS / DESTRUCTOR
+  // =========================================================================
+
+  ControlMessageQueue() = default;
+
+  ~ControlMessageQueue() {
+    shutdown();
+  }
+
+  // Non-copyable, non-movable (owns synchronization primitives)
+  ControlMessageQueue(const ControlMessageQueue&) = delete;
+  ControlMessageQueue& operator=(const ControlMessageQueue&) = delete;
+  ControlMessageQueue(ControlMessageQueue&&) = delete;
+  ControlMessageQueue& operator=(ControlMessageQueue&&) = delete;
+
+  // =========================================================================
+  // PRODUCER API (JS Thread)
+  // =========================================================================
+
+  /**
+   * Enqueue a message for processing.
+   * Thread-safe, called from JS main thread.
+   *
+   * @param msg The message to enqueue
+   * @return true if message was enqueued, false if queue is closed
+   */
+  [[nodiscard]] bool enqueue(Message msg) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (closed_) {
+      return false;
+    }
+    queue_.push(std::move(msg));
+    cv_.notify_one();
+    return true;
+  }
+
+  // =========================================================================
+  // CONSUMER API (Worker Thread)
+  // =========================================================================
+
+  /**
+   * Dequeue a message for processing.
+   * Blocks until a message is available or queue is closed.
+   * Thread-safe, called from worker thread.
+   *
+   * @return The next message, or std::nullopt if queue is closed and empty
+   */
+  [[nodiscard]] std::optional<Message> dequeue() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv_.wait(lock, [this] { return !queue_.empty() || closed_; });
+
+    if (closed_ && queue_.empty()) {
+      return std::nullopt;
+    }
+
+    Message msg = std::move(queue_.front());
+    queue_.pop();
+    return msg;
+  }
+
+  /**
+   * Dequeue with timeout.
+   * Useful for checking shutdown conditions periodically.
+   *
+   * @param timeout Maximum time to wait
+   * @return The next message, or std::nullopt on timeout or if closed
+   */
+  [[nodiscard]] std::optional<Message> dequeue_for(std::chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!cv_.wait_for(lock, timeout, [this] { return !queue_.empty() || closed_; })) {
+      return std::nullopt;  // Timeout
+    }
+
+    if (closed_ && queue_.empty()) {
+      return std::nullopt;
+    }
+
+    Message msg = std::move(queue_.front());
+    queue_.pop();
+    return msg;
+  }
+
+  /**
+   * Try to dequeue without blocking.
+   *
+   * @return The next message, or std::nullopt if queue is empty
+   */
+  [[nodiscard]] std::optional<Message> try_dequeue() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (queue_.empty()) {
+      return std::nullopt;
+    }
+
+    Message msg = std::move(queue_.front());
+    queue_.pop();
+    return msg;
+  }
+
+  // =========================================================================
+  // RESET / SHUTDOWN
+  // =========================================================================
+
+  /**
+   * Clear all pending messages (for reset).
+   * Returns any packets that were dropped so they can be properly unreferenced.
+   *
+   * @return Vector of packets that were dropped
+   */
+  std::vector<PacketType> clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<PacketType> dropped;
+
+    while (!queue_.empty()) {
+      auto& msg = queue_.front();
+      if (auto* decode = std::get_if<DecodeMessage>(&msg)) {
+        dropped.push_back(std::move(decode->packet));
+      }
+      queue_.pop();
+    }
+
+    return dropped;
+  }
+
+  /**
+   * Shutdown the queue permanently.
+   * Any subsequent enqueue() calls will return false.
+   * Any blocked dequeue() calls will return std::nullopt.
+   */
+  void shutdown() {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      closed_ = true;
+    }
+    cv_.notify_all();
+  }
+
+  // =========================================================================
+  // QUERY
+  // =========================================================================
+
+  /**
+   * Get the current queue size (for decodeQueueSize/encodeQueueSize attribute).
+   * Thread-safe.
+   */
+  [[nodiscard]] size_t size() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.size();
+  }
+
+  /**
+   * Check if the queue is empty.
+   */
+  [[nodiscard]] bool empty() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.empty();
+  }
+
+  /**
+   * Check if the queue is closed.
+   */
+  [[nodiscard]] bool is_closed() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return closed_;
+  }
+
+  /**
+   * Check if queue is blocked (for configure).
+   */
+  [[nodiscard]] bool is_blocked() const {
+    return blocked_.load(std::memory_order_acquire);
+  }
+
+  /**
+   * Set blocked state (during configure).
+   */
+  void set_blocked(bool blocked) {
+    blocked_.store(blocked, std::memory_order_release);
+  }
+
+ private:
+  mutable std::mutex mutex_;
+  std::condition_variable cv_;
+  std::queue<Message> queue_;
+  std::atomic<bool> blocked_{false};
+  bool closed_{false};
+};
+
+// ===========================================================================
+// TYPE ALIASES
+// ===========================================================================
+
+/**
+ * Control queue for video codecs.
+ * PacketType: encoded video data
+ * FrameType: decoded video frames
+ */
+using VideoControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePtr>;
+
+/**
+ * Control queue for audio codecs.
+ * PacketType: encoded audio data
+ * FrameType: decoded audio frames
+ */
+using AudioControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePtr>;
+
+// ===========================================================================
+// VISITOR HELPER
+// ===========================================================================
+
+/**
+ * Helper for processing messages with std::visit.
+ *
+ * Usage:
+ *   auto result = std::visit(MessageVisitor{
+ *     [](ConfigureMessage& msg) { ... },
+ *     [](DecodeMessage& msg) { ... },
+ *     [](FlushMessage& msg) { ... },
+ *     [](ResetMessage& msg) { ... },
+ *     [](CloseMessage& msg) { ... }
+ *   }, message);
+ */
+template<class... Ts>
+struct MessageVisitor : Ts... {
+  using Ts::operator()...;
+};
+
+// Deduction guide for C++17
+template<class... Ts>
+MessageVisitor(Ts...) -> MessageVisitor<Ts...>;
+
+}  // namespace webcodecs

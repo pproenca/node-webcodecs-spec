@@ -24,6 +24,11 @@
     "clean": "node-gyp clean && rm -rf dist",
     "rebuild": "npm run clean && npm run build",
     "test": "vitest",
+    "test:native": "cd test/cpp && cmake -B build && cmake --build build && ./build/webcodecs_tests",
+    "test:native:tsan": "cd test/cpp && cmake -B build -DENABLE_TSAN=ON && cmake --build build && ./build/webcodecs_tests",
+    "test:native:asan": "cd test/cpp && cmake -B build -DENABLE_ASAN=ON && cmake --build build && ./build/webcodecs_tests",
+    "test:native:ubsan": "cd test/cpp && cmake -B build -DENABLE_UBSAN=ON && cmake --build build && ./build/webcodecs_tests",
+    "test:all": "npm run test:native && npm run test",
     "format": "prettier --write \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\""
   },
