@@ -6,6 +6,11 @@
     "lib": ["ES2022"],
     "outDir": "dist",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@pproenca/node-webcodecs": ["./lib"],
+      "@pproenca/node-webcodecs/*": ["./lib/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
