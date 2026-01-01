@@ -1,13 +1,12 @@
 /**
  * Generate GitHub Issues from WebCodecs Spec
  *
- * Clones w3c/webcodecs repo, renders with bikeshed, extracts H2 sections,
+ * Fetches pre-rendered WebCodecs spec from W3C, extracts H2 sections,
  * creates one GitHub issue per section via `gh` CLI.
  *
  * Usage: npm run issues
  *
  * Prerequisites:
- *   - bikeshed installed: pip install bikeshed
  *   - gh CLI installed and authenticated
  */
 
@@ -21,9 +20,8 @@ import TurndownService from 'turndown';
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(currentDir, '..');
 const CACHE_DIR = path.join(ROOT_DIR, '.spec-cache');
-const WEBCODECS_DIR = path.join(CACHE_DIR, 'webcodecs');
-const SPEC_SOURCE = path.join(WEBCODECS_DIR, 'index.src.html');
-const SPEC_OUTPUT = path.join(CACHE_DIR, 'webcodecs.html');
+const SPEC_URL = 'https://www.w3.org/TR/webcodecs/';
+const SPEC_CACHE_FILE = path.join(CACHE_DIR, 'webcodecs.html');
 
 interface Section {
   number: string;
@@ -31,28 +29,34 @@ interface Section {
   content: string;
 }
 
-async function ensureWebCodecsRepo(): Promise<void> {
+async function fetchSpec(): Promise<string> {
   await fs.mkdir(CACHE_DIR, { recursive: true });
 
+  // Check if we have a cached version (less than 1 hour old)
   try {
-    await fs.access(path.join(WEBCODECS_DIR, '.git'));
-    console.log('Updating webcodecs repo...');
-    execSync('git pull', { cwd: WEBCODECS_DIR, stdio: 'inherit' });
-  } catch {
-    console.log('Cloning webcodecs repo...');
-    execSync('git clone --depth 1 https://github.com/w3c/webcodecs.git', {
-      cwd: CACHE_DIR,
-      stdio: 'inherit',
-    });
-  }
-}
+    const stats = await fs.stat(SPEC_CACHE_FILE);
+    const ageMs = Date.now() - stats.mtimeMs;
+    const oneHour = 60 * 60 * 1000;
 
-async function renderWithBikeshed(): Promise<void> {
-  console.log('Rendering spec with bikeshed...');
-  execSync(`bikeshed spec "${SPEC_SOURCE}" "${SPEC_OUTPUT}"`, {
-    cwd: WEBCODECS_DIR,
-    stdio: 'inherit',
-  });
+    if (ageMs < oneHour) {
+      console.log('Using cached spec (less than 1 hour old)...');
+      return await fs.readFile(SPEC_CACHE_FILE, 'utf-8');
+    }
+  } catch {
+    // Cache doesn't exist, fetch fresh
+  }
+
+  console.log(`Fetching spec from ${SPEC_URL}...`);
+  const response = await fetch(SPEC_URL);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
+  }
+
+  const html = await response.text();
+  await fs.writeFile(SPEC_CACHE_FILE, html);
+  console.log('Spec cached.');
+
+  return html;
 }
 
 function extractH2Sections(html: string): Section[] {
@@ -149,18 +153,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Ensure bikeshed is installed
-  try {
-    execSync('bikeshed --version', { stdio: 'pipe' });
-  } catch {
-    console.error('Error: bikeshed not installed. Run: pip install bikeshed');
-    process.exit(1);
-  }
-
-  await ensureWebCodecsRepo();
-  await renderWithBikeshed();
-
-  const html = await fs.readFile(SPEC_OUTPUT, 'utf-8');
+  const html = await fetchSpec();
   const sections = extractH2Sections(html);
 
   console.log(`Found ${sections.length} sections to create as issues`);
