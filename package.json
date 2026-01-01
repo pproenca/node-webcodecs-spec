@@ -17,9 +17,7 @@
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "scaffold": "tsx scripts/scaffold-project.ts",
-    "generate:tasks": "tsx scripts/generate-tasks.ts",
-    "tasks": "npm run generate:tasks",
-    "pipeline": "npm run scaffold && npm run generate:tasks",
+    "issues": "tsx scripts/generate-issues.ts",
     "build:native": "node-gyp rebuild",
     "build": "npm run build:native && tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
     "clean": "node-gyp clean && rm -rf dist",
