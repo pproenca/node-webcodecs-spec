@@ -47,22 +47,13 @@ export class VideoEncoder {
     return this._native.reset(...args);
   }
 
-  close(...args: any[]): any {
-    return this._native.close(...args);
+  close(): void {
+    if (this._native?.close) {
+      this._native.close();
+    }
   }
-
 
   static isConfigSupported(...args: any[]): any {
     return bindings.VideoEncoder.isConfigSupported(...args);
-  }
-
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
-  close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
-    }
   }
 }

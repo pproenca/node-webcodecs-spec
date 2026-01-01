@@ -13,6 +13,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
+// @ts-expect-error - webidl2 has no @types package
 import { parse as parseIDL, type InterfaceType, type OperationMemberType, type AttributeMemberType, type IDLRootType } from 'webidl2';
 
 // --- CLI Arguments ---
@@ -27,6 +28,7 @@ const CONTEXT_DIR = path.join(ROOT_DIR, 'spec', 'context');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
 const LIB_DIR = path.join(ROOT_DIR, 'lib');
 const BINDING_GYP_PATH = path.join(ROOT_DIR, 'binding.gyp');
+const TYPES_DIR = path.join(ROOT_DIR, 'types');
 
 // --- Type Definitions ---
 interface MethodContext {
@@ -108,6 +110,7 @@ async function main() {
   await fs.mkdir(CONTEXT_DIR, { recursive: true });
   await fs.mkdir(SRC_DIR, { recursive: true });
   await fs.mkdir(LIB_DIR, { recursive: true });
+  await fs.mkdir(TYPES_DIR, { recursive: true });
 
   // 3. Parse Spec
   const { idlText, algorithmMap, interfaceDescriptions } = parseBikeshed(htmlContent);
@@ -152,11 +155,22 @@ async function main() {
     await safeWrite(path.join(LIB_DIR, `${name}.ts`), generateTsSource(context));
   }
 
-  // 5. Generate TypeScript index (no C++ index.h needed for flat structure)
-  await fs.writeFile(
-    path.join(LIB_DIR, 'index.ts'),
-    generatedClasses.map(c => `export { ${c} } from './${c}';`).join('\n') + '\n'
-  );
+  // 5. Generate TypeScript index with type re-exports
+  const indexContent = [
+    '// Re-export all types from the generated type definitions',
+    "// Using 'export type *' ensures this is compile-time only (no runtime import)",
+    "export type * from '../types/webcodecs';",
+    '',
+    '// Export class implementations',
+    ...generatedClasses.map(c => `export { ${c} } from './${c}';`),
+    '',
+  ].join('\n');
+  await fs.writeFile(path.join(LIB_DIR, 'index.ts'), indexContent);
+
+  // 5b. Generate TypeScript type definitions from full IDL AST
+  const typesContent = generateTypeDefinitions(idlAst);
+  await fs.writeFile(path.join(TYPES_DIR, 'webcodecs.d.ts'), typesContent);
+  console.log('[Scaffold] ✅ Generated types/webcodecs.d.ts');
 
   // 6. Update or warn about binding.gyp
   const generatedSources = generatedClasses.map(c => `src/${c}.cpp`);
@@ -252,7 +266,7 @@ function buildInterfaceContext(
     if (member.type === 'operation' && member.name) {
       const op = member as OperationMemberType;
       const key = `${iface.name}.${op.name}`;
-      const args = (op.arguments || []).map(arg => ({
+      const args = (op.arguments || []).map((arg: { name: string; idlType: unknown }) => ({
         name: arg.name,
         type: getCppType(arg.idlType as any),
       }));
@@ -260,7 +274,7 @@ function buildInterfaceContext(
       methods.push({
         name: op.name,
         isStatic: op.special === 'static',
-        signature: `${getCppType(op.idlType as any)} ${op.name}(${args.map(a => `${a.type} ${a.name}`).join(', ')})`,
+        signature: `${getCppType(op.idlType as any)} ${op.name}(${args.map((a: { type: string; name: string }) => `${a.type} ${a.name}`).join(', ')})`,
         steps: algoMap.get(key) || ['See spec/context file.'],
         args,
         returnType: getCppType(op.idlType as any),
@@ -270,7 +284,7 @@ function buildInterfaceContext(
     if (member.type === 'constructor') {
       hasConstructor = true;
       const key = `${iface.name}.constructor`;
-      const args = (member.arguments || []).map(arg => ({
+      const args = ((member as { arguments?: Array<{ name: string; idlType: unknown }> }).arguments || []).map((arg: { name: string; idlType: unknown }) => ({
         name: arg.name,
         type: getCppType(arg.idlType as any),
       }));
@@ -278,7 +292,7 @@ function buildInterfaceContext(
       methods.push({
         name: 'constructor',
         isStatic: false,
-        signature: `constructor(${args.map(a => `${a.type} ${a.name}`).join(', ')})`,
+        signature: `constructor(${args.map((a: { type: string; name: string }) => `${a.type} ${a.name}`).join(', ')})`,
         steps: algoMap.get(key) || ['Initialize internal slots.'],
         args,
         returnType: 'void',
@@ -513,6 +527,266 @@ ${methods.filter(m => m.isStatic).map(m => `
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// --- TypeScript Type Definition Generator ---
+
+// WebIDL to TypeScript type mapping
+const TS_TYPE_MAP: Record<string, string> = {
+  'void': 'void',
+  'undefined': 'void',
+  'boolean': 'boolean',
+  'byte': 'number',
+  'octet': 'number',
+  'short': 'number',
+  'unsigned short': 'number',
+  'long': 'number',
+  'unsigned long': 'number',
+  'long long': 'number',
+  'unsigned long long': 'number',
+  'float': 'number',
+  'unrestricted float': 'number',
+  'double': 'number',
+  'unrestricted double': 'number',
+  'DOMString': 'string',
+  'USVString': 'string',
+  'ByteString': 'string',
+  'BufferSource': 'BufferSource',
+  'AllowSharedBufferSource': 'BufferSource',
+  'ArrayBuffer': 'ArrayBuffer',
+  'ArrayBufferView': 'ArrayBufferView',
+  'Uint8Array': 'Uint8Array',
+  'ReadableStream': 'ReadableStream',
+  'object': 'object',
+  'any': 'any',
+  'EventHandler': 'EventHandler',
+  'EventTarget': 'EventTarget',
+  'DOMException': 'DOMException',
+  'DOMRectReadOnly': 'DOMRectReadOnly',
+  'CanvasImageSource': 'CanvasImageSource',
+};
+
+function getTsType(idlType: any): string {
+  if (!idlType) return 'any';
+
+  // Handle nullable types
+  if (idlType.nullable) {
+    const baseType = getTsType({ ...idlType, nullable: false });
+    return `${baseType} | null`;
+  }
+
+  // Handle union types
+  if (idlType.union) {
+    return idlType.idlType.map((t: any) => getTsType(t)).join(' | ');
+  }
+
+  // Handle Promise<T>
+  if (idlType.generic === 'Promise') {
+    const inner = idlType.idlType?.[0];
+    return `Promise<${inner ? getTsType(inner) : 'void'}>`;
+  }
+
+  // Handle sequence<T>
+  if (idlType.generic === 'sequence') {
+    const inner = idlType.idlType?.[0];
+    return `${getTsType(inner)}[]`;
+  }
+
+  // Handle FrozenArray<T>
+  if (idlType.generic === 'FrozenArray') {
+    const inner = idlType.idlType?.[0];
+    return `readonly ${getTsType(inner)}[]`;
+  }
+
+  // Handle record<K, V>
+  if (idlType.generic === 'record') {
+    const [keyType, valType] = idlType.idlType || [];
+    return `Record<${getTsType(keyType)}, ${getTsType(valType)}>`;
+  }
+
+  // Simple type name
+  const typeName = typeof idlType === 'string' ? idlType : idlType.idlType;
+  if (typeof typeName === 'string') {
+    return TS_TYPE_MAP[typeName] || typeName;
+  }
+
+  // Nested type
+  if (Array.isArray(typeName)) {
+    return typeName.map((t: any) => getTsType(t)).join(' | ');
+  }
+
+  return getTsType(typeName);
+}
+
+function generateTypeDefinitions(ast: any[]): string {
+  // Collect all type names for exports
+  const exportNames = ast
+    .filter((item: any) =>
+      ['enum', 'typedef', 'callback', 'dictionary', 'interface'].includes(item.type) &&
+      !['Window', 'Worker', 'DedicatedWorker', 'SharedWorker'].includes(item.name)
+    )
+    .map((item: any) => item.name);
+
+  const lines: string[] = [
+    '/**',
+    ' * WebCodecs API Type Definitions for Node.js',
+    ' * Auto-generated from W3C WebIDL specification',
+    ' * ',
+    ' * @packageDocumentation',
+    ' * @see https://www.w3.org/TR/webcodecs/',
+    ' */',
+    '',
+    '// --- Required DOM polyfill types for Node.js ---',
+    '// These types are needed because Node.js doesn\'t have DOM globals',
+    '',
+    'export type BufferSource = ArrayBufferView | ArrayBuffer;',
+    'export type EventHandler = ((event: Event) => void) | null;',
+    '',
+    'export interface DOMRectInit {',
+    '  height?: number;',
+    '  width?: number;',
+    '  x?: number;',
+    '  y?: number;',
+    '}',
+    '',
+    'export interface DOMRectReadOnly {',
+    '  readonly bottom: number;',
+    '  readonly height: number;',
+    '  readonly left: number;',
+    '  readonly right: number;',
+    '  readonly top: number;',
+    '  readonly width: number;',
+    '  readonly x: number;',
+    '  readonly y: number;',
+    '}',
+    '',
+    '// Placeholder types for browser APIs not available in Node.js',
+    'export type CanvasImageSource = unknown;',
+    'export type ImageBitmap = unknown;',
+    'export type OffscreenCanvas = unknown;',
+    'export type PredefinedColorSpace = "display-p3" | "srgb";',
+    'export type ColorSpaceConversion = "default" | "none";',
+    '',
+    '// --- WebCodecs Types (from W3C spec) ---',
+    '',
+  ];
+
+  // Process each item in the AST
+  for (const item of ast) {
+    switch (item.type) {
+      case 'enum':
+        lines.push(generateEnumType(item));
+        break;
+      case 'typedef':
+        lines.push(generateTypedef(item));
+        break;
+      case 'callback':
+        lines.push(generateCallback(item));
+        break;
+      case 'dictionary':
+        lines.push(generateDictionary(item));
+        break;
+      case 'interface':
+        // Skip browser globals
+        if (!['Window', 'Worker', 'DedicatedWorker', 'SharedWorker'].includes(item.name)) {
+          lines.push(generateInterface(item));
+        }
+        break;
+    }
+  }
+
+  // Add module declaration for ambient types (prevents conflicts with lib.dom.d.ts)
+  lines.push('');
+  lines.push('// --- Module augmentation for Node.js global scope ---');
+  lines.push('declare global {');
+  lines.push('  // WebCodecs types are available globally when this module is imported');
+  exportNames.forEach(name => {
+    lines.push(`  // type ${name} is available`);
+  });
+  lines.push('}');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function generateEnumType(item: any): string {
+  const values = item.values.map((v: any) => `"${v.value}"`).join(' | ');
+  return `export type ${item.name} = ${values};\n`;
+}
+
+function generateTypedef(item: any): string {
+  const tsType = getTsType(item.idlType);
+  return `export type ${item.name} = ${tsType};\n`;
+}
+
+function generateCallback(item: any): string {
+  const params = (item.arguments || [])
+    .map((arg: any) => `${arg.name}${arg.optional ? '?' : ''}: ${getTsType(arg.idlType)}`)
+    .join(', ');
+  const returnType = getTsType(item.idlType);
+  return `export type ${item.name} = (${params}) => ${returnType};\n`;
+}
+
+function generateDictionary(item: any): string {
+  const lines: string[] = [];
+
+  // Handle inheritance
+  const ext = item.inheritance ? ` extends ${item.inheritance}` : '';
+  lines.push(`export interface ${item.name}${ext} {`);
+
+  for (const member of item.members || []) {
+    if (member.type === 'field') {
+      const optional = member.required ? '' : '?';
+      const tsType = getTsType(member.idlType);
+      lines.push(`  ${member.name}${optional}: ${tsType};`);
+    }
+  }
+
+  lines.push('}');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function generateInterface(item: any): string {
+  const lines: string[] = [];
+
+  // Handle inheritance
+  const ext = item.inheritance ? ` extends ${item.inheritance}` : '';
+  lines.push(`export interface ${item.name}${ext} {`);
+
+  for (const member of item.members || []) {
+    switch (member.type) {
+      case 'attribute': {
+        const readonly = member.readonly ? 'readonly ' : '';
+        const tsType = getTsType(member.idlType);
+        lines.push(`  ${readonly}${member.name}: ${tsType};`);
+        break;
+      }
+      case 'operation': {
+        if (member.name) {
+          const params = (member.arguments || [])
+            .map((arg: any) => `${arg.name}${arg.optional ? '?' : ''}: ${getTsType(arg.idlType)}`)
+            .join(', ');
+          const returnType = getTsType(member.idlType);
+          const staticMod = member.special === 'static' ? 'static ' : '';
+          lines.push(`  ${staticMod}${member.name}(${params}): ${returnType};`);
+        }
+        break;
+      }
+      case 'constructor': {
+        const params = (member.arguments || [])
+          .map((arg: any) => `${arg.name}${arg.optional ? '?' : ''}: ${getTsType(arg.idlType)}`)
+          .join(', ');
+        // Note: constructor declarations use 'new' in interfaces
+        lines.push(`  // constructor(${params})`);
+        break;
+      }
+    }
+  }
+
+  lines.push('}');
+  lines.push('');
+  return lines.join('\n');
 }
 
 // --- Parser Implementation ---

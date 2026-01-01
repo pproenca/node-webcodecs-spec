@@ -51,18 +51,9 @@ export class AudioData {
     return this._native.clone(...args);
   }
 
-  close(...args: any[]): any {
-    return this._native.close(...args);
-  }
-
-
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
   close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
+    if (this._native?.close) {
+      this._native.close();
     }
   }
 }
