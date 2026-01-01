@@ -16,6 +16,7 @@
   "scripts": {
     "scaffold": "tsx scripts/scaffold-project.ts",
     "generate:types": "webidl2ts -i spec/context/_webcodecs.idl -o types/webcodecs.d.ts",
+    "generate:tasks": "tsx scripts/generate-tasks.ts",
     "build:native": "node-gyp rebuild",
     "build": "npm run build:native && tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
     "clean": "node-gyp clean && rm -rf dist",
