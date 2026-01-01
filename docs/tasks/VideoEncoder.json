@@ -5,6 +5,7 @@
     "idl": "spec/context/_webcodecs.idl#L84-L98",
     "spec": "spec/context/VideoEncoder.md"
   },
+  "inheritance": "EventTarget",
   "extendedAttributes": [
     "Exposed=[{\"value\":\"Window\"},{\"value\":\"DedicatedWorker\"}]",
     "SecureContext"

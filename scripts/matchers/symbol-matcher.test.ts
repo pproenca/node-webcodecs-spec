@@ -16,6 +16,7 @@ describe('matchIdlToCode', () => {
     };
     const tsClass: TsClassParseResult = {
       className: 'VideoDecoder',
+      constructor: undefined,
       methods: new Map(),
       getters: new Map([['state', { line: 47, endLine: 49 }]]),
       setters: new Map(),
@@ -39,6 +40,7 @@ describe('matchIdlToCode', () => {
     const cppImpl: CppImplParseResult = { methods: new Map() };
     const tsClass: TsClassParseResult = {
       className: 'VideoDecoder',
+      constructor: undefined,
       methods: new Map(),
       getters: new Map(),
       setters: new Map(),
@@ -62,6 +64,7 @@ describe('matchIdlToCode', () => {
     };
     const tsClass: TsClassParseResult = {
       className: 'VideoDecoder',
+      constructor: undefined,
       methods: new Map([['configure', { line: 61, endLine: 63 }]]),
       getters: new Map(),
       setters: new Map(),
@@ -87,6 +90,7 @@ describe('matchIdlToCode', () => {
     };
     const tsClass: TsClassParseResult = {
       className: 'VideoDecoder',
+      constructor: undefined,
       methods: new Map(),
       getters: new Map(),
       setters: new Map(),

@@ -5,6 +5,7 @@
     "idl": "spec/context/_webcodecs.idl#L2-L16",
     "spec": "spec/context/AudioDecoder.md"
   },
+  "inheritance": "EventTarget",
   "extendedAttributes": [
     "Exposed=[{\"value\":\"Window\"},{\"value\":\"DedicatedWorker\"}]",
     "SecureContext"

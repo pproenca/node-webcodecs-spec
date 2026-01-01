@@ -35,6 +35,7 @@ export async function parseTsFile(filePath: string): Promise<TsClassParseResult>
   const cls = classes[0];
   const result: TsClassParseResult = {
     className: cls.getName() || 'Unknown',
+    constructor: undefined,
     methods: new Map(),
     getters: new Map(),
     setters: new Map(),

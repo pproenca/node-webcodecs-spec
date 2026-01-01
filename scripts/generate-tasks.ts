@@ -260,7 +260,7 @@ async function generateInterfaceTask(
         try {
           const match = matchIdlToCode(
             interfaceName,
-            { type: 'operation', name: methodName, special: member.special },
+            { type: 'operation', name: methodName, special: member.special ?? undefined },
             cppHeader,
             cppImpl,
             tsClass,
@@ -346,7 +346,7 @@ async function generateInterfaceTask(
     }
   }
 
-  const inheritance = node.inheritance?.name;
+  const inheritance = node.inheritance ?? undefined;
 
   return {
     interface: interfaceName,
@@ -375,7 +375,7 @@ function generateTypesFile(ast: webidl2.IDLRootType[]): TypesFile {
           name: m.name,
           type: parseIdlType(m.idlType),
           required: m.required,
-          defaultValue: m.default?.value?.toString(),
+          defaultValue: m.default && 'value' in m.default ? String(m.default.value) : undefined,
         })),
       });
     } else if (node.type === 'enum') {

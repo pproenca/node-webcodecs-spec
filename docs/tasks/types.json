@@ -752,22 +752,26 @@
         {
           "name": "primaries",
           "type": "VideoColorPrimaries",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "transfer",
           "type": "VideoTransferCharacteristics",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "matrix",
           "type": "VideoMatrixCoefficients",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "fullRange",
           "type": "boolean",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         }
       ]
     },
@@ -1606,22 +1610,26 @@
         {
           "name": "primaries",
           "type": "VideoColorPrimaries",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "transfer",
           "type": "VideoTransferCharacteristics",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "matrix",
           "type": "VideoMatrixCoefficients",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         },
         {
           "name": "fullRange",
           "type": "boolean",
-          "required": false
+          "required": false,
+          "defaultValue": "undefined"
         }
       ]
     },
