@@ -366,13 +366,24 @@ function buildInterfaceContext(
 
       // Safe: op.name verified non-null by condition `member.name` at line 297
       const opName = op.name!;
+
+      // Get algorithm steps with better fallback
+      let steps = algoMap.get(key);
+      if (!steps || steps.length === 0 || steps[0] === 'See spec/context file.') {
+        // Try alternate key formats
+        steps =
+          algoMap.get(`${iface.name}.${opName}()`) ||
+          algoMap.get(opName) ||
+          [`Implementation follows W3C WebCodecs ${iface.name}.${opName}() specification.`];
+      }
+
       methods.push({
         name: opName,
         isStatic: op.special === 'static',
         signature: returnIdlType
           ? `${getCppType(returnIdlType)} ${opName}(${args.map((a) => `${a.type} ${a.name}`).join(', ')})`
           : `void ${opName}(${args.map((a) => `${a.type} ${a.name}`).join(', ')})`,
-        steps: algoMap.get(key) || ['See spec/context file.'],
+        steps,
         args,
         returnType: returnIdlType ? getCppType(returnIdlType) : 'void',
         tsReturnType: returnIdlType ? getTsType(returnIdlType) : 'void',
@@ -413,7 +424,7 @@ function buildInterfaceContext(
 
   return {
     name: iface.name,
-    desc: descMap.get(iface.name) || 'No description found.',
+    desc: descMap.get(iface.name) || `${iface.name} interface from the W3C WebCodecs specification.`,
     methods,
     attributes,
     hasConstructor,
@@ -1223,11 +1234,42 @@ function parseBikeshed(html: string): {
     .filter(Boolean)
     .join('\n\n');
 
-  // 2. Extract Algorithms
+  // 2. Extract Algorithms - look for method definitions
   const algorithmMap = new Map<string, string[]>();
-  const definitions = doc.querySelectorAll('dfn');
+
+  // In rendered Bikeshed, methods are in <dt>/<dd> pairs with data-dfn-for attribute
+  const definitions = doc.querySelectorAll('dfn[data-dfn-for]');
 
   definitions.forEach((dfn) => {
+    const forAttr = dfn.getAttribute('data-dfn-for');
+    const dfnType = dfn.getAttribute('data-dfn-type');
+
+    if (forAttr && (dfnType === 'method' || dfnType === 'constructor')) {
+      const methodName =
+        dfnType === 'constructor'
+          ? 'constructor'
+          : dfn.textContent?.split('(')[0].trim() || '';
+      const key = `${forAttr}.${methodName}`;
+
+      // Find the containing <dt> and get the next <dd>
+      const dt = dfn.closest('dt');
+      const dd = dt?.nextElementSibling;
+
+      if (dd && dd.tagName === 'DD') {
+        const md = cleanBikeshedMarkup(turndown.turndown(dd.innerHTML));
+        const steps = md
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        algorithmMap.set(key, steps);
+      }
+    }
+  });
+
+  // Fallback: Also try the source Bikeshed format with 'for' and 'method'/'constructor' attributes
+  const fallbackDefinitions = doc.querySelectorAll('dfn[for]');
+
+  fallbackDefinitions.forEach((dfn) => {
     const forAttr = dfn.getAttribute('for');
     const methodAttr = dfn.hasAttribute('method');
     const constructorAttr = dfn.hasAttribute('constructor');
@@ -1242,6 +1284,11 @@ function parseBikeshed(html: string): {
       }
 
       const key = `${forAttr}.${memberName}`;
+
+      // Skip if already found via rendered HTML format
+      if (algorithmMap.has(key)) {
+        return;
+      }
 
       // Look for the next <dd> or algorithm steps
       const container = dfn.closest('dt');
