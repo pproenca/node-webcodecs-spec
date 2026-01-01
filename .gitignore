@@ -32,6 +32,9 @@ package-lock.json
 # Spec cache (cloned w3c/webcodecs repo)
 .spec-cache/
 
+# Generated issue markdown files
+docs/issues/
+
 # Generated TypeScript output
 dist/
 
