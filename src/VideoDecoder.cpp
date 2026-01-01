@@ -40,20 +40,42 @@ VideoDecoder::~VideoDecoder() {
 }
 
 void VideoDecoder::Release() {
-  // TODO(impl): Free handle_ and native resources
-  handle_ = nullptr;
+  // Thread-safe close: transition to Closed state
+  state_.close();
+
+  // Lock to safely clear resources
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Clear decode queue (RAII handles packet cleanup)
+  while (!decodeQueue_.empty()) {
+    decodeQueue_.pop();
+  }
+  decodeQueueSize_.store(0, std::memory_order_release);
+
+  // Release codec context (RAII handles avcodec_free_context)
+  codecCtx_.reset();
+
+  // Release JS callbacks
+  if (!outputCallback_.IsEmpty()) {
+    outputCallback_.Reset();
+  }
+  if (!errorCallback_.IsEmpty()) {
+    errorCallback_.Reset();
+  }
+  if (!ondequeueCallback_.IsEmpty()) {
+    ondequeueCallback_.Reset();
+  }
 }
 
 // --- Attributes ---
 
 Napi::Value VideoDecoder::GetState(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return state
-  return info.Env().Null();
+  return Napi::String::New(info.Env(), state_.to_string());
 }
 
 Napi::Value VideoDecoder::GetDecodeQueueSize(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return decodeQueueSize
-  return info.Env().Null();
+  return Napi::Number::New(info.Env(),
+      static_cast<double>(decodeQueueSize_.load(std::memory_order_acquire)));
 }
 
 Napi::Value VideoDecoder::GetOndequeue(const Napi::CallbackInfo& info) {
@@ -119,12 +141,12 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
 Napi::Value VideoDecoder::Close(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * Immediately aborts all pending work and releases \[=system resources=\]. Close is final. When invoked, run the \[=Close VideoDecoder=\] algorithm with an {{AbortError}} {{DOMException}}.
-   */
+  // [SPEC] Immediately aborts all pending work and releases system resources.
+  // Close is final - after close(), the decoder cannot be used again.
 
-  // TODO(impl): Implement method logic
+  // Release all resources and transition to closed state
+  Release();
+
   return env.Undefined();
 }
 

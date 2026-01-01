@@ -3,47 +3,51 @@
  * @see spec/context/ImageDecoder.md
  */
 
-import type { ImageDecodeOptions, ImageDecodeResult, ImageDecoderInit, ImageTrackList } from '../types/webcodecs';
+import { createRequire } from 'node:module';
+import type {
+  ImageDecodeOptions,
+  ImageDecodeResult,
+  ImageDecoderInit,
+  ImageTrackList,
+} from '../types/webcodecs.js';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
 export class ImageDecoder {
-  private readonly _native: unknown;
+  private readonly native: unknown;
 
   constructor(init: ImageDecoderInit) {
-    this._native = new bindings.ImageDecoder(init);
+    this.native = new bindings.ImageDecoder(init);
   }
 
   get type(): string {
-    return (this._native as Record<string, unknown>).type as string;
+    return (this.native as Record<string, unknown>).type as string;
   }
 
   get complete(): boolean {
-    return (this._native as Record<string, unknown>).complete as boolean;
+    return (this.native as Record<string, unknown>).complete as boolean;
   }
 
   get completed(): Promise<void> {
-    return (this._native as Record<string, unknown>).completed as Promise<void>;
+    return (this.native as Record<string, unknown>).completed as Promise<void>;
   }
 
   get tracks(): ImageTrackList {
-    return (this._native as Record<string, unknown>).tracks as ImageTrackList;
+    return (this.native as Record<string, unknown>).tracks as ImageTrackList;
   }
 
-
   decode(options: ImageDecodeOptions): Promise<ImageDecodeResult> {
-    return (this._native as Record<string, Function>).decode(options) as Promise<ImageDecodeResult>;
+    return (this.native as Record<string, Function>).decode(options) as Promise<ImageDecodeResult>;
   }
 
   reset(): void {
-    return (this._native as Record<string, Function>).reset() as void;
+    return (this.native as Record<string, Function>).reset() as void;
   }
 
   close(): void {
-    return (this._native as Record<string, Function>).close() as void;
+    return (this.native as Record<string, Function>).close() as void;
   }
-
 
   static isTypeSupported(type: string): Promise<boolean> {
     return bindings.ImageDecoder.isTypeSupported(type) as Promise<boolean>;

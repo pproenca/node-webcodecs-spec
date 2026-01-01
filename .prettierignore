@@ -1,0 +1,6 @@
+dist/
+build/
+node_modules/
+*.node
+spec/context/
+types/webcodecs.d.ts

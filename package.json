@@ -2,6 +2,7 @@
   "name": "@pproenca/node-webcodecs",
   "version": "0.0.1-alpha",
   "description": "Server-side WebCodecs implementation for Node.js backed by FFmpeg",
+  "type": "module",
   "main": "dist/lib/index.js",
   "types": "dist/types/webcodecs.d.ts",
   "exports": {
@@ -22,7 +23,9 @@
     "build": "npm run build:native && tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
     "clean": "node-gyp clean && rm -rf dist",
     "rebuild": "npm run clean && npm run build",
-    "test": "vitest"
+    "test": "vitest",
+    "format": "prettier --write \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\""
   },
   "gypfile": true,
   "binary": {
@@ -44,6 +47,7 @@
     "@types/webidl2": "^24.4.3",
     "jsdom": "^24.0.0",
     "node-gyp": "^10.0.0",
+    "prettier": "^3.7.4",
     "tsx": "^4.7.0",
     "turndown": "^7.1.3",
     "typescript": "^5.3.3",

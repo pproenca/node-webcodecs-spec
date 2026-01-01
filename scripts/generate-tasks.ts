@@ -7,10 +7,12 @@
  * Outputs: docs/tasks/<interface-name>.md
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as webidl2 from 'webidl2';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const IDL_PATH = path.join(__dirname, '../spec/context/_webcodecs.idl');
 const OUTPUT_DIR = path.join(__dirname, '../docs/tasks');
 
@@ -28,7 +30,7 @@ function parseIdlType(idlType: webidl2.IDLTypeDescription | null): string {
     return idlType.idlType;
   }
   if (Array.isArray(idlType.idlType)) {
-    return idlType.idlType.map(t => parseIdlType(t as webidl2.IDLTypeDescription)).join(' | ');
+    return idlType.idlType.map((t) => parseIdlType(t as webidl2.IDLTypeDescription)).join(' | ');
   }
   return 'unknown';
 }
@@ -48,14 +50,14 @@ function extractTasks(member: webidl2.IDLInterfaceMemberType): TaskItem | null {
         type: member.special === 'static' ? 'static-method' : 'method',
         name: member.name,
         returnType: parseIdlType(member.idlType),
-        params: member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`),
+        params: member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`),
       };
     case 'constructor':
       return {
         type: 'constructor',
         name: 'constructor',
         returnType: 'instance',
-        params: member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`),
+        params: member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`),
       };
     default:
       return null;
@@ -89,7 +91,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   ];
 
   // Constructor
-  const constructor = tasks.find(t => t.type === 'constructor');
+  const constructor = tasks.find((t) => t.type === 'constructor');
   if (constructor) {
     lines.push(`### Constructor`);
     lines.push('');
@@ -103,7 +105,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Attributes
-  const attributes = tasks.filter(t => t.type === 'attribute');
+  const attributes = tasks.filter((t) => t.type === 'attribute');
   if (attributes.length > 0) {
     lines.push(`### Attributes`);
     lines.push('');
@@ -111,7 +113,9 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
       const prefix = attr.readonly ? '(readonly)' : '(read/write)';
       lines.push(`#### \`${attr.name}\` ${prefix}`);
       lines.push('');
-      lines.push(`- [ ] C++: Implement \`Get${capitalize(attr.name)}()\` returning \`${attr.returnType}\``);
+      lines.push(
+        `- [ ] C++: Implement \`Get${capitalize(attr.name)}()\` returning \`${attr.returnType}\``
+      );
       if (!attr.readonly) {
         lines.push(`- [ ] C++: Implement \`Set${capitalize(attr.name)}()\``);
       }
@@ -122,7 +126,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Methods
-  const methods = tasks.filter(t => t.type === 'method');
+  const methods = tasks.filter((t) => t.type === 'method');
   if (methods.length > 0) {
     lines.push(`### Methods`);
     lines.push('');
@@ -143,7 +147,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Static Methods
-  const staticMethods = tasks.filter(t => t.type === 'static-method');
+  const staticMethods = tasks.filter((t) => t.type === 'static-method');
   if (staticMethods.length > 0) {
     lines.push(`### Static Methods`);
     lines.push('');
@@ -160,7 +164,9 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Memory Management (if applicable)
-  if (['VideoFrame', 'AudioData', 'EncodedVideoChunk', 'EncodedAudioChunk'].includes(interfaceName)) {
+  if (
+    ['VideoFrame', 'AudioData', 'EncodedVideoChunk', 'EncodedAudioChunk'].includes(interfaceName)
+  ) {
     lines.push(`### Memory Management`);
     lines.push('');
     lines.push(`- [ ] Implement \`close()\` to free native resources immediately`);

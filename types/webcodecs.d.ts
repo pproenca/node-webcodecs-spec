@@ -14,7 +14,7 @@ export type AllowSharedBufferSource = ArrayBufferView | ArrayBuffer | SharedArra
 export type EventHandler = ((event: Event) => void) | null;
 
 // BitrateMode is defined in MediaStream Recording spec, used by AudioEncoderConfig
-export type BitrateMode = "constant" | "variable";
+export type BitrateMode = 'constant' | 'variable';
 
 export interface DOMRectInit {
   height?: number;
@@ -38,8 +38,8 @@ export interface DOMRectReadOnly {
 export type CanvasImageSource = unknown;
 export type ImageBitmap = unknown;
 export type OffscreenCanvas = unknown;
-export type PredefinedColorSpace = "display-p3" | "srgb";
-export type ColorSpaceConversion = "default" | "none";
+export type PredefinedColorSpace = 'display-p3' | 'srgb';
+export type ColorSpaceConversion = 'default' | 'none';
 
 // --- WebCodecs Types (from W3C spec) ---
 
@@ -250,19 +250,19 @@ export interface VideoEncoderConfig {
   contentHint?: string;
 }
 
-export type HardwareAcceleration = "no-preference" | "prefer-hardware" | "prefer-software";
+export type HardwareAcceleration = 'no-preference' | 'prefer-hardware' | 'prefer-software';
 
-export type AlphaOption = "keep" | "discard";
+export type AlphaOption = 'keep' | 'discard';
 
-export type LatencyMode = "quality" | "realtime";
+export type LatencyMode = 'quality' | 'realtime';
 
 export interface VideoEncoderEncodeOptions {
   keyFrame?: boolean;
 }
 
-export type VideoEncoderBitrateMode = "constant" | "variable" | "quantizer";
+export type VideoEncoderBitrateMode = 'constant' | 'variable' | 'quantizer';
 
-export type CodecState = "unconfigured" | "configured" | "closed";
+export type CodecState = 'unconfigured' | 'configured' | 'closed';
 
 export type WebCodecsErrorCallback = (error: DOMException) => void;
 
@@ -283,7 +283,7 @@ export interface EncodedAudioChunkInit {
   transfer?: ArrayBuffer[];
 }
 
-export type EncodedAudioChunkType = "key" | "delta";
+export type EncodedAudioChunkType = 'key' | 'delta';
 
 export interface EncodedVideoChunk {
   // constructor(init: EncodedVideoChunkInit)
@@ -302,7 +302,7 @@ export interface EncodedVideoChunkInit {
   transfer?: ArrayBuffer[];
 }
 
-export type EncodedVideoChunkType = "key" | "delta";
+export type EncodedVideoChunkType = 'key' | 'delta';
 
 export interface AudioData {
   // constructor(init: AudioDataInit)
@@ -335,7 +335,7 @@ export interface AudioDataCopyToOptions {
   format?: AudioSampleFormat;
 }
 
-export type AudioSampleFormat = "u8" | "s16" | "s32" | "f32" | "u8-planar" | "s16-planar" | "s32-planar" | "f32-planar";
+export type AudioSampleFormat = 'u8' | 's16' | 's32' | 'f32' | 'u8-planar' | 's16-planar' | 's32-planar' | 'f32-planar';
 
 export interface VideoFrame {
   // constructor(image: CanvasImageSource, init?: VideoFrameInit)
@@ -403,7 +403,7 @@ export interface PlaneLayout {
   stride: number;
 }
 
-export type VideoPixelFormat = "I420" | "I420P10" | "I420P12" | "I420A" | "I420AP10" | "I420AP12" | "I422" | "I422P10" | "I422P12" | "I422A" | "I422AP10" | "I422AP12" | "I444" | "I444P10" | "I444P12" | "I444A" | "I444AP10" | "I444AP12" | "NV12" | "RGBA" | "RGBX" | "BGRA" | "BGRX";
+export type VideoPixelFormat = 'I420' | 'I420P10' | 'I420P12' | 'I420A' | 'I420AP10' | 'I420AP12' | 'I422' | 'I422P10' | 'I422P12' | 'I422A' | 'I422AP10' | 'I422AP12' | 'I444' | 'I444P10' | 'I444P12' | 'I444A' | 'I444AP10' | 'I444AP12' | 'NV12' | 'RGBA' | 'RGBX' | 'BGRA' | 'BGRX';
 
 export interface VideoColorSpace {
   // constructor(init?: VideoColorSpaceInit)
@@ -421,11 +421,11 @@ export interface VideoColorSpaceInit {
   fullRange?: boolean | null;
 }
 
-export type VideoColorPrimaries = "bt709" | "bt470bg" | "smpte170m" | "bt2020" | "smpte432";
+export type VideoColorPrimaries = 'bt709' | 'bt470bg' | 'smpte170m' | 'bt2020' | 'smpte432';
 
-export type VideoTransferCharacteristics = "bt709" | "smpte170m" | "iec61966-2-1" | "linear" | "pq" | "hlg";
+export type VideoTransferCharacteristics = 'bt709' | 'smpte170m' | 'iec61966-2-1' | 'linear' | 'pq' | 'hlg';
 
-export type VideoMatrixCoefficients = "rgb" | "bt709" | "bt470bg" | "smpte170m" | "bt2020-ncl";
+export type VideoMatrixCoefficients = 'rgb' | 'bt709' | 'bt470bg' | 'smpte170m' | 'bt2020-ncl';
 
 
 // --- Module augmentation for Node.js global scope ---

@@ -1,12 +1,24 @@
 #pragma once
 #include <napi.h>
+#include <atomic>
 #include "shared/Utils.h"
+#include "ffmpeg_raii.h"
 
 namespace webcodecs {
 
 /**
  * VideoFrame - W3C WebCodecs VideoFrame implementation
  * @see spec/context/VideoFrame.md
+ *
+ * Resource Management:
+ * - Wraps an AVFrame using RAII (AVFramePtr)
+ * - Uses av_frame_ref for clone() to share underlying buffer memory
+ * - close() releases the frame immediately
+ * - Destructor ensures cleanup even if close() not called
+ *
+ * Thread Safety:
+ * - VideoFrame instances should only be accessed from JS main thread
+ * - The underlying AVFrame buffers are refcounted and thread-safe
  */
 class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
 public:
@@ -14,15 +26,26 @@ public:
   VideoFrame(const Napi::CallbackInfo& info);
   ~VideoFrame() override;
 
-  // RAII Release
+  // RAII Release - unrefs the AVFrame buffers
   void Release();
+
+  // Factory method to create a VideoFrame from an existing AVFrame
+  // The AVFrame is cloned (refcounted), so caller retains ownership
+  static Napi::Object CreateFromAVFrame(Napi::Env env, const AVFrame* frame);
+
+  // Get the underlying AVFrame (for internal use by decoder/encoder)
+  AVFrame* GetAVFrame() const { return frame_.get(); }
 
 private:
   static Napi::FunctionReference constructor;
 
-  // Internal Native Handle
-  // TODO(impl): Define strict handle type (e.g., AVCodecContext*)
-  void* handle_ = nullptr;
+  // --- FFmpeg Resource (RAII managed) ---
+  // Uses av_frame_ref for cloning, av_frame_unref on release
+  raii::AVFramePtr frame_;
+
+  // --- Closed State ---
+  // Once closed, all accessors return null/throw
+  std::atomic<bool> closed_{false};
 
   // Attributes
   Napi::Value GetFormat(const Napi::CallbackInfo& info);

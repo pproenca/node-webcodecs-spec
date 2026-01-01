@@ -4,8 +4,10 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse as parseIDL } from 'webidl2';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const idlPath = path.join(__dirname, '..', 'spec', 'context', '_webcodecs.idl');
 const tsPath = path.join(__dirname, '..', 'types', 'webcodecs.d.ts');
 
@@ -26,14 +28,20 @@ function typeIsDefined(typeName: string): boolean {
     new RegExp(`export interface ${typeName}\\s*[{<]`),
     new RegExp(`export interface ${typeName} extends`),
   ];
-  return patterns.some(p => p.test(tsContent));
+  return patterns.some((p) => p.test(tsContent));
 }
 
 // Helper to check if a member exists on an interface/type
-function memberExists(interfaceName: string, memberName: string, memberType: 'attribute' | 'method'): boolean {
+function memberExists(
+  interfaceName: string,
+  memberName: string,
+  memberType: 'attribute' | 'method'
+): boolean {
   // Find the interface block - handle nested braces by matching balanced braces
   // Use word boundary or specific patterns to avoid partial matches (e.g., ImageTrack vs ImageTrackList)
-  const startPattern = new RegExp(`export interface ${interfaceName}(?:\\s+extends\\s+\\w+)?\\s*\\{`);
+  const startPattern = new RegExp(
+    `export interface ${interfaceName}(?:\\s+extends\\s+\\w+)?\\s*\\{`
+  );
   const startMatch = tsContent.match(startPattern);
   if (!startMatch || startMatch.index === undefined) return false;
 
@@ -117,7 +125,7 @@ for (const item of ast) {
       if (match) {
         const tsValues = match[1];
         for (const val of item.values) {
-          if (!tsValues.includes(`"${val.value}"`)) {
+          if (!tsValues.includes(`'${val.value}'`)) {
             errors.push(`Enum ${item.name} is missing value "${val.value}"`);
           }
         }
@@ -150,7 +158,14 @@ for (const item of ast) {
 
 // Check polyfill types
 console.log('Checking polyfill types...');
-const requiredPolyfills = ['BufferSource', 'AllowSharedBufferSource', 'BitrateMode', 'EventHandler', 'DOMRectInit', 'DOMRectReadOnly'];
+const requiredPolyfills = [
+  'BufferSource',
+  'AllowSharedBufferSource',
+  'BitrateMode',
+  'EventHandler',
+  'DOMRectInit',
+  'DOMRectReadOnly',
+];
 for (const polyfill of requiredPolyfills) {
   checked++;
   if (!typeIsDefined(polyfill)) {
@@ -163,20 +178,26 @@ console.log('Checking type correctness...');
 
 // Check AllowSharedBufferSource includes SharedArrayBuffer
 checked++;
-if (!tsContent.includes('AllowSharedBufferSource = ArrayBufferView | ArrayBuffer | SharedArrayBuffer')) {
+if (
+  !tsContent.includes('AllowSharedBufferSource = ArrayBufferView | ArrayBuffer | SharedArrayBuffer')
+) {
   errors.push('AllowSharedBufferSource does not include SharedArrayBuffer');
 }
 
 // Check BitrateMode values
 checked++;
-if (!tsContent.includes('BitrateMode = "constant" | "variable"')) {
+if (!tsContent.includes("BitrateMode = 'constant' | 'variable'")) {
   errors.push('BitrateMode does not have correct values');
 }
 
 // Check nullable types are correct (not 'any')
 const nullableChecks = [
   { interface: 'VideoColorSpace', member: 'primaries', expected: 'VideoColorPrimaries | null' },
-  { interface: 'VideoColorSpace', member: 'transfer', expected: 'VideoTransferCharacteristics | null' },
+  {
+    interface: 'VideoColorSpace',
+    member: 'transfer',
+    expected: 'VideoTransferCharacteristics | null',
+  },
   { interface: 'VideoColorSpace', member: 'matrix', expected: 'VideoMatrixCoefficients | null' },
   { interface: 'VideoColorSpace', member: 'fullRange', expected: 'boolean | null' },
   { interface: 'AudioData', member: 'format', expected: 'AudioSampleFormat | null' },
@@ -191,7 +212,9 @@ const nullableChecks = [
 
 for (const check of nullableChecks) {
   checked++;
-  const regex = new RegExp(`${check.member}:\\s*${check.expected.replace(/[|]/g, '\\|').replace(/\s+/g, '\\s*')}`);
+  const regex = new RegExp(
+    `${check.member}:\\s*${check.expected.replace(/[|]/g, '\\|').replace(/\s+/g, '\\s*')}`
+  );
   if (!regex.test(tsContent)) {
     errors.push(`${check.interface}.${check.member} should be ${check.expected}`);
   }
@@ -205,12 +228,12 @@ console.log(`Warnings: ${warnings.length}`);
 
 if (errors.length > 0) {
   console.log('\n❌ ERRORS:');
-  errors.forEach(e => console.log(`  - ${e}`));
+  errors.forEach((e) => console.log(`  - ${e}`));
 }
 
 if (warnings.length > 0) {
   console.log('\n⚠️  WARNINGS:');
-  warnings.forEach(w => console.log(`  - ${w}`));
+  warnings.forEach((w) => console.log(`  - ${w}`));
 }
 
 if (errors.length === 0 && warnings.length === 0) {

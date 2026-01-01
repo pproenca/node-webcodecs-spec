@@ -1,6 +1,9 @@
 #pragma once
 #include <napi.h>
 #include <thread>
+#include <mutex>
+#include <atomic>
+#include <condition_variable>
 #include <vector>
 #include <string>
 #include <memory>
@@ -17,46 +20,88 @@ namespace webcodecs {
 
 // --- ASYNC CONTEXT STRUCT ---
 /**
- * AsyncDecodeContext - RAII container for async decode operations.
+ * AsyncDecodeContext - Thread-safe RAII container for async decode operations.
  *
  * Owns:
  * - TypedThreadSafeFunction for main thread callbacks
  * - AVCodecContext for FFmpeg decode state
  * - Worker thread for non-blocking decode
  *
- * Cleanup is triggered by the TSFN finalizer when all threads Release().
+ * Thread Safety:
+ * - shouldExit is atomic for lock-free shutdown signaling
+ * - codecMutex protects all codec operations
+ * - Destructor ordering: join thread -> release TSFN -> free codec
+ *
+ * CRITICAL: The destructor order is essential:
+ * 1. Signal worker to exit (atomic)
+ * 2. Wake any waiting threads (condition variable)
+ * 3. Join worker thread (wait for completion)
+ * 4. Release TSFN (after worker is done using it)
+ * 5. Free codec context (after worker is done using it)
  */
 struct AsyncDecodeContext {
   using TSFN = Napi::TypedThreadSafeFunction<AsyncDecodeContext, AVFrame*>;
 
+  // Thread synchronization
+  mutable std::mutex codecMutex;
+  std::condition_variable cv;
+  std::atomic<bool> shouldExit{false};
+
+  // TSFN for callbacks to JS main thread
   TSFN tsfn;
+
+  // FFmpeg codec context (protected by codecMutex)
   AVCodecContext* codecCtx = nullptr;
+
+  // Worker thread
   std::thread workerThread;
-  bool shouldExit = false;
 
   AsyncDecodeContext() = default;
 
-  // Move-only (no copy)
+  // Non-copyable, non-movable (owns thread and mutex)
   AsyncDecodeContext(const AsyncDecodeContext&) = delete;
   AsyncDecodeContext& operator=(const AsyncDecodeContext&) = delete;
-  AsyncDecodeContext(AsyncDecodeContext&&) = default;
-  AsyncDecodeContext& operator=(AsyncDecodeContext&&) = default;
+  AsyncDecodeContext(AsyncDecodeContext&&) = delete;
+  AsyncDecodeContext& operator=(AsyncDecodeContext&&) = delete;
 
   ~AsyncDecodeContext() {
-    shouldExit = true;
+    // 1. Signal worker to exit (atomic, no lock needed)
+    shouldExit.store(true, std::memory_order_release);
 
+    // 2. Wake any threads waiting on the condition variable
+    cv.notify_all();
+
+    // 3. Join worker thread FIRST (before releasing any resources it uses)
+    if (workerThread.joinable()) {
+      workerThread.join();
+    }
+
+    // 4. Release TSFN (worker is done, safe to release)
     if (tsfn) {
       tsfn.Release();
     }
 
+    // 5. Free codec context (worker is done, safe to free)
     if (codecCtx) {
       avcodec_free_context(&codecCtx);
       codecCtx = nullptr;
     }
+  }
 
-    if (workerThread.joinable()) {
-      workerThread.join();
-    }
+  /**
+   * Thread-safe check if context should exit.
+   * Use this in worker loops.
+   */
+  bool should_exit() const {
+    return shouldExit.load(std::memory_order_acquire);
+  }
+
+  /**
+   * Lock the codec mutex for thread-safe operations.
+   * Use with std::lock_guard or std::unique_lock.
+   */
+  std::unique_lock<std::mutex> lock() const {
+    return std::unique_lock<std::mutex>(codecMutex);
   }
 };
 
