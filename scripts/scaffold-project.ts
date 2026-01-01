@@ -154,23 +154,34 @@ function getCppType(idlType: string | IDLTypeDescription): string {
 
 // --- Main Execution ---
 async function main() {
-  console.log(`[Scaffold] 🚀 Fetching Source of Truth from ${SPEC_URL}...`);
+  console.log(`[Scaffold] Fetching Source of Truth from ${SPEC_URL}...`);
 
   // 1. Direct Fetch (No Git Clone)
   const response = await fetch(SPEC_URL);
   if (!response.ok) {
     throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
   }
-  const htmlContent = await response.text();
-  console.log(`[Scaffold] ✅ Fetched spec (${(htmlContent.length / 1024).toFixed(1)} KB)`);
+  const rawBikeshedSource = await response.text();
+  console.log(`[Scaffold] Fetched raw Bikeshed source (${(rawBikeshedSource.length / 1024).toFixed(1)} KB)`);
 
-  // 2. Prepare Directories
+  // 2. Build with Bikeshed API
+  console.log('[Scaffold] Building spec with Bikeshed API...');
+  let htmlContent: string;
+  try {
+    htmlContent = await buildWithBikeshed(rawBikeshedSource);
+    console.log(`[Scaffold] Built spec (${(htmlContent.length / 1024).toFixed(1)} KB)`);
+  } catch (err) {
+    console.warn('[Scaffold] Bikeshed API failed, falling back to raw source:', err);
+    htmlContent = rawBikeshedSource;
+  }
+
+  // 3. Prepare Directories
   await fs.mkdir(CONTEXT_DIR, { recursive: true });
   await fs.mkdir(SRC_DIR, { recursive: true });
   await fs.mkdir(LIB_DIR, { recursive: true });
   await fs.mkdir(TYPES_DIR, { recursive: true });
 
-  // 3. Parse Spec
+  // 4. Parse Spec
   const { idlText, algorithmMap, interfaceDescriptions } = parseBikeshed(htmlContent);
 
   // Write raw IDL for reference
@@ -184,7 +195,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Generate Artifacts for EVERY Interface
+  // 5. Generate Artifacts for EVERY Interface
   const generatedClasses: string[] = [];
   const skippedInterfaces = ['Window', 'Worker', 'DedicatedWorker', 'SharedWorker'];
 
@@ -210,7 +221,7 @@ async function main() {
     await safeWrite(path.join(LIB_DIR, `${name}.ts`), generateTsSource(context), FORCE_TS);
   }
 
-  // 5. Generate TypeScript index with type re-exports
+  // 6. Generate TypeScript index with type re-exports
   const indexContent = [
     '// Re-export all types from the generated type definitions',
     "// Using 'export type *' ensures this is compile-time only (no runtime import)",
@@ -222,12 +233,12 @@ async function main() {
   ].join('\n');
   await fs.writeFile(path.join(LIB_DIR, 'index.ts'), indexContent);
 
-  // 5b. Generate TypeScript type definitions from full IDL AST
+  // 6b. Generate TypeScript type definitions from full IDL AST
   const typesContent = generateTypeDefinitions(idlAst);
   await fs.writeFile(path.join(TYPES_DIR, 'webcodecs.d.ts'), typesContent);
   console.log('[Scaffold] ✅ Generated types/webcodecs.d.ts');
 
-  // 6. Update or warn about binding.gyp
+  // 7. Update or warn about binding.gyp
   const generatedSources = generatedClasses.map((c) => `src/${c}.cpp`);
 
   if (WRITE_BINDING_GYP) {
@@ -239,7 +250,7 @@ async function main() {
     console.log('   npm run scaffold -- --write');
   }
 
-  // 7. Summary
+  // 8. Summary
   console.log('\n[Scaffold] ✅ Generation complete!');
   console.log(`\n📁 Generated ${generatedClasses.length} interfaces:`);
   generatedClasses.forEach((c) => console.log(`   - ${c}`));
