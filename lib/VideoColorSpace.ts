@@ -3,46 +3,37 @@
  * @see spec/context/VideoColorSpace.md
  */
 
+import type { VideoColorPrimaries, VideoColorSpaceInit, VideoMatrixCoefficients, VideoTransferCharacteristics } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class VideoColorSpace {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: VideoColorSpaceInit) {
     this._native = new bindings.VideoColorSpace(init);
   }
 
-
-  get primaries(): any {
-    return this._native.primaries;
+  get primaries(): VideoColorPrimaries | null {
+    return (this._native as Record<string, unknown>).primaries as VideoColorPrimaries | null;
   }
 
-  get transfer(): any {
-    return this._native.transfer;
+  get transfer(): VideoTransferCharacteristics | null {
+    return (this._native as Record<string, unknown>).transfer as VideoTransferCharacteristics | null;
   }
 
-  get matrix(): any {
-    return this._native.matrix;
+  get matrix(): VideoMatrixCoefficients | null {
+    return (this._native as Record<string, unknown>).matrix as VideoMatrixCoefficients | null;
   }
 
-  get fullRange(): any {
-    return this._native.fullRange;
-  }
-
-
-  toJSON(...args: any[]): any {
-    return this._native.toJSON(...args);
+  get fullRange(): boolean | null {
+    return (this._native as Record<string, unknown>).fullRange as boolean | null;
   }
 
 
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
-  close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
-    }
+  toJSON(): VideoColorSpaceInit {
+    return (this._native as Record<string, Function>).toJSON() as VideoColorSpaceInit;
   }
+
 }

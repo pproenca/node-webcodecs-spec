@@ -3,46 +3,37 @@
  * @see spec/context/EncodedVideoChunk.md
  */
 
+import type { AllowSharedBufferSource, EncodedVideoChunkInit, EncodedVideoChunkType } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class EncodedVideoChunk {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: EncodedVideoChunkInit) {
     this._native = new bindings.EncodedVideoChunk(init);
   }
 
-
-  get type(): any {
-    return this._native.type;
+  get type(): EncodedVideoChunkType {
+    return (this._native as Record<string, unknown>).type as EncodedVideoChunkType;
   }
 
-  get timestamp(): any {
-    return this._native.timestamp;
+  get timestamp(): number {
+    return (this._native as Record<string, unknown>).timestamp as number;
   }
 
-  get duration(): any {
-    return this._native.duration;
+  get duration(): number | null {
+    return (this._native as Record<string, unknown>).duration as number | null;
   }
 
-  get byteLength(): any {
-    return this._native.byteLength;
-  }
-
-
-  copyTo(...args: any[]): any {
-    return this._native.copyTo(...args);
+  get byteLength(): number {
+    return (this._native as Record<string, unknown>).byteLength as number;
   }
 
 
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
-  close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
-    }
+  copyTo(destination: AllowSharedBufferSource): void {
+    return (this._native as Record<string, Function>).copyTo(destination) as void;
   }
+
 }

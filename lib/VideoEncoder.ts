@@ -3,57 +3,57 @@
  * @see spec/context/VideoEncoder.md
  */
 
+import type { CodecState, EventHandler, VideoEncoderConfig, VideoEncoderEncodeOptions, VideoEncoderInit, VideoEncoderSupport, VideoFrame } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class VideoEncoder {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: VideoEncoderInit) {
     this._native = new bindings.VideoEncoder(init);
   }
 
-
-  get state(): any {
-    return this._native.state;
+  get state(): CodecState {
+    return (this._native as Record<string, unknown>).state as CodecState;
   }
 
-  get encodeQueueSize(): any {
-    return this._native.encodeQueueSize;
+  get encodeQueueSize(): number {
+    return (this._native as Record<string, unknown>).encodeQueueSize as number;
   }
 
-  get ondequeue(): any {
-    return this._native.ondequeue;
+  get ondequeue(): EventHandler {
+    return (this._native as Record<string, unknown>).ondequeue as EventHandler;
   }
 
-  set ondequeue(value: any) {
-    this._native.ondequeue = value;
+  set ondequeue(value: EventHandler) {
+    (this._native as Record<string, unknown>).ondequeue = value;
   }
 
 
-  configure(...args: any[]): any {
-    return this._native.configure(...args);
+  configure(config: VideoEncoderConfig): void {
+    return (this._native as Record<string, Function>).configure(config) as void;
   }
 
-  encode(...args: any[]): any {
-    return this._native.encode(...args);
+  encode(frame: VideoFrame, options: VideoEncoderEncodeOptions): void {
+    return (this._native as Record<string, Function>).encode(frame, options) as void;
   }
 
-  flush(...args: any[]): any {
-    return this._native.flush(...args);
+  flush(): Promise<void> {
+    return (this._native as Record<string, Function>).flush() as Promise<void>;
   }
 
-  reset(...args: any[]): any {
-    return this._native.reset(...args);
+  reset(): void {
+    return (this._native as Record<string, Function>).reset() as void;
   }
 
   close(): void {
-    if (this._native?.close) {
-      this._native.close();
-    }
+    return (this._native as Record<string, Function>).close() as void;
   }
 
-  static isConfigSupported(...args: any[]): any {
-    return bindings.VideoEncoder.isConfigSupported(...args);
+
+  static isConfigSupported(config: VideoEncoderConfig): Promise<VideoEncoderSupport> {
+    return bindings.VideoEncoder.isConfigSupported(config) as Promise<VideoEncoderSupport>;
   }
 }

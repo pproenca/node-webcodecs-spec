@@ -3,57 +3,57 @@
  * @see spec/context/AudioDecoder.md
  */
 
+import type { AudioDecoderConfig, AudioDecoderInit, AudioDecoderSupport, CodecState, EncodedAudioChunk, EventHandler } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class AudioDecoder {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: AudioDecoderInit) {
     this._native = new bindings.AudioDecoder(init);
   }
 
-
-  get state(): any {
-    return this._native.state;
+  get state(): CodecState {
+    return (this._native as Record<string, unknown>).state as CodecState;
   }
 
-  get decodeQueueSize(): any {
-    return this._native.decodeQueueSize;
+  get decodeQueueSize(): number {
+    return (this._native as Record<string, unknown>).decodeQueueSize as number;
   }
 
-  get ondequeue(): any {
-    return this._native.ondequeue;
+  get ondequeue(): EventHandler {
+    return (this._native as Record<string, unknown>).ondequeue as EventHandler;
   }
 
-  set ondequeue(value: any) {
-    this._native.ondequeue = value;
+  set ondequeue(value: EventHandler) {
+    (this._native as Record<string, unknown>).ondequeue = value;
   }
 
 
-  configure(...args: any[]): any {
-    return this._native.configure(...args);
+  configure(config: AudioDecoderConfig): void {
+    return (this._native as Record<string, Function>).configure(config) as void;
   }
 
-  decode(...args: any[]): any {
-    return this._native.decode(...args);
+  decode(chunk: EncodedAudioChunk): void {
+    return (this._native as Record<string, Function>).decode(chunk) as void;
   }
 
-  flush(...args: any[]): any {
-    return this._native.flush(...args);
+  flush(): Promise<void> {
+    return (this._native as Record<string, Function>).flush() as Promise<void>;
   }
 
-  reset(...args: any[]): any {
-    return this._native.reset(...args);
+  reset(): void {
+    return (this._native as Record<string, Function>).reset() as void;
   }
 
   close(): void {
-    if (this._native?.close) {
-      this._native.close();
-    }
+    return (this._native as Record<string, Function>).close() as void;
   }
 
-  static isConfigSupported(...args: any[]): any {
-    return bindings.AudioDecoder.isConfigSupported(...args);
+
+  static isConfigSupported(config: AudioDecoderConfig): Promise<AudioDecoderSupport> {
+    return bindings.AudioDecoder.isConfigSupported(config) as Promise<AudioDecoderSupport>;
   }
 }

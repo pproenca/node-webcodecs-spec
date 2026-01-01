@@ -3,85 +3,85 @@
  * @see spec/context/VideoFrame.md
  */
 
+import type { AllowSharedBufferSource, DOMRectReadOnly, PlaneLayout, VideoColorSpace, VideoFrameCopyToOptions, VideoFrameInit, VideoFrameMetadata, VideoPixelFormat } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class VideoFrame {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: VideoFrameInit) {
     this._native = new bindings.VideoFrame(init);
   }
 
-
-  get format(): any {
-    return this._native.format;
+  get format(): VideoPixelFormat | null {
+    return (this._native as Record<string, unknown>).format as VideoPixelFormat | null;
   }
 
-  get codedWidth(): any {
-    return this._native.codedWidth;
+  get codedWidth(): number {
+    return (this._native as Record<string, unknown>).codedWidth as number;
   }
 
-  get codedHeight(): any {
-    return this._native.codedHeight;
+  get codedHeight(): number {
+    return (this._native as Record<string, unknown>).codedHeight as number;
   }
 
-  get codedRect(): any {
-    return this._native.codedRect;
+  get codedRect(): DOMRectReadOnly | null {
+    return (this._native as Record<string, unknown>).codedRect as DOMRectReadOnly | null;
   }
 
-  get visibleRect(): any {
-    return this._native.visibleRect;
+  get visibleRect(): DOMRectReadOnly | null {
+    return (this._native as Record<string, unknown>).visibleRect as DOMRectReadOnly | null;
   }
 
-  get rotation(): any {
-    return this._native.rotation;
+  get rotation(): number {
+    return (this._native as Record<string, unknown>).rotation as number;
   }
 
-  get flip(): any {
-    return this._native.flip;
+  get flip(): boolean {
+    return (this._native as Record<string, unknown>).flip as boolean;
   }
 
-  get displayWidth(): any {
-    return this._native.displayWidth;
+  get displayWidth(): number {
+    return (this._native as Record<string, unknown>).displayWidth as number;
   }
 
-  get displayHeight(): any {
-    return this._native.displayHeight;
+  get displayHeight(): number {
+    return (this._native as Record<string, unknown>).displayHeight as number;
   }
 
-  get duration(): any {
-    return this._native.duration;
+  get duration(): number | null {
+    return (this._native as Record<string, unknown>).duration as number | null;
   }
 
-  get timestamp(): any {
-    return this._native.timestamp;
+  get timestamp(): number {
+    return (this._native as Record<string, unknown>).timestamp as number;
   }
 
-  get colorSpace(): any {
-    return this._native.colorSpace;
+  get colorSpace(): VideoColorSpace {
+    return (this._native as Record<string, unknown>).colorSpace as VideoColorSpace;
   }
 
 
-  metadata(...args: any[]): any {
-    return this._native.metadata(...args);
+  metadata(): VideoFrameMetadata {
+    return (this._native as Record<string, Function>).metadata() as VideoFrameMetadata;
   }
 
-  allocationSize(...args: any[]): any {
-    return this._native.allocationSize(...args);
+  allocationSize(options: VideoFrameCopyToOptions): number {
+    return (this._native as Record<string, Function>).allocationSize(options) as number;
   }
 
-  copyTo(...args: any[]): any {
-    return this._native.copyTo(...args);
+  copyTo(destination: AllowSharedBufferSource, options: VideoFrameCopyToOptions): Promise<PlaneLayout[]> {
+    return (this._native as Record<string, Function>).copyTo(destination, options) as Promise<PlaneLayout[]>;
   }
 
-  clone(...args: any[]): any {
-    return this._native.clone(...args);
+  clone(): VideoFrame {
+    return (this._native as Record<string, Function>).clone() as VideoFrame;
   }
 
   close(): void {
-    if (this._native?.close) {
-      this._native.close();
-    }
+    return (this._native as Record<string, Function>).close() as void;
   }
+
 }

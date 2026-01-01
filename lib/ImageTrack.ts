@@ -7,42 +7,31 @@
 const bindings = require('bindings')('webcodecs');
 
 export class ImageTrack {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: unknown) {
     this._native = new bindings.ImageTrack(init);
   }
 
-
-  get animated(): any {
-    return this._native.animated;
+  get animated(): boolean {
+    return (this._native as Record<string, unknown>).animated as boolean;
   }
 
-  get frameCount(): any {
-    return this._native.frameCount;
+  get frameCount(): number {
+    return (this._native as Record<string, unknown>).frameCount as number;
   }
 
-  get repetitionCount(): any {
-    return this._native.repetitionCount;
+  get repetitionCount(): number {
+    return (this._native as Record<string, unknown>).repetitionCount as number;
   }
 
-  get selected(): any {
-    return this._native.selected;
+  get selected(): boolean {
+    return (this._native as Record<string, unknown>).selected as boolean;
   }
 
-  set selected(value: any) {
-    this._native.selected = value;
+  set selected(value: boolean) {
+    (this._native as Record<string, unknown>).selected = value;
   }
 
 
-
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
-  close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
-    }
-  }
 }

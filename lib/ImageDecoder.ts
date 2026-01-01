@@ -3,49 +3,49 @@
  * @see spec/context/ImageDecoder.md
  */
 
+import type { ImageDecodeOptions, ImageDecodeResult, ImageDecoderInit, ImageTrackList } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class ImageDecoder {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: ImageDecoderInit) {
     this._native = new bindings.ImageDecoder(init);
   }
 
-
-  get type(): any {
-    return this._native.type;
+  get type(): string {
+    return (this._native as Record<string, unknown>).type as string;
   }
 
-  get complete(): any {
-    return this._native.complete;
+  get complete(): boolean {
+    return (this._native as Record<string, unknown>).complete as boolean;
   }
 
-  get completed(): any {
-    return this._native.completed;
+  get completed(): Promise<void> {
+    return (this._native as Record<string, unknown>).completed as Promise<void>;
   }
 
-  get tracks(): any {
-    return this._native.tracks;
+  get tracks(): ImageTrackList {
+    return (this._native as Record<string, unknown>).tracks as ImageTrackList;
   }
 
 
-  decode(...args: any[]): any {
-    return this._native.decode(...args);
+  decode(options: ImageDecodeOptions): Promise<ImageDecodeResult> {
+    return (this._native as Record<string, Function>).decode(options) as Promise<ImageDecodeResult>;
   }
 
-  reset(...args: any[]): any {
-    return this._native.reset(...args);
+  reset(): void {
+    return (this._native as Record<string, Function>).reset() as void;
   }
 
   close(): void {
-    if (this._native?.close) {
-      this._native.close();
-    }
+    return (this._native as Record<string, Function>).close() as void;
   }
 
-  static isTypeSupported(...args: any[]): any {
-    return bindings.ImageDecoder.isTypeSupported(...args);
+
+  static isTypeSupported(type: string): Promise<boolean> {
+    return bindings.ImageDecoder.isTypeSupported(type) as Promise<boolean>;
   }
 }

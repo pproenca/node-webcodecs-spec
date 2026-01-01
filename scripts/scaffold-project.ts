@@ -5,8 +5,10 @@
  * generates C++ headers/sources, TypeScript wrappers, and spec context docs.
  *
  * Usage:
- *   npm run scaffold           # Generate files, warn about binding.gyp
- *   npm run scaffold -- --write  # Also update binding.gyp sources
+ *   npm run scaffold                       # Generate files, warn about binding.gyp
+ *   npm run scaffold -- --write            # Also update binding.gyp sources
+ *   npm run scaffold -- --force-ts         # Regenerate TypeScript wrappers with proper types
+ *   npm run scaffold -- --write --force-ts # Both
  */
 
 import * as fs from 'node:fs/promises';
@@ -18,6 +20,7 @@ import { parse as parseIDL, type InterfaceType, type OperationMemberType, type A
 // --- CLI Arguments ---
 const args = process.argv.slice(2);
 const WRITE_BINDING_GYP = args.includes('--write');
+const FORCE_TS = args.includes('--force-ts');
 
 // --- Configuration ---
 const SPEC_URL = 'https://raw.githubusercontent.com/w3c/webcodecs/main/index.src.html';
@@ -35,13 +38,15 @@ interface MethodContext {
   signature: string;
   steps: string[];
   isStatic: boolean;
-  args: { name: string; type: string }[];
+  args: { name: string; type: string; tsType: string }[];
   returnType: string;
+  tsReturnType: string;
 }
 
 interface AttributeContext {
   name: string;
   type: string;
+  tsType: string;
   readonly: boolean;
 }
 
@@ -151,7 +156,7 @@ async function main() {
     // B. Generate Code Skeletons (Only if missing)
     await safeWrite(path.join(SRC_DIR, `${name}.h`), generateCppHeader(context));
     await safeWrite(path.join(SRC_DIR, `${name}.cpp`), generateCppSource(context));
-    await safeWrite(path.join(LIB_DIR, `${name}.ts`), generateTsSource(context));
+    await safeWrite(path.join(LIB_DIR, `${name}.ts`), generateTsSource(context), FORCE_TS);
   }
 
   // 5. Generate TypeScript index with type re-exports
@@ -243,12 +248,12 @@ async function fileExists(p: string): Promise<boolean> {
   }
 }
 
-async function safeWrite(p: string, content: string): Promise<void> {
-  if (await fileExists(p)) {
+async function safeWrite(p: string, content: string, force = false): Promise<void> {
+  if (!force && await fileExists(p)) {
     console.warn(`[Scaffold] ⚠️  Skipping ${path.basename(p)} (File exists)`);
   } else {
     await fs.writeFile(p, content);
-    console.log(`[Scaffold] ➕ Created ${path.basename(p)}`);
+    console.log(`[Scaffold] ${force ? '🔄 Regenerated' : '➕ Created'} ${path.basename(p)}`);
   }
 }
 
@@ -268,6 +273,7 @@ function buildInterfaceContext(
       const args = (op.arguments || []).map((arg: { name: string; idlType: unknown }) => ({
         name: arg.name,
         type: getCppType(arg.idlType as any),
+        tsType: getTsType(arg.idlType as any),
       }));
 
       methods.push({
@@ -277,6 +283,7 @@ function buildInterfaceContext(
         steps: algoMap.get(key) || ['See spec/context file.'],
         args,
         returnType: getCppType(op.idlType as any),
+        tsReturnType: getTsType(op.idlType as any),
       });
     }
 
@@ -286,6 +293,7 @@ function buildInterfaceContext(
       const args = ((member as { arguments?: Array<{ name: string; idlType: unknown }> }).arguments || []).map((arg: { name: string; idlType: unknown }) => ({
         name: arg.name,
         type: getCppType(arg.idlType as any),
+        tsType: getTsType(arg.idlType as any),
       }));
 
       methods.push({
@@ -295,6 +303,7 @@ function buildInterfaceContext(
         steps: algoMap.get(key) || ['Initialize internal slots.'],
         args,
         returnType: 'void',
+        tsReturnType: 'void',
       });
     }
 
@@ -303,6 +312,7 @@ function buildInterfaceContext(
       attributes.push({
         name: attr.name,
         type: getCppType(attr.idlType as any),
+        tsType: getTsType(attr.idlType as any),
         readonly: attr.readonly,
       });
     }
@@ -476,56 +486,106 @@ ${m.steps.map(s => `   * ${s}`).join('\n')}
 
 function generateTsSource(ctx: InterfaceContext): string {
   const methods = ctx.methods.filter(m => m.name !== 'constructor');
+  const imports = collectTypeImports(ctx);
+
+  // Build import line if there are types to import
+  const importLine = imports.length > 0
+    ? `import type { ${imports.join(', ')} } from '../types/webcodecs';\n\n`
+    : '';
+
+  // Determine constructor parameter type
+  const initType = ctx.hasConstructor ? `${ctx.name}Init` : 'unknown';
 
   return `/**
  * ${ctx.name} - TypeScript wrapper for native ${ctx.name}
  * @see spec/context/${ctx.name}.md
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+${importLine}// eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class ${ctx.name} {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: ${initType}) {
     this._native = new bindings.${ctx.name}(init);
   }
-
 ${ctx.attributes.map(a => `
-  get ${a.name}(): any {
-    return this._native.${a.name};
+  get ${a.name}(): ${a.tsType} {
+    return (this._native as Record<string, unknown>).${a.name} as ${a.tsType};
   }
 ${!a.readonly ? `
-  set ${a.name}(value: any) {
-    this._native.${a.name} = value;
+  set ${a.name}(value: ${a.tsType}) {
+    (this._native as Record<string, unknown>).${a.name} = value;
   }
 ` : ''}`).join('')}
 ${methods.filter(m => !m.isStatic).map(m => `
-  ${m.name}(...args: any[]): any {
-    return this._native.${m.name}(...args);
+  ${m.name}(${m.args.map(a => `${a.name}: ${a.tsType}`).join(', ')}): ${m.tsReturnType} {
+    return (this._native as Record<string, Function>).${m.name}(${m.args.map(a => a.name).join(', ')}) as ${m.tsReturnType};
   }
 `).join('')}
 ${methods.filter(m => m.isStatic).map(m => `
-  static ${m.name}(...args: any[]): any {
-    return bindings.${ctx.name}.${m.name}(...args);
+  static ${m.name}(${m.args.map(a => `${a.name}: ${a.tsType}`).join(', ')}): ${m.tsReturnType} {
+    return bindings.${ctx.name}.${m.name}(${m.args.map(a => a.name).join(', ')}) as ${m.tsReturnType};
   }
-`).join('')}
-  /**
-   * Explicit Resource Management (RAII)
-   * Call this to release native resources immediately.
-   */
-  close(): void {
-    if (this._native?.Release) {
-      this._native.Release();
-    }
-  }
-}
+`).join('')}}
 `;
 }
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// --- TypeScript Wrapper Type Import Helpers ---
+
+/**
+ * Extract type names from a TypeScript type string.
+ * Handles complex types like "Promise<VideoDecoderSupport>" and "EncodedVideoChunk | null".
+ */
+function extractTypeNames(typeStr: string, set: Set<string>): void {
+  // Extract PascalCase type names (interfaces, classes, enums)
+  const matches = typeStr.match(/[A-Z][a-zA-Z0-9]*/g);
+  if (matches) {
+    for (const match of matches) {
+      set.add(match);
+    }
+  }
+}
+
+/**
+ * Collect all type imports needed for a TypeScript wrapper class.
+ * Returns an array of type names to import from webcodecs.d.ts.
+ */
+function collectTypeImports(ctx: InterfaceContext): string[] {
+  const types = new Set<string>();
+
+  // Init type for constructor (e.g., VideoDecoderInit)
+  if (ctx.hasConstructor) {
+    types.add(`${ctx.name}Init`);
+  }
+
+  // Attribute types
+  for (const attr of ctx.attributes) {
+    extractTypeNames(attr.tsType, types);
+  }
+
+  // Method types (params and return types)
+  for (const method of ctx.methods) {
+    if (method.name !== 'constructor') {
+      extractTypeNames(method.tsReturnType, types);
+      for (const arg of method.args) {
+        extractTypeNames(arg.tsType, types);
+      }
+    }
+  }
+
+  // Filter out primitives, built-ins, and the class name itself
+  const primitives = new Set([
+    'void', 'boolean', 'number', 'string', 'any', 'unknown', 'null', 'undefined',
+    'Promise', 'Array', 'ArrayBuffer', 'Uint8Array', 'SharedArrayBuffer',
+    ctx.name, // Don't import the class we're generating
+  ]);
+  return Array.from(types).filter(t => !primitives.has(t)).sort();
 }
 
 // --- TypeScript Type Definition Generator ---

@@ -3,57 +3,57 @@
  * @see spec/context/AudioData.md
  */
 
+import type { AllowSharedBufferSource, AudioDataCopyToOptions, AudioDataInit, AudioSampleFormat } from '../types/webcodecs';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bindings = require('bindings')('webcodecs');
 
 export class AudioData {
-  private readonly _native: any;
+  private readonly _native: unknown;
 
-  constructor(init?: any) {
+  constructor(init: AudioDataInit) {
     this._native = new bindings.AudioData(init);
   }
 
-
-  get format(): any {
-    return this._native.format;
+  get format(): AudioSampleFormat | null {
+    return (this._native as Record<string, unknown>).format as AudioSampleFormat | null;
   }
 
-  get sampleRate(): any {
-    return this._native.sampleRate;
+  get sampleRate(): number {
+    return (this._native as Record<string, unknown>).sampleRate as number;
   }
 
-  get numberOfFrames(): any {
-    return this._native.numberOfFrames;
+  get numberOfFrames(): number {
+    return (this._native as Record<string, unknown>).numberOfFrames as number;
   }
 
-  get numberOfChannels(): any {
-    return this._native.numberOfChannels;
+  get numberOfChannels(): number {
+    return (this._native as Record<string, unknown>).numberOfChannels as number;
   }
 
-  get duration(): any {
-    return this._native.duration;
+  get duration(): number {
+    return (this._native as Record<string, unknown>).duration as number;
   }
 
-  get timestamp(): any {
-    return this._native.timestamp;
+  get timestamp(): number {
+    return (this._native as Record<string, unknown>).timestamp as number;
   }
 
 
-  allocationSize(...args: any[]): any {
-    return this._native.allocationSize(...args);
+  allocationSize(options: AudioDataCopyToOptions): number {
+    return (this._native as Record<string, Function>).allocationSize(options) as number;
   }
 
-  copyTo(...args: any[]): any {
-    return this._native.copyTo(...args);
+  copyTo(destination: AllowSharedBufferSource, options: AudioDataCopyToOptions): void {
+    return (this._native as Record<string, Function>).copyTo(destination, options) as void;
   }
 
-  clone(...args: any[]): any {
-    return this._native.clone(...args);
+  clone(): AudioData {
+    return (this._native as Record<string, Function>).clone() as AudioData;
   }
 
   close(): void {
-    if (this._native?.close) {
-      this._native.close();
-    }
+    return (this._native as Record<string, Function>).close() as void;
   }
+
 }
