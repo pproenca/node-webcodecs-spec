@@ -147,6 +147,18 @@ async function createIssue(section: Section): Promise<void> {
 
   console.log(`Creating issue: ${title}`);
 
+  // GitHub has a 65536 character limit for issue bodies
+  const MAX_BODY_LENGTH = 65000;
+  if (body.length > MAX_BODY_LENGTH) {
+    const truncatedBody =
+      body.slice(0, MAX_BODY_LENGTH) +
+      '\n\n---\n*Content truncated. See [full spec section](https://www.w3.org/TR/webcodecs/#' +
+      title.toLowerCase().replace(/[^a-z0-9]+/g, '-') +
+      ').*';
+    await fs.writeFile(tmpFile, truncatedBody);
+    console.log(`  (content truncated from ${body.length} to ${MAX_BODY_LENGTH} chars)`);
+  }
+
   // Try with label, fall back to without if label doesn't exist
   try {
     execSync(`gh issue create --title "${title}" --body-file "${tmpFile}" --label "spec-section"`, {
