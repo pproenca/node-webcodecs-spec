@@ -14,6 +14,7 @@
     }
   },
   "scripts": {
+    "install": "node-pre-gyp install --fallback-to-build",
     "scaffold": "tsx scripts/scaffold-project.ts",
     "generate:types": "webidl2ts -i spec/context/_webcodecs.idl -o types/webcodecs.d.ts",
     "generate:tasks": "tsx scripts/generate-tasks.ts",
@@ -24,7 +25,15 @@
     "test": "vitest"
   },
   "gypfile": true,
+  "binary": {
+    "module_name": "webcodecs",
+    "module_path": "./build/Release/",
+    "remote_path": "./releases/download/{version}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}.tar.gz",
+    "host": "https://github.com/pproenca/node-webcodecs-spec"
+  },
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.11",
     "bindings": "^1.5.0",
     "node-addon-api": "^8.0.0"
   },

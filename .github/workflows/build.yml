@@ -1,0 +1,97 @@
+# .github/workflows/build.yml
+name: Build and Test
+
+on:
+  push:
+    branches: [master, main]
+    tags: ['v*']
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x64
+            platform: linux
+          - os: macos-13
+            arch: x64
+            platform: darwin
+          - os: macos-14
+            arch: arm64
+            platform: darwin
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install FFmpeg (Ubuntu)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            pkg-config
+
+      - name: Install FFmpeg (macOS)
+        if: matrix.platform == 'darwin'
+        run: |
+          brew install ffmpeg pkg-config
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build native module
+        run: npm run build:native
+
+      - name: Build TypeScript
+        run: npx tsc
+
+      - name: Run tests
+        run: npm test -- --run
+
+      - name: Package prebuild
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npx node-pre-gyp package
+
+      - name: Upload prebuild artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuild-${{ matrix.platform }}-${{ matrix.arch }}
+          path: build/stage/**/*.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: prebuilds
+          pattern: prebuild-*
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: prebuilds/**/*.tar.gz
+          generate_release_notes: true
