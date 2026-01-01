@@ -260,13 +260,15 @@ async function main() {
   }
 
   // 6. Generate TypeScript index with type re-exports
+  // Deduplicate in case IDL has repeated interface definitions
+  const uniqueClasses = [...new Set(generatedClasses)];
   const indexContent = [
     '// Re-export all types from the generated type definitions',
     "// Using 'export type *' ensures this is compile-time only (no runtime import)",
     "export type * from '../types/webcodecs.js';",
     '',
     '// Export class implementations',
-    ...generatedClasses.map((c) => `export { ${c} } from './${c}.js';`),
+    ...uniqueClasses.map((c) => `export { ${c} } from './${c}.js';`),
     '',
   ].join('\n');
   await fs.writeFile(path.join(LIB_DIR, 'index.ts'), indexContent);
