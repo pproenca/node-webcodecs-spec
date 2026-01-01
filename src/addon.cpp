@@ -64,6 +64,8 @@ struct AsyncDecodeContext {
   }
 };
 
+}  // namespace webcodecs
+
 /**
  * Module initialization.
  *
@@ -75,15 +77,13 @@ struct AsyncDecodeContext {
  */
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Register class constructors
-  VideoDecoder::Init(env, exports);
-  VideoEncoder::Init(env, exports);
-  VideoFrame::Init(env, exports);
-  EncodedVideoChunk::Init(env, exports);
+  webcodecs::VideoDecoder::Init(env, exports);
+  webcodecs::VideoEncoder::Init(env, exports);
+  webcodecs::VideoFrame::Init(env, exports);
+  webcodecs::EncodedVideoChunk::Init(env, exports);
 
   return exports;
 }
 
-}  // namespace webcodecs
-
 // Module registration macro (N-API stable ABI)
-NODE_API_MODULE(webcodecs, webcodecs::Init)
+NODE_API_MODULE(webcodecs, Init)
