@@ -15,14 +15,14 @@ describe('VideoDecoder', () => {
 
     it('should require output callback', () => {
       expect(() => {
-        // @ts-expect-error - Testing missing required field
+        // @ts-ignore - Testing missing required field
         new VideoDecoder({ error: () => {} });
       }).toThrow();
     });
 
     it('should require error callback', () => {
       expect(() => {
-        // @ts-expect-error - Testing missing required field
+        // @ts-ignore - Testing missing required field
         new VideoDecoder({ output: () => {} });
       }).toThrow();
     });

@@ -13,7 +13,6 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
-// @ts-expect-error - webidl2 has no @types package
 import { parse as parseIDL, type InterfaceType, type OperationMemberType, type AttributeMemberType, type IDLRootType } from 'webidl2';
 
 // --- CLI Arguments ---
@@ -272,7 +271,7 @@ function buildInterfaceContext(
       }));
 
       methods.push({
-        name: op.name,
+        name: op.name!,
         isStatic: op.special === 'static',
         signature: `${getCppType(op.idlType as any)} ${op.name}(${args.map((a: { type: string; name: string }) => `${a.type} ${a.name}`).join(', ')})`,
         steps: algoMap.get(key) || ['See spec/context file.'],

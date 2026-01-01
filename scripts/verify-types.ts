@@ -4,7 +4,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-// @ts-expect-error - webidl2 has no @types package
 import { parse as parseIDL } from 'webidl2';
 
 const idlPath = path.join(__dirname, '..', 'spec', 'context', '_webcodecs.idl');
