@@ -1,0 +1,143 @@
+#include "AudioEncoder.h"
+
+namespace webcodecs {
+
+Napi::FunctionReference AudioEncoder::constructor;
+
+Napi::Object AudioEncoder::Init(Napi::Env env, Napi::Object exports) {
+  Napi::Function func = DefineClass(env, "AudioEncoder", {
+    InstanceAccessor<&AudioEncoder::GetState>("state"),
+    InstanceAccessor<&AudioEncoder::GetEncodeQueueSize>("encodeQueueSize"),
+    InstanceAccessor<&AudioEncoder::GetOndequeue, &AudioEncoder::SetOndequeue>("ondequeue"),
+    InstanceMethod<&AudioEncoder::Configure>("configure"),
+    InstanceMethod<&AudioEncoder::Encode>("encode"),
+    InstanceMethod<&AudioEncoder::Flush>("flush"),
+    InstanceMethod<&AudioEncoder::Reset>("reset"),
+    InstanceMethod<&AudioEncoder::Close>("close"),
+    StaticMethod<&AudioEncoder::IsConfigSupported>("isConfigSupported"),
+  });
+
+  constructor = Napi::Persistent(func);
+  constructor.SuppressDestruct();
+  exports.Set("AudioEncoder", func);
+  return exports;
+}
+
+AudioEncoder::AudioEncoder(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<AudioEncoder>(info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Constructor Algorithm
+  /*
+   * Initialize internal slots.
+   */
+
+  // TODO(impl): Implement Constructor & Resource Allocation
+}
+
+AudioEncoder::~AudioEncoder() {
+  Release();
+}
+
+void AudioEncoder::Release() {
+  // TODO(impl): Free handle_ and native resources
+  handle_ = nullptr;
+}
+
+// --- Attributes ---
+
+Napi::Value AudioEncoder::GetState(const Napi::CallbackInfo& info) {
+  // TODO(impl): Return state
+  return info.Env().Null();
+}
+
+Napi::Value AudioEncoder::GetEncodeQueueSize(const Napi::CallbackInfo& info) {
+  // TODO(impl): Return encodeQueueSize
+  return info.Env().Null();
+}
+
+Napi::Value AudioEncoder::GetOndequeue(const Napi::CallbackInfo& info) {
+  // TODO(impl): Return ondequeue
+  return info.Env().Null();
+}
+
+void AudioEncoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Value& value) {
+  // TODO(impl): Set ondequeue
+}
+
+
+// --- Methods ---
+
+Napi::Value AudioEncoder::Configure(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * \[=Enqueues a control message=\] to configure the audio encoder for encoding audio data as described by |config|. NOTE: This method will trigger a {{NotSupportedError}} if the User Agent does not support |config|. Authors are encouraged to first check support by calling {{AudioEncoder/isConfigSupported()}} with |config|. User Agents don't have to support any particular codec type or configuration. When invoked, run these steps: 1. If |config| is not a \[=valid AudioEncoderConfig=\], throw a {{TypeError}}. 2. If {{AudioEncoder/\[\[state\]\]}} is \`"closed"\`, throw an {{InvalidStateError}}. 3. Set {{AudioEncoder/\[\[state\]\]}} to \`"configured"\`. 4. \[=Queue a control message=\] to configure the encoder using |config|. 5. \[=Process the control message queue=\]. \[=Running a control message=\] to configure the encoder means performing these steps: 1. Assign \`true\` to {{AudioEncoder/\[\[message queue blocked\]\]}}. 2. Enqueue the following steps to {{AudioEncoder/\[\[codec work queue\]\]}}: 1. Let |supported| be the result of running the Check Configuration Support algorithm with |config|. 2. If |supported| is \`false\`, \[=queue a task=\] to run the Close AudioEncoder algorithm with {{NotSupportedError}} and abort these steps. 3. If needed, assign {{AudioEncoder/\[\[codec implementation\]\]}} with an implementation supporting |config|. 4. Configure {{AudioEncoder/\[\[codec implementation\]\]}} with |config|. 5. \[=queue a task=\] to run the following steps: 1. Assign \`false\` to {{AudioEncoder/\[\[message queue blocked\]\]}}. 2. \[=Queue a task=\] to \[=Process the control message queue=\]. 3. Return \`"processed"\`.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+Napi::Value AudioEncoder::Encode(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * \[=Enqueues a control message=\] to encode the given |data|. When invoked, run these steps: 1. If the value of |data|'s {{platform object/\[\[Detached\]\]}} internal slot is \`true\`, throw a {{TypeError}}. 2. If {{AudioEncoder/\[\[state\]\]}} is not \`"configured"\`, throw an {{InvalidStateError}}. 3. Let |dataClone| hold the result of running the \[=Clone AudioData=\] algorithm with |data|. 4. Increment {{AudioEncoder/\[\[encodeQueueSize\]\]}}. 5. \[=Queue a control message=\] to encode |dataClone|. 6. \[=Process the control message queue=\]. \[=Running a control message=\] to encode the data means performing these steps: 1. If {{AudioEncoder/\[\[codec saturated\]\]}} equals \`true\`, return \`"not processed"\`. 2. If encoding |data| will cause the {{AudioEncoder/\[\[codec implementation\]\]}} to become \[=saturated=\], assign \`true\` to {{AudioEncoder/\[\[codec saturated\]\]}}. 3. Decrement {{AudioEncoder/\[\[encodeQueueSize\]\]}} and run the \[=AudioEncoder/Schedule Dequeue Event=\] algorithm. 4. Enqueue the following steps to the {{AudioEncoder/\[\[codec work queue\]\]}}: 1. Attempt to use {{AudioEncoder/\[\[codec implementation\]\]}} to encode the \[=media resource=\] described by |dataClone|. 2. If encoding results in an error, \[=queue a task=\] to run the \[=Close AudioEncoder=\] algorithm with {{EncodingError}} and return. 3. If {{AudioEncoder/\[\[codec saturated\]\]}} equals \`true\` and {{AudioEncoder/\[\[codec implementation\]\]}} is no longer \[=saturated=\], \[=queue a task=\] to perform the following steps: 1. Assign \`false\` to {{AudioEncoder/\[\[codec saturated\]\]}}. 2. \[=Process the control message queue=\]. 4. Let |encoded outputs| be a \[=list=\] of encoded audio data outputs emitted by {{AudioEncoder/\[\[codec implementation\]\]}}. 5. If |encoded outputs| is not empty, \[=queue a task=\] to run the \[=Output EncodedAudioChunks=\] algorithm with |encoded outputs|. 5. Return \`"processed"\`.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+Napi::Value AudioEncoder::Flush(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * Completes all \[=control messages=\] in the \[=control message queue=\] and emits all outputs. When invoked, run these steps: 1. If {{AudioEncoder/\[\[state\]\]}} is not \`"configured"\`, return \[=a promise rejected with=\] {{InvalidStateError}} {{DOMException}}. 2. Let |promise| be a new Promise. 3. Append |promise| to {{AudioEncoder/\[\[pending flush promises\]\]}}. 4. \[=Queue a control message=\] to flush the codec with |promise|. 5. \[=Process the control message queue=\]. 6. Return |promise|. \[=Running a control message=\] to flush the codec means performing these steps with |promise|. 1. Enqueue the following steps to the {{AudioEncoder/\[\[codec work queue\]\]}}: 1. Signal {{AudioEncoder/\[\[codec implementation\]\]}} to emit all \[=internal pending outputs=\]. 2. Let |encoded outputs| be a \[=list=\] of encoded audio data outputs emitted by {{AudioEncoder/\[\[codec implementation\]\]}}. 3. \[=Queue a task=\] to perform these steps: 1. If |encoded outputs| is not empty, run the \[=Output EncodedAudioChunks=\] algorithm with |encoded outputs|. 2. Remove |promise| from {{AudioEncoder/\[\[pending flush promises\]\]}}. 3. Resolve |promise|. 2. Return \`"processed"\`.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+Napi::Value AudioEncoder::Reset(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * Immediately resets all state including configuration, \[=control messages=\] in the \[=control message queue=\], and all pending callbacks. When invoked, run the \[=Reset AudioEncoder=\] algorithm with an {{AbortError}} {{DOMException}}.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+Napi::Value AudioEncoder::Close(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * Immediately aborts all pending work and releases \[=system resources=\]. Close is final. When invoked, run the \[=Close AudioEncoder=\] algorithm with an {{AbortError}} {{DOMException}}.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+Napi::Value AudioEncoder::IsConfigSupported(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC] Algorithm
+  /*
+   * Returns a promise indicating whether the provided |config| is supported by the User Agent. NOTE: The returned {{AudioEncoderSupport}} {{AudioEncoderSupport/config}} will contain only the dictionary members that User Agent recognized. Unrecognized dictionary members will be ignored. Authors can detect unrecognized dictionary members by comparing {{AudioEncoderSupport/config}} to their provided |config|. When invoked, run these steps: 1. If |config| is not a valid AudioEncoderConfig, return \[=a promise rejected with=\] {{TypeError}}. 2. Let |p| be a new Promise. 3. Let |checkSupportQueue| be the result of starting a new parallel queue. 4. Enqueue the following steps to |checkSupportQueue|: 1. Let |supported| be the result of running the Check Configuration Support algorithm with |config|. 2. \[=Queue a task=\] to run the following steps: 1. Let |encoderSupport| be a newly constructed {{AudioEncoderSupport}}, initialized as follows: 1. Set {{AudioEncoderSupport/config}} to the result of running the Clone Configuration algorithm with |config|. 2. Set {{AudioEncoderSupport/supported}} to |supported|. 2. Resolve |p| with |encoderSupport|. 5. Return |p|.
+   */
+
+  // TODO(impl): Implement method logic
+  return env.Undefined();
+}
+
+}  // namespace webcodecs
