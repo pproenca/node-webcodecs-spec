@@ -9,8 +9,19 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-// Generated class headers
-#include "generated/index.h"
+// WebCodecs class headers
+#include "VideoDecoder.h"
+#include "VideoEncoder.h"
+#include "VideoFrame.h"
+#include "EncodedVideoChunk.h"
+#include "VideoColorSpace.h"
+#include "AudioDecoder.h"
+#include "AudioEncoder.h"
+#include "AudioData.h"
+#include "EncodedAudioChunk.h"
+#include "ImageDecoder.h"
+#include "ImageTrack.h"
+#include "ImageTrackList.h"
 
 namespace webcodecs {
 

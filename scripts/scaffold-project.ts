@@ -1,7 +1,7 @@
 /**
  * Spec-First Code Generator for WebCodecs
  *
- * Clones w3c/webcodecs, parses Bikeshed HTML + WebIDL,
+ * Fetches w3c/webcodecs spec directly, parses Bikeshed HTML + WebIDL,
  * generates C++ headers/sources, TypeScript wrappers, and spec context docs.
  *
  * Usage:
@@ -11,7 +11,6 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { execSync } from 'node:child_process';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
 import { parse as parseIDL, type InterfaceType, type OperationMemberType, type AttributeMemberType, type IDLRootType } from 'webidl2';
@@ -21,11 +20,11 @@ const args = process.argv.slice(2);
 const WRITE_BINDING_GYP = args.includes('--write');
 
 // --- Configuration ---
-const REPO_URL = 'https://github.com/w3c/webcodecs.git';
+const SPEC_URL = 'https://raw.githubusercontent.com/w3c/webcodecs/main/index.src.html';
 const ROOT_DIR = path.resolve(__dirname, '..');
-const CACHE_DIR = path.join(ROOT_DIR, '.spec-cache');
 const CONTEXT_DIR = path.join(ROOT_DIR, 'spec', 'context');
-const SRC_DIR = path.join(ROOT_DIR, 'src', 'generated');
+// FLAT STRUCTURE: src/ and lib/ directly (no generated/ subfolder)
+const SRC_DIR = path.join(ROOT_DIR, 'src');
 const LIB_DIR = path.join(ROOT_DIR, 'lib');
 const BINDING_GYP_PATH = path.join(ROOT_DIR, 'binding.gyp');
 
@@ -95,15 +94,15 @@ function getCppType(idlType: string | { idlType: string | string[] }): string {
 
 // --- Main Execution ---
 async function main() {
-  console.log(`[Scaffold] 🚀 Starting WebCodecs Scaffolding...`);
+  console.log(`[Scaffold] 🚀 Fetching Source of Truth from ${SPEC_URL}...`);
 
-  // 1. Shallow Clone Source of Truth
-  if (!await fileExists(CACHE_DIR)) {
-    console.log(`[Scaffold] Cloning w3c/webcodecs (shallow)...`);
-    execSync(`git clone --depth 1 ${REPO_URL} ${CACHE_DIR}`, { stdio: 'inherit' });
-  } else {
-    console.log(`[Scaffold] Using cached spec repo. Delete .spec-cache to refresh.`);
+  // 1. Direct Fetch (No Git Clone)
+  const response = await fetch(SPEC_URL);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
   }
+  const htmlContent = await response.text();
+  console.log(`[Scaffold] ✅ Fetched spec (${(htmlContent.length / 1024).toFixed(1)} KB)`);
 
   // 2. Prepare Directories
   await fs.mkdir(CONTEXT_DIR, { recursive: true });
@@ -111,10 +110,6 @@ async function main() {
   await fs.mkdir(LIB_DIR, { recursive: true });
 
   // 3. Parse Spec
-  const specFile = path.join(CACHE_DIR, 'index.src.html');
-  console.log(`[Scaffold] Parsing ${specFile}...`);
-  const htmlContent = await fs.readFile(specFile, 'utf-8');
-
   const { idlText, algorithmMap, interfaceDescriptions } = parseBikeshed(htmlContent);
 
   // Write raw IDL for reference
@@ -157,25 +152,20 @@ async function main() {
     await safeWrite(path.join(LIB_DIR, `${name}.ts`), generateTsSource(context));
   }
 
-  // 5. Generate index files
-  await fs.writeFile(
-    path.join(SRC_DIR, 'index.h'),
-    generatedClasses.map(c => `#include "${c}.h"`).join('\n') + '\n'
-  );
-
+  // 5. Generate TypeScript index (no C++ index.h needed for flat structure)
   await fs.writeFile(
     path.join(LIB_DIR, 'index.ts'),
     generatedClasses.map(c => `export { ${c} } from './${c}';`).join('\n') + '\n'
   );
 
   // 6. Update or warn about binding.gyp
-  const generatedSources = generatedClasses.map(c => `src/generated/${c}.cpp`);
+  const generatedSources = generatedClasses.map(c => `src/${c}.cpp`);
 
   if (WRITE_BINDING_GYP) {
     await updateBindingGyp(generatedSources);
   } else {
     console.log('\n⚠️  Ensure the following files are in your binding.gyp "sources" list:');
-    generatedClasses.forEach(c => console.log(`      "src/generated/${c}.cpp",`));
+    generatedClasses.forEach(c => console.log(`      "src/${c}.cpp",`));
     console.log('\n💡 Run with --write to auto-update binding.gyp:');
     console.log('   npm run scaffold -- --write');
   }
@@ -215,13 +205,14 @@ async function updateBindingGyp(generatedSources: string[]): Promise<void> {
     return;
   }
 
-  // Get existing non-generated sources
-  const existingSources = target.sources.filter(
-    s => !s.startsWith('src/generated/')
+  // Get existing manual sources (addon.cpp, etc.)
+  const manualSources = target.sources.filter(
+    s => s === 'src/addon.cpp' || s.startsWith('src/shared/')
   );
 
-  // Merge: existing manual sources + generated sources
-  target.sources = [...existingSources, ...generatedSources];
+  // Merge: manual sources + generated sources (deduped)
+  const allSources = new Set([...manualSources, ...generatedSources]);
+  target.sources = Array.from(allSources);
 
   // Write back with pretty formatting
   await fs.writeFile(BINDING_GYP_PATH, JSON.stringify(gyp, null, 2) + '\n');
@@ -350,7 +341,7 @@ function generateCppHeader(ctx: InterfaceContext): string {
 
   return `#pragma once
 #include <napi.h>
-#include "../shared/Utils.h"
+#include "shared/Utils.h"
 
 namespace webcodecs {
 

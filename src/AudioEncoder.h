@@ -1,18 +1,18 @@
 #pragma once
 #include <napi.h>
-#include "../shared/Utils.h"
+#include "shared/Utils.h"
 
 namespace webcodecs {
 
 /**
- * VideoDecoder - W3C WebCodecs VideoDecoder implementation
- * @see spec/context/VideoDecoder.md
+ * AudioEncoder - W3C WebCodecs AudioEncoder implementation
+ * @see spec/context/AudioEncoder.md
  */
-class VideoDecoder : public Napi::ObjectWrap<VideoDecoder> {
+class AudioEncoder : public Napi::ObjectWrap<AudioEncoder> {
 public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  VideoDecoder(const Napi::CallbackInfo& info);
-  ~VideoDecoder() override;
+  AudioEncoder(const Napi::CallbackInfo& info);
+  ~AudioEncoder() override;
 
   // RAII Release
   void Release();
@@ -26,13 +26,13 @@ private:
 
   // Attributes
   Napi::Value GetState(const Napi::CallbackInfo& info);
-  Napi::Value GetDecodeQueueSize(const Napi::CallbackInfo& info);
+  Napi::Value GetEncodeQueueSize(const Napi::CallbackInfo& info);
   Napi::Value GetOndequeue(const Napi::CallbackInfo& info);
   void SetOndequeue(const Napi::CallbackInfo& info, const Napi::Value& value);
 
   // Methods
   Napi::Value Configure(const Napi::CallbackInfo& info);
-  Napi::Value Decode(const Napi::CallbackInfo& info);
+  Napi::Value Encode(const Napi::CallbackInfo& info);
   Napi::Value Flush(const Napi::CallbackInfo& info);
   Napi::Value Reset(const Napi::CallbackInfo& info);
   Napi::Value Close(const Napi::CallbackInfo& info);
