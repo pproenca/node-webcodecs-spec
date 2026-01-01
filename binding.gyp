@@ -4,6 +4,7 @@
       "target_name": "webcodecs",
       "sources": [
         "src/addon.cpp",
+        "src/shared/codec_registry.cpp",
         "src/ImageDecoder.cpp",
         "src/ImageTrackList.cpp",
         "src/ImageTrack.cpp",
