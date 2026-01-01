@@ -1,12 +1,20 @@
 #pragma once
 #include <napi.h>
+#include <queue>
 #include "shared/Utils.h"
+#include "ffmpeg_raii.h"
 
 namespace webcodecs {
 
 /**
  * AudioDecoder - W3C WebCodecs AudioDecoder implementation
  * @see spec/context/AudioDecoder.md
+ *
+ * Thread Safety:
+ * - All public methods are called from the JS main thread
+ * - Decode operations run on a worker thread via AsyncDecodeContext
+ * - State transitions use atomic operations
+ * - Codec operations are protected by mutex
  */
 class AudioDecoder : public Napi::ObjectWrap<AudioDecoder> {
 public:
@@ -14,15 +22,32 @@ public:
   AudioDecoder(const Napi::CallbackInfo& info);
   ~AudioDecoder() override;
 
-  // RAII Release
+  // RAII Release - cleans up all resources
   void Release();
 
 private:
   static Napi::FunctionReference constructor;
 
-  // Internal Native Handle
-  // TODO(impl): Define strict handle type (e.g., AVCodecContext*)
-  void* handle_ = nullptr;
+  // --- FFmpeg Resources (RAII managed) ---
+  raii::AVCodecContextPtr codecCtx_;
+
+  // --- Audio Resampler (for format conversion) ---
+  raii::SwrContextPtr swrCtx_;
+
+  // --- Thread-Safe State ---
+  raii::AtomicCodecState state_;
+
+  // --- Synchronization ---
+  mutable std::mutex mutex_;
+
+  // --- Decode Queue ---
+  std::queue<raii::AVPacketPtr> decodeQueue_;
+  std::atomic<uint32_t> decodeQueueSize_{0};
+
+  // --- Callbacks ---
+  Napi::FunctionReference outputCallback_;
+  Napi::FunctionReference errorCallback_;
+  Napi::FunctionReference ondequeueCallback_;
 
   // Attributes
   Napi::Value GetState(const Napi::CallbackInfo& info);

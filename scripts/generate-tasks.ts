@@ -227,4 +227,6 @@ async function main() {
   console.log(`\nDone! Generated ${interfaceCount} task files with ${taskCount} total tasks.`);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+});

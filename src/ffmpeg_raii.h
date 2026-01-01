@@ -23,6 +23,10 @@ extern "C" {
 #include <libavutil/frame.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 }
 
 namespace webcodecs {
@@ -83,8 +87,21 @@ struct SwsContextDeleter {
   }
 };
 
-// Note: SwrContext (audio resampling) wrappers can be added when needed
-// by including <libswresample/swresample.h>
+struct SwrContextDeleter {
+  void operator()(SwrContext* ctx) const noexcept {
+    if (ctx) {
+      swr_free(&ctx);
+    }
+  }
+};
+
+struct AVFilterGraphDeleter {
+  void operator()(AVFilterGraph* graph) const noexcept {
+    if (graph) {
+      avfilter_graph_free(&graph);
+    }
+  }
+};
 
 struct AVBufferRefDeleter {
   void operator()(AVBufferRef* buf) const noexcept {
@@ -120,6 +137,8 @@ using AVCodecContextPtr = std::unique_ptr<AVCodecContext, AVCodecContextDeleter>
 using AVFormatContextPtr = std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
 using AVFormatContextOutputPtr = std::unique_ptr<AVFormatContext, AVFormatContextOutputDeleter>;
 using SwsContextPtr = std::unique_ptr<SwsContext, SwsContextDeleter>;
+using SwrContextPtr = std::unique_ptr<SwrContext, SwrContextDeleter>;
+using AVFilterGraphPtr = std::unique_ptr<AVFilterGraph, AVFilterGraphDeleter>;
 using AVBufferRefPtr = std::unique_ptr<AVBufferRef, AVBufferRefDeleter>;
 using AVIOContextPtr = std::unique_ptr<AVIOContext, AVIOContextDeleter>;
 using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
@@ -186,6 +205,51 @@ inline AVPacketPtr clone_av_packet(const AVPacket* src) {
   }
 
   return dst;
+}
+
+/**
+ * Creates a new SwrContext for audio resampling.
+ * Returns nullptr on allocation failure.
+ * Caller must call swr_init() after setting options via av_opt_set_*.
+ */
+inline SwrContextPtr make_swr_context() {
+  return SwrContextPtr(swr_alloc());
+}
+
+/**
+ * Creates and initializes a SwrContext in one call.
+ * Returns nullptr on failure.
+ *
+ * @param out_ch_layout Output channel layout
+ * @param out_sample_fmt Output sample format
+ * @param out_sample_rate Output sample rate
+ * @param in_ch_layout Input channel layout
+ * @param in_sample_fmt Input sample format
+ * @param in_sample_rate Input sample rate
+ */
+[[nodiscard]] inline SwrContextPtr make_swr_context_initialized(
+    const AVChannelLayout* out_ch_layout, AVSampleFormat out_sample_fmt, int out_sample_rate,
+    const AVChannelLayout* in_ch_layout, AVSampleFormat in_sample_fmt, int in_sample_rate) {
+  SwrContext* ctx = nullptr;
+  int ret = swr_alloc_set_opts2(&ctx,
+      out_ch_layout, out_sample_fmt, out_sample_rate,
+      in_ch_layout, in_sample_fmt, in_sample_rate,
+      0, nullptr);
+  if (ret < 0 || !ctx) return nullptr;
+
+  if (swr_init(ctx) < 0) {
+    swr_free(&ctx);
+    return nullptr;
+  }
+  return SwrContextPtr(ctx);
+}
+
+/**
+ * Creates a new AVFilterGraph for video/audio filtering.
+ * Returns nullptr on allocation failure.
+ */
+inline AVFilterGraphPtr make_filter_graph() {
+  return AVFilterGraphPtr(avfilter_graph_alloc());
 }
 
 // =============================================================================
