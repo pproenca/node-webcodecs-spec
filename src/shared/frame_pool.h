@@ -298,7 +298,8 @@ class GlobalFramePool {
 
   /**
    * Clear all pools.
-   * Frees all pooled frames. In-flight frames are unaffected.
+   * Frees all pooled frames and removes all dimension keys.
+   * In-flight frames are unaffected.
    */
   void clear() {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -306,8 +307,8 @@ class GlobalFramePool {
       for (AVFrame* frame : pool) {
         av_frame_free(&frame);
       }
-      pool.clear();
     }
+    pools_.clear();
     stats_.current_pooled.store(0, std::memory_order_relaxed);
   }
 

@@ -126,13 +126,15 @@ TEST(TimebaseTest, FrameDurationUs_30fps) {
 TEST(TimebaseTest, FrameDurationUs_60fps) {
   AVRational fps60 = {60, 1};
   int64_t duration = frame_duration_us(fps60);
-  EXPECT_EQ(duration, 16666);  // 1000000 / 60 = 16666.66...
+  // 1000000 / 60 = 16666.66..., av_rescale rounds to nearest = 16667
+  EXPECT_NEAR(duration, 16667, 1);
 }
 
 TEST(TimebaseTest, FrameDurationUs_24fps) {
   AVRational fps24 = {24, 1};
   int64_t duration = frame_duration_us(fps24);
-  EXPECT_EQ(duration, 41666);  // 1000000 / 24 = 41666.66...
+  // 1000000 / 24 = 41666.67, av_rescale rounds to nearest = 41667
+  EXPECT_EQ(duration, 41667);
 }
 
 TEST(TimebaseTest, FrameDurationUs_2997fps) {

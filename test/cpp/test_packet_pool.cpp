@@ -140,8 +140,10 @@ TEST_F(PacketPoolTest, AcquireRefNullptr) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, StatsTrackTotalAllocated) {
+  // Hold onto all packets to force 5 separate allocations
+  std::vector<GlobalPacketPool::PooledPacket> packets;
   for (int i = 0; i < 5; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+    packets.push_back(GlobalPacketPool::instance().acquire());
   }
 
   auto& stats = GlobalPacketPool::instance().stats();
@@ -165,12 +167,21 @@ TEST_F(PacketPoolTest, StatsTrackPeakInFlight) {
 }
 
 TEST_F(PacketPoolTest, HitRateCalculation) {
-  for (int i = 0; i < 4; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+  // Hold 4 packets simultaneously to force 4 separate allocations (misses)
+  {
+    std::vector<GlobalPacketPool::PooledPacket> packets;
+    for (int i = 0; i < 4; ++i) {
+      packets.push_back(GlobalPacketPool::instance().acquire());
+    }
+    // All 4 packets returned to pool here
   }
 
-  for (int i = 0; i < 4; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+  // Next 4 acquires are hits (reusing pooled packets)
+  {
+    std::vector<GlobalPacketPool::PooledPacket> packets;
+    for (int i = 0; i < 4; ++i) {
+      packets.push_back(GlobalPacketPool::instance().acquire());
+    }
   }
 
   auto& stats = GlobalPacketPool::instance().stats();
@@ -196,16 +207,25 @@ TEST_F(PacketPoolTest, ResetStats) {
 TEST_F(PacketPoolTest, MaxPoolSizeEnforced) {
   GlobalPacketPool::instance().set_max_pool_size(3);
 
-  for (int i = 0; i < 5; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+  // Acquire 5 packets simultaneously, then return them all
+  {
+    std::vector<GlobalPacketPool::PooledPacket> packets;
+    for (int i = 0; i < 5; ++i) {
+      packets.push_back(GlobalPacketPool::instance().acquire());
+    }
+    // All 5 returned here, but only 3 kept due to max size
   }
 
   EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 3);
 }
 
 TEST_F(PacketPoolTest, TrimReducesPoolSize) {
-  for (int i = 0; i < 10; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+  // Acquire 10 packets simultaneously, then return them all to pool
+  {
+    std::vector<GlobalPacketPool::PooledPacket> packets;
+    for (int i = 0; i < 10; ++i) {
+      packets.push_back(GlobalPacketPool::instance().acquire());
+    }
   }
   EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 10);
 
@@ -214,8 +234,12 @@ TEST_F(PacketPoolTest, TrimReducesPoolSize) {
 }
 
 TEST_F(PacketPoolTest, ClearRemovesAllPooledPackets) {
-  for (int i = 0; i < 5; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+  // Acquire 5 packets simultaneously, then return them all to pool
+  {
+    std::vector<GlobalPacketPool::PooledPacket> packets;
+    for (int i = 0; i < 5; ++i) {
+      packets.push_back(GlobalPacketPool::instance().acquire());
+    }
   }
   EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 5);
 
@@ -395,8 +419,9 @@ TEST_F(PacketPoolTest, PacketPoolHandleStats) {
 
 TEST_F(PacketPoolTest, ZeroSizeBuffer) {
   auto packet = GlobalPacketPool::instance().acquire_with_buffer(0);
-  // av_new_packet with size 0 should fail
-  EXPECT_EQ(packet, nullptr);
+  // av_new_packet with size 0 succeeds in modern FFmpeg (allocates empty buffer)
+  ASSERT_NE(packet, nullptr);
+  EXPECT_EQ(packet->size, 0);
 }
 
 TEST_F(PacketPoolTest, LargeBuffer) {

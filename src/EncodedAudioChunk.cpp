@@ -37,8 +37,8 @@ EncodedAudioChunk::~EncodedAudioChunk() {
 }
 
 void EncodedAudioChunk::Release() {
-  // TODO(impl): Free handle_ and native resources
-  handle_ = nullptr;
+  // Release packet (RAII handles av_packet_unref)
+  packet_.reset();
 }
 
 // --- Attributes ---

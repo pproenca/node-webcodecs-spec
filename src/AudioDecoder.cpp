@@ -40,8 +40,31 @@ AudioDecoder::~AudioDecoder() {
 }
 
 void AudioDecoder::Release() {
-  // TODO(impl): Free handle_ and native resources
-  handle_ = nullptr;
+  // Thread-safe close: transition to Closed state
+  state_.close();
+
+  // Lock to safely clear resources
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Clear decode queue (RAII handles packet cleanup)
+  while (!decodeQueue_.empty()) {
+    decodeQueue_.pop();
+  }
+  decodeQueueSize_.store(0, std::memory_order_release);
+
+  // Release codec context (RAII handles avcodec_free_context)
+  codecCtx_.reset();
+
+  // Release JS callbacks
+  if (!outputCallback_.IsEmpty()) {
+    outputCallback_.Reset();
+  }
+  if (!errorCallback_.IsEmpty()) {
+    errorCallback_.Reset();
+  }
+  if (!ondequeueCallback_.IsEmpty()) {
+    ondequeueCallback_.Reset();
+  }
 }
 
 // --- Attributes ---

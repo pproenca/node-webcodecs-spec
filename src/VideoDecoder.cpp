@@ -28,11 +28,31 @@ VideoDecoder::VideoDecoder(const Napi::CallbackInfo& info)
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
-  /*
-   * Initialize internal slots.
-   */
+  // VideoDecoderInit requires: output (VideoFrameOutputCallback), error (WebCodecsErrorCallback)
 
-  // TODO(impl): Implement Constructor & Resource Allocation
+  // Validate init object is provided
+  if (info.Length() < 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(env, "VideoDecoderInit is required").ThrowAsJavaScriptException();
+    return;
+  }
+
+  Napi::Object init = info[0].As<Napi::Object>();
+
+  // Validate output callback is provided and is a function
+  if (!init.Has("output") || !init.Get("output").IsFunction()) {
+    Napi::TypeError::New(env, "output callback is required").ThrowAsJavaScriptException();
+    return;
+  }
+
+  // Validate error callback is provided and is a function
+  if (!init.Has("error") || !init.Get("error").IsFunction()) {
+    Napi::TypeError::New(env, "error callback is required").ThrowAsJavaScriptException();
+    return;
+  }
+
+  // Store callbacks for later use
+  outputCallback_ = Napi::Persistent(init.Get("output").As<Napi::Function>());
+  errorCallback_ = Napi::Persistent(init.Get("error").As<Napi::Function>());
 }
 
 VideoDecoder::~VideoDecoder() {

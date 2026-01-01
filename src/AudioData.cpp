@@ -42,8 +42,9 @@ AudioData::~AudioData() {
 }
 
 void AudioData::Release() {
-  // TODO(impl): Free handle_ and native resources
-  handle_ = nullptr;
+  // Release frame (RAII handles av_frame_unref)
+  frame_.reset();
+  closed_ = true;
 }
 
 // --- Attributes ---

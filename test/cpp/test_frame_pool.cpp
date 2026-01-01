@@ -135,11 +135,16 @@ TEST_F(FramePoolTest, DifferentFormatsSeparatePools) {
 }
 
 TEST_F(FramePoolTest, SameDimensionsSharePool) {
-  // Return 3 frames to pool
+  // Acquire 3 frames simultaneously, then return them to pool
+  std::vector<GlobalFramePool::PooledFrame> frames;
   for (int i = 0; i < 3; ++i) {
     auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame, nullptr);
+    frames.push_back(std::move(frame));
   }
+
+  // Now return all frames to pool
+  frames.clear();
 
   EXPECT_EQ(GlobalFramePool::instance().pool_count(), 1);
   EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 3);
@@ -150,8 +155,10 @@ TEST_F(FramePoolTest, SameDimensionsSharePool) {
 // =============================================================================
 
 TEST_F(FramePoolTest, StatsTrackTotalAllocated) {
+  // Hold onto all frames to force 5 separate allocations
+  std::vector<GlobalFramePool::PooledFrame> frames;
   for (int i = 0; i < 5; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
   }
 
   auto& stats = GlobalFramePool::instance().stats();
@@ -175,14 +182,21 @@ TEST_F(FramePoolTest, StatsTrackPeakInFlight) {
 }
 
 TEST_F(FramePoolTest, HitRateCalculation) {
-  // First 5 acquires are misses
-  for (int i = 0; i < 5; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  // Hold 5 frames simultaneously to force 5 separate allocations (misses)
+  {
+    std::vector<GlobalFramePool::PooledFrame> frames;
+    for (int i = 0; i < 5; ++i) {
+      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    }
+    // All 5 frames returned to pool here
   }
 
-  // Next 5 acquires are hits
-  for (int i = 0; i < 5; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  // Next 5 acquires are hits (reusing pooled frames)
+  {
+    std::vector<GlobalFramePool::PooledFrame> frames;
+    for (int i = 0; i < 5; ++i) {
+      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    }
   }
 
   auto& stats = GlobalFramePool::instance().stats();
@@ -207,18 +221,25 @@ TEST_F(FramePoolTest, ResetStats) {
 TEST_F(FramePoolTest, MaxPoolSizeEnforced) {
   GlobalFramePool::instance().set_max_pool_size(3);
 
-  // Return 5 frames - only 3 should be kept
-  for (int i = 0; i < 5; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  // Acquire 5 frames simultaneously, then return them all
+  {
+    std::vector<GlobalFramePool::PooledFrame> frames;
+    for (int i = 0; i < 5; ++i) {
+      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    }
+    // All 5 returned here, but only 3 kept due to max size
   }
 
   EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 3);
 }
 
 TEST_F(FramePoolTest, TrimReducesPoolSize) {
-  // Build up pool
-  for (int i = 0; i < 10; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  // Acquire 10 frames simultaneously, then return them all to pool
+  {
+    std::vector<GlobalFramePool::PooledFrame> frames;
+    for (int i = 0; i < 10; ++i) {
+      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    }
   }
   EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 10);
 
@@ -227,8 +248,12 @@ TEST_F(FramePoolTest, TrimReducesPoolSize) {
 }
 
 TEST_F(FramePoolTest, ClearRemovesAllPooledFrames) {
-  for (int i = 0; i < 5; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  // Acquire 5 frames simultaneously, then return them all to pool
+  {
+    std::vector<GlobalFramePool::PooledFrame> frames;
+    for (int i = 0; i < 5; ++i) {
+      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    }
   }
   EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 5);
 
