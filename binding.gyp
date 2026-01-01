@@ -48,19 +48,13 @@
               "MACOSX_DEPLOYMENT_TARGET": "10.15"
             },
             "libraries": [
-              "<(ffmpeg_libdir)/libavformat.a",
-              "<(ffmpeg_libdir)/libavcodec.a",
-              "<(ffmpeg_libdir)/libswscale.a",
-              "<(ffmpeg_libdir)/libavutil.a",
+              "<!@(pkg-config --libs libavformat libavcodec libswscale libavutil 2>/dev/null || echo '-lavformat -lavcodec -lswscale -lavutil')",
               "-framework CoreFoundation",
               "-framework CoreMedia",
               "-framework CoreVideo",
               "-framework VideoToolbox",
               "-framework Security",
-              "-framework AudioToolbox",
-              "-lbz2",
-              "-lz",
-              "-liconv"
+              "-framework AudioToolbox"
             ]
           }
         ],
@@ -75,14 +69,9 @@
               "-fPIC"
             ],
             "libraries": [
-              "<(ffmpeg_libdir)/libavformat.a",
-              "<(ffmpeg_libdir)/libavcodec.a",
-              "<(ffmpeg_libdir)/libswscale.a",
-              "<(ffmpeg_libdir)/libavutil.a",
+              "<!@(pkg-config --libs libavformat libavcodec libswscale libavutil 2>/dev/null || echo '-lavformat -lavcodec -lswscale -lavutil')",
               "-lpthread",
-              "-ldl",
-              "-lz",
-              "-llzma"
+              "-ldl"
             ]
           }
         ],
