@@ -10,33 +10,47 @@ import type {
   EncodedAudioChunkType,
 } from '../types/webcodecs.js';
 
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+/** Native binding interface for EncodedAudioChunk - matches C++ NAPI class shape */
+interface NativeEncodedAudioChunk {
+  readonly type: EncodedAudioChunkType;
+  readonly timestamp: number;
+  readonly duration: number | null;
+  readonly byteLength: number;
+  copyTo(destination: AllowSharedBufferSource): void;
+}
+
+/** Native constructor interface for EncodedAudioChunk */
+interface NativeEncodedAudioChunkConstructor {
+  new (init: EncodedAudioChunkInit): NativeEncodedAudioChunk;
+}
+
 export class EncodedAudioChunk {
-  private readonly native: unknown;
+  private readonly native: NativeEncodedAudioChunk;
 
   constructor(init: EncodedAudioChunkInit) {
-    this.native = new bindings.EncodedAudioChunk(init);
+    const NativeClass = bindings.EncodedAudioChunk as NativeEncodedAudioChunkConstructor;
+    this.native = new NativeClass(init);
   }
 
   get type(): EncodedAudioChunkType {
-    return (this.native as Record<string, unknown>).type as EncodedAudioChunkType;
+    return this.native.type;
   }
-
   get timestamp(): number {
-    return (this.native as Record<string, unknown>).timestamp as number;
+    return this.native.timestamp;
   }
-
   get duration(): number | null {
-    return (this.native as Record<string, unknown>).duration as number | null;
+    return this.native.duration;
   }
-
   get byteLength(): number {
-    return (this.native as Record<string, unknown>).byteLength as number;
+    return this.native.byteLength;
   }
 
   copyTo(destination: AllowSharedBufferSource): void {
-    return (this.native as Record<string, Function>).copyTo(destination) as void;
+    this.native.copyTo(destination);
   }
 }

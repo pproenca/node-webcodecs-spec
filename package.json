@@ -4,10 +4,10 @@
   "description": "Server-side WebCodecs implementation for Node.js backed by FFmpeg",
   "type": "module",
   "main": "dist/lib/index.js",
-  "types": "dist/types/webcodecs.d.ts",
+  "types": "dist/lib/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types/webcodecs.d.ts",
+      "types": "./dist/lib/index.d.ts",
       "default": "./dist/lib/index.js"
     },
     "./types": {

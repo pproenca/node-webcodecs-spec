@@ -388,8 +388,8 @@ export interface VideoFrameBufferInit {
   metadata?: VideoFrameMetadata;
 }
 
-export interface VideoFrameMetadata {
-}
+/** VideoFrameMetadata is extensible per WebCodecs spec */
+export type VideoFrameMetadata = Record<string, unknown>;
 
 export interface VideoFrameCopyToOptions {
   rect?: DOMRectInit;
@@ -426,68 +426,3 @@ export type VideoColorPrimaries = 'bt709' | 'bt470bg' | 'smpte170m' | 'bt2020' |
 export type VideoTransferCharacteristics = 'bt709' | 'smpte170m' | 'iec61966-2-1' | 'linear' | 'pq' | 'hlg';
 
 export type VideoMatrixCoefficients = 'rgb' | 'bt709' | 'bt470bg' | 'smpte170m' | 'bt2020-ncl';
-
-
-// --- Module augmentation for Node.js global scope ---
-declare global {
-  // WebCodecs types are available globally when this module is imported
-  // type ImageDecoder is available
-  // type ImageBufferSource is available
-  // type ImageDecoderInit is available
-  // type ImageDecodeOptions is available
-  // type ImageDecodeResult is available
-  // type ImageTrackList is available
-  // type ImageTrack is available
-  // type AudioDecoder is available
-  // type AudioDecoderInit is available
-  // type AudioDataOutputCallback is available
-  // type VideoDecoder is available
-  // type VideoDecoderInit is available
-  // type VideoFrameOutputCallback is available
-  // type AudioEncoder is available
-  // type AudioEncoderInit is available
-  // type EncodedAudioChunkOutputCallback is available
-  // type EncodedAudioChunkMetadata is available
-  // type VideoEncoder is available
-  // type VideoEncoderInit is available
-  // type EncodedVideoChunkOutputCallback is available
-  // type EncodedVideoChunkMetadata is available
-  // type SvcOutputMetadata is available
-  // type AudioDecoderSupport is available
-  // type VideoDecoderSupport is available
-  // type AudioEncoderSupport is available
-  // type VideoEncoderSupport is available
-  // type AudioDecoderConfig is available
-  // type VideoDecoderConfig is available
-  // type AudioEncoderConfig is available
-  // type VideoEncoderConfig is available
-  // type HardwareAcceleration is available
-  // type AlphaOption is available
-  // type LatencyMode is available
-  // type VideoEncoderEncodeOptions is available
-  // type VideoEncoderBitrateMode is available
-  // type CodecState is available
-  // type WebCodecsErrorCallback is available
-  // type EncodedAudioChunk is available
-  // type EncodedAudioChunkInit is available
-  // type EncodedAudioChunkType is available
-  // type EncodedVideoChunk is available
-  // type EncodedVideoChunkInit is available
-  // type EncodedVideoChunkType is available
-  // type AudioData is available
-  // type AudioDataInit is available
-  // type AudioDataCopyToOptions is available
-  // type AudioSampleFormat is available
-  // type VideoFrame is available
-  // type VideoFrameInit is available
-  // type VideoFrameBufferInit is available
-  // type VideoFrameMetadata is available
-  // type VideoFrameCopyToOptions is available
-  // type PlaneLayout is available
-  // type VideoPixelFormat is available
-  // type VideoColorSpace is available
-  // type VideoColorSpaceInit is available
-  // type VideoColorPrimaries is available
-  // type VideoTransferCharacteristics is available
-  // type VideoMatrixCoefficients is available
-}

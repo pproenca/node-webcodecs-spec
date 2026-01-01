@@ -15,86 +15,101 @@ import type {
   VideoPixelFormat,
 } from '../types/webcodecs.js';
 
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+/** Native binding interface for VideoFrame - matches C++ NAPI class shape */
+interface NativeVideoFrame {
+  readonly format: VideoPixelFormat | null;
+  readonly codedWidth: number;
+  readonly codedHeight: number;
+  readonly codedRect: DOMRectReadOnly | null;
+  readonly visibleRect: DOMRectReadOnly | null;
+  readonly rotation: number;
+  readonly flip: boolean;
+  readonly displayWidth: number;
+  readonly displayHeight: number;
+  readonly duration: number | null;
+  readonly timestamp: number;
+  readonly colorSpace: VideoColorSpace;
+  metadata(): VideoFrameMetadata;
+  allocationSize(options: VideoFrameCopyToOptions): number;
+  copyTo(
+    destination: AllowSharedBufferSource,
+    options: VideoFrameCopyToOptions
+  ): Promise<PlaneLayout[]>;
+  clone(): VideoFrame;
+  close(): void;
+}
+
+/** Native constructor interface for VideoFrame */
+interface NativeVideoFrameConstructor {
+  new (init: VideoFrameInit): NativeVideoFrame;
+}
+
 export class VideoFrame {
-  private readonly native: unknown;
+  private readonly native: NativeVideoFrame;
 
   constructor(init: VideoFrameInit) {
-    this.native = new bindings.VideoFrame(init);
+    const NativeClass = bindings.VideoFrame as NativeVideoFrameConstructor;
+    this.native = new NativeClass(init);
   }
 
   get format(): VideoPixelFormat | null {
-    return (this.native as Record<string, unknown>).format as VideoPixelFormat | null;
+    return this.native.format;
   }
-
   get codedWidth(): number {
-    return (this.native as Record<string, unknown>).codedWidth as number;
+    return this.native.codedWidth;
   }
-
   get codedHeight(): number {
-    return (this.native as Record<string, unknown>).codedHeight as number;
+    return this.native.codedHeight;
   }
-
   get codedRect(): DOMRectReadOnly | null {
-    return (this.native as Record<string, unknown>).codedRect as DOMRectReadOnly | null;
+    return this.native.codedRect;
   }
-
   get visibleRect(): DOMRectReadOnly | null {
-    return (this.native as Record<string, unknown>).visibleRect as DOMRectReadOnly | null;
+    return this.native.visibleRect;
   }
-
   get rotation(): number {
-    return (this.native as Record<string, unknown>).rotation as number;
+    return this.native.rotation;
   }
-
   get flip(): boolean {
-    return (this.native as Record<string, unknown>).flip as boolean;
+    return this.native.flip;
   }
-
   get displayWidth(): number {
-    return (this.native as Record<string, unknown>).displayWidth as number;
+    return this.native.displayWidth;
   }
-
   get displayHeight(): number {
-    return (this.native as Record<string, unknown>).displayHeight as number;
+    return this.native.displayHeight;
   }
-
   get duration(): number | null {
-    return (this.native as Record<string, unknown>).duration as number | null;
+    return this.native.duration;
   }
-
   get timestamp(): number {
-    return (this.native as Record<string, unknown>).timestamp as number;
+    return this.native.timestamp;
   }
-
   get colorSpace(): VideoColorSpace {
-    return (this.native as Record<string, unknown>).colorSpace as VideoColorSpace;
+    return this.native.colorSpace;
   }
 
   metadata(): VideoFrameMetadata {
-    return (this.native as Record<string, Function>).metadata() as VideoFrameMetadata;
+    return this.native.metadata();
   }
-
   allocationSize(options: VideoFrameCopyToOptions): number {
-    return (this.native as Record<string, Function>).allocationSize(options) as number;
+    return this.native.allocationSize(options);
   }
-
   copyTo(
     destination: AllowSharedBufferSource,
     options: VideoFrameCopyToOptions
   ): Promise<PlaneLayout[]> {
-    return (this.native as Record<string, Function>).copyTo(destination, options) as Promise<
-      PlaneLayout[]
-    >;
+    return this.native.copyTo(destination, options);
   }
-
   clone(): VideoFrame {
-    return (this.native as Record<string, Function>).clone() as VideoFrame;
+    return this.native.clone();
   }
-
   close(): void {
-    return (this.native as Record<string, Function>).close() as void;
+    this.native.close();
   }
 }

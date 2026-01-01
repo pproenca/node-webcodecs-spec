@@ -40,8 +40,8 @@ const FORCE_TS = args.includes('--force-ts');
 
 // --- Configuration ---
 const SPEC_URL = 'https://raw.githubusercontent.com/w3c/webcodecs/main/index.src.html';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = path.resolve(__dirname, '..');
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(currentDir, '..');
 const CONTEXT_DIR = path.join(ROOT_DIR, 'spec', 'context');
 // FLAT STRUCTURE: src/ and lib/ directly (no generated/ subfolder)
 const SRC_DIR = path.join(ROOT_DIR, 'src');
@@ -304,7 +304,7 @@ function buildInterfaceContext(
       }));
       const returnIdlType = op.idlType;
 
-      // op.name is verified non-null in the condition above
+      // Safe: op.name verified non-null by condition `member.name` at line 297
       const opName = op.name!;
       methods.push({
         name: opName,
@@ -552,12 +552,71 @@ ${m.steps.map((s) => `   * ${s}`).join('\n')}
 }
 
 /**
+ * Generates the native binding interface for type-safe access to C++ bindings.
+ * @param ctx - Interface context with methods, attributes, and constructor info
+ * @returns Native interface definition string
+ */
+function generateNativeInterface(ctx: InterfaceContext): string {
+  const methods = ctx.methods.filter((m) => m.name !== 'constructor');
+  const instanceMethods = methods.filter((m) => !m.isStatic);
+
+  const lines: string[] = [];
+  lines.push(`/** Native binding interface for ${ctx.name} - matches C++ NAPI class shape */`);
+  lines.push(`interface Native${ctx.name} {`);
+
+  // Attributes
+  for (const attr of ctx.attributes) {
+    const readonly = attr.readonly ? 'readonly ' : '';
+    lines.push(`  ${readonly}${attr.name}: ${attr.tsType};`);
+  }
+
+  // Instance methods
+  for (const method of instanceMethods) {
+    const params = method.args.map((a) => `${a.name}: ${a.tsType}`).join(', ');
+    lines.push(`  ${method.name}(${params}): ${method.tsReturnType};`);
+  }
+
+  lines.push('}');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates the native constructor interface for static methods.
+ * @param ctx - Interface context with methods, attributes, and constructor info
+ * @returns Native constructor interface definition string
+ */
+function generateNativeConstructorInterface(ctx: InterfaceContext): string {
+  const methods = ctx.methods.filter((m) => m.name !== 'constructor');
+  const staticMethods = methods.filter((m) => m.isStatic);
+  const initType = ctx.hasConstructor ? `${ctx.name}Init` : 'unknown';
+
+  const lines: string[] = [];
+  lines.push(`/** Native constructor interface for ${ctx.name} */`);
+  lines.push(`interface Native${ctx.name}Constructor {`);
+  lines.push(`  new (init: ${initType}): Native${ctx.name};`);
+
+  // Static methods
+  for (const method of staticMethods) {
+    const params = method.args.map((a) => `${a.name}: ${a.tsType}`).join(', ');
+    lines.push(`  ${method.name}(${params}): ${method.tsReturnType};`);
+  }
+
+  lines.push('}');
+
+  return lines.join('\n');
+}
+
+/**
  * Generates TypeScript wrapper class for a native binding.
+ * Follows Google TypeScript Style Guide with proper interfaces instead of unsafe casts.
  * @param ctx - Interface context with methods, attributes, and constructor info
  * @returns TypeScript class source code
  */
 function generateTsSource(ctx: InterfaceContext): string {
   const methods = ctx.methods.filter((m) => m.name !== 'constructor');
+  const instanceMethods = methods.filter((m) => !m.isStatic);
+  const staticMethods = methods.filter((m) => m.isStatic);
   const imports = collectTypeImports(ctx);
 
   // Build import line if there are types to import
@@ -569,6 +628,68 @@ function generateTsSource(ctx: InterfaceContext): string {
   // Determine constructor parameter type
   const initType = ctx.hasConstructor ? `${ctx.name}Init` : 'unknown';
 
+  // Generate native interfaces
+  const nativeInterface = generateNativeInterface(ctx);
+  const nativeConstructorInterface = generateNativeConstructorInterface(ctx);
+
+  // Generate getters
+  const getters = ctx.attributes
+    .map((a) => {
+      const getter = `
+  get ${a.name}(): ${a.tsType} {
+    return this.native.${a.name};
+  }`;
+      const setter = !a.readonly
+        ? `
+
+  set ${a.name}(value: ${a.tsType}) {
+    this.native.${a.name} = value;
+  }`
+        : '';
+      return getter + setter;
+    })
+    .join('');
+
+  // Generate instance methods
+  const instanceMethodsCode = instanceMethods
+    .map((m) => {
+      const params = m.args.map((a) => `${a.name}: ${a.tsType}`).join(', ');
+      const args = m.args.map((a) => a.name).join(', ');
+      const isVoid = m.tsReturnType === 'void';
+      if (isVoid) {
+        return `
+  ${m.name}(${params}): void {
+    this.native.${m.name}(${args});
+  }`;
+      }
+      return `
+  ${m.name}(${params}): ${m.tsReturnType} {
+    return this.native.${m.name}(${args});
+  }`;
+    })
+    .join('');
+
+  // Generate static methods
+  const staticMethodsCode = staticMethods
+    .map((m) => {
+      const params = m.args.map((a) => `${a.name}: ${a.tsType}`).join(', ');
+      const args = m.args.map((a) => a.name).join(', ');
+      const isVoid = m.tsReturnType === 'void';
+      if (isVoid) {
+        return `
+  static ${m.name}(${params}): void {
+    const NativeClass = bindings.${ctx.name} as Native${ctx.name}Constructor;
+    NativeClass.${m.name}(${args});
+  }`;
+      }
+      return `
+  static ${m.name}(${params}): ${m.tsReturnType} {
+    const NativeClass = bindings.${ctx.name} as Native${ctx.name}Constructor;
+    return NativeClass.${m.name}(${args});
+  }`;
+    })
+    .join('');
+
   return `/**
  * ${ctx.name} - TypeScript wrapper for native ${ctx.name}
  * @see spec/context/${ctx.name}.md
@@ -576,52 +697,26 @@ function generateTsSource(ctx: InterfaceContext): string {
 
 import { createRequire } from 'node:module';
 ${importLine}
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+${nativeInterface}
+
+${nativeConstructorInterface}
+
 export class ${ctx.name} {
-  private readonly native: unknown;
+  private readonly native: Native${ctx.name};
 
   constructor(init: ${initType}) {
-    this.native = new bindings.${ctx.name}(init);
+    const NativeClass = bindings.${ctx.name} as Native${ctx.name}Constructor;
+    this.native = new NativeClass(init);
   }
-${ctx.attributes
-  .map(
-    (a) => `
-  get ${a.name}(): ${a.tsType} {
-    return (this.native as Record<string, unknown>).${a.name} as ${a.tsType};
-  }
-${
-  !a.readonly
-    ? `
-  set ${a.name}(value: ${a.tsType}) {
-    (this.native as Record<string, unknown>).${a.name} = value;
-  }
-`
-    : ''
-}`
-  )
-  .join('')}
-${methods
-  .filter((m) => !m.isStatic)
-  .map(
-    (m) => `
-  ${m.name}(${m.args.map((a) => `${a.name}: ${a.tsType}`).join(', ')}): ${m.tsReturnType} {
-    return (this.native as Record<string, Function>).${m.name}(${m.args.map((a) => a.name).join(', ')}) as ${m.tsReturnType};
-  }
-`
-  )
-  .join('')}
-${methods
-  .filter((m) => m.isStatic)
-  .map(
-    (m) => `
-  static ${m.name}(${m.args.map((a) => `${a.name}: ${a.tsType}`).join(', ')}): ${m.tsReturnType} {
-    return bindings.${ctx.name}.${m.name}(${m.args.map((a) => a.name).join(', ')}) as ${m.tsReturnType};
-  }
-`
-  )
-  .join('')}}
+${getters}
+${instanceMethodsCode}
+${staticMethodsCode}
+}
 `;
 }
 
@@ -823,17 +918,6 @@ function getTsType(idlType: IDLTypeDescription | string | null): string {
  * @returns Complete TypeScript .d.ts file content
  */
 function generateTypeDefinitions(ast: IDLRootType[]): string {
-  // Collect all type names for exports
-  // Filter to types that have a 'name' property (excludes IncludesType which only has target/includes)
-  const exportNames = ast
-    .filter(
-      (item): item is EnumType | TypedefType | CallbackType | DictionaryType | InterfaceType =>
-        ['enum', 'typedef', 'callback', 'dictionary', 'interface'].includes(item.type) &&
-        'name' in item &&
-        !['Window', 'Worker', 'DedicatedWorker', 'SharedWorker'].includes(item.name)
-    )
-    .map((item) => item.name);
-
   const lines: string[] = [
     '/**',
     ' * WebCodecs API Type Definitions for Node.js',
@@ -906,16 +990,9 @@ function generateTypeDefinitions(ast: IDLRootType[]): string {
     }
   }
 
-  // Add module declaration for ambient types (prevents conflicts with lib.dom.d.ts)
-  lines.push('');
-  lines.push('// --- Module augmentation for Node.js global scope ---');
-  lines.push('declare global {');
-  lines.push('  // WebCodecs types are available globally when this module is imported');
-  exportNames.forEach((name) => {
-    lines.push(`  // type ${name} is available`);
-  });
-  lines.push('}');
-  lines.push('');
+  // Note: No declare global block needed - types are exported from this module
+  // and should be imported explicitly where used. Empty declare global blocks
+  // with only comments have no effect and violate style guidelines.
 
   return lines.join('\n');
 }
@@ -939,13 +1016,25 @@ function generateCallback(item: CallbackType): string {
 }
 
 function generateDictionary(item: DictionaryType): string {
+  const members = item.members || [];
+
+  // Empty dictionaries without inheritance should be type aliases
+  // per Google TypeScript Style Guide: avoid empty interfaces
+  if (members.length === 0 && !item.inheritance) {
+    return [
+      `/** ${item.name} is extensible per WebCodecs spec */`,
+      `export type ${item.name} = Record<string, unknown>;`,
+      '',
+    ].join('\n');
+  }
+
   const lines: string[] = [];
 
   // Handle inheritance
   const ext = item.inheritance ? ` extends ${item.inheritance}` : '';
   lines.push(`export interface ${item.name}${ext} {`);
 
-  for (const member of item.members || []) {
+  for (const member of members) {
     const field = member as FieldType;
     const optional = field.required ? '' : '?';
     const tsType = getTsType(field.idlType);

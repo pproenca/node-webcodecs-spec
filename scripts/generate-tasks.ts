@@ -7,14 +7,14 @@
  * Outputs: docs/tasks/<interface-name>.md
  */
 
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as webidl2 from 'webidl2';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const IDL_PATH = path.join(__dirname, '../spec/context/_webcodecs.idl');
-const OUTPUT_DIR = path.join(__dirname, '../docs/tasks');
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const IDL_PATH = path.join(currentDir, '../spec/context/_webcodecs.idl');
+const OUTPUT_DIR = path.join(currentDir, '../docs/tasks');
 
 interface TaskItem {
   type: 'attribute' | 'method' | 'constructor' | 'static-method';
@@ -188,14 +188,12 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   return lines.join('\n');
 }
 
-async function main() {
+async function main(): Promise<void> {
   // Ensure output directory exists
-  if (!fs.existsSync(OUTPUT_DIR)) {
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  }
+  await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
   // Read and parse IDL
-  const idlContent = fs.readFileSync(IDL_PATH, 'utf-8');
+  const idlContent = await fs.readFile(IDL_PATH, 'utf-8');
   const ast = webidl2.parse(idlContent);
 
   let interfaceCount = 0;
@@ -217,7 +215,7 @@ async function main() {
       if (tasks.length > 0) {
         const markdown = generateTaskMarkdown(interfaceName, tasks);
         const outputPath = path.join(OUTPUT_DIR, `${interfaceName}.md`);
-        fs.writeFileSync(outputPath, markdown);
+        await fs.writeFile(outputPath, markdown);
         console.log(`Generated: ${outputPath} (${tasks.length} tasks)`);
         interfaceCount++;
       }

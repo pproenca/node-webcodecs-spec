@@ -13,53 +13,69 @@ import type {
   VideoDecoderSupport,
 } from '../types/webcodecs.js';
 
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+/** Native binding interface for VideoDecoder - matches C++ NAPI class shape */
+interface NativeVideoDecoder {
+  readonly state: CodecState;
+  readonly decodeQueueSize: number;
+  ondequeue: EventHandler;
+  configure(config: VideoDecoderConfig): void;
+  decode(chunk: EncodedVideoChunk): void;
+  flush(): Promise<void>;
+  reset(): void;
+  close(): void;
+}
+
+/** Native constructor interface for VideoDecoder */
+interface NativeVideoDecoderConstructor {
+  new (init: VideoDecoderInit): NativeVideoDecoder;
+  isConfigSupported(config: VideoDecoderConfig): Promise<VideoDecoderSupport>;
+}
+
 export class VideoDecoder {
-  private readonly native: unknown;
+  private readonly native: NativeVideoDecoder;
 
   constructor(init: VideoDecoderInit) {
-    this.native = new bindings.VideoDecoder(init);
+    const NativeClass = bindings.VideoDecoder as NativeVideoDecoderConstructor;
+    this.native = new NativeClass(init);
   }
 
   get state(): CodecState {
-    return (this.native as Record<string, unknown>).state as CodecState;
+    return this.native.state;
   }
-
   get decodeQueueSize(): number {
-    return (this.native as Record<string, unknown>).decodeQueueSize as number;
+    return this.native.decodeQueueSize;
   }
-
   get ondequeue(): EventHandler {
-    return (this.native as Record<string, unknown>).ondequeue as EventHandler;
+    return this.native.ondequeue;
   }
 
   set ondequeue(value: EventHandler) {
-    (this.native as Record<string, unknown>).ondequeue = value;
+    this.native.ondequeue = value;
   }
 
   configure(config: VideoDecoderConfig): void {
-    return (this.native as Record<string, Function>).configure(config) as void;
+    this.native.configure(config);
   }
-
   decode(chunk: EncodedVideoChunk): void {
-    return (this.native as Record<string, Function>).decode(chunk) as void;
+    this.native.decode(chunk);
   }
-
   flush(): Promise<void> {
-    return (this.native as Record<string, Function>).flush() as Promise<void>;
+    return this.native.flush();
   }
-
   reset(): void {
-    return (this.native as Record<string, Function>).reset() as void;
+    this.native.reset();
   }
-
   close(): void {
-    return (this.native as Record<string, Function>).close() as void;
+    this.native.close();
   }
 
   static isConfigSupported(config: VideoDecoderConfig): Promise<VideoDecoderSupport> {
-    return bindings.VideoDecoder.isConfigSupported(config) as Promise<VideoDecoderSupport>;
+    const NativeClass = bindings.VideoDecoder as NativeVideoDecoderConstructor;
+    return NativeClass.isConfigSupported(config);
   }
 }

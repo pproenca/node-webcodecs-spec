@@ -13,53 +13,69 @@ import type {
   EventHandler,
 } from '../types/webcodecs.js';
 
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+/** Native binding interface for AudioDecoder - matches C++ NAPI class shape */
+interface NativeAudioDecoder {
+  readonly state: CodecState;
+  readonly decodeQueueSize: number;
+  ondequeue: EventHandler;
+  configure(config: AudioDecoderConfig): void;
+  decode(chunk: EncodedAudioChunk): void;
+  flush(): Promise<void>;
+  reset(): void;
+  close(): void;
+}
+
+/** Native constructor interface for AudioDecoder */
+interface NativeAudioDecoderConstructor {
+  new (init: AudioDecoderInit): NativeAudioDecoder;
+  isConfigSupported(config: AudioDecoderConfig): Promise<AudioDecoderSupport>;
+}
+
 export class AudioDecoder {
-  private readonly native: unknown;
+  private readonly native: NativeAudioDecoder;
 
   constructor(init: AudioDecoderInit) {
-    this.native = new bindings.AudioDecoder(init);
+    const NativeClass = bindings.AudioDecoder as NativeAudioDecoderConstructor;
+    this.native = new NativeClass(init);
   }
 
   get state(): CodecState {
-    return (this.native as Record<string, unknown>).state as CodecState;
+    return this.native.state;
   }
-
   get decodeQueueSize(): number {
-    return (this.native as Record<string, unknown>).decodeQueueSize as number;
+    return this.native.decodeQueueSize;
   }
-
   get ondequeue(): EventHandler {
-    return (this.native as Record<string, unknown>).ondequeue as EventHandler;
+    return this.native.ondequeue;
   }
 
   set ondequeue(value: EventHandler) {
-    (this.native as Record<string, unknown>).ondequeue = value;
+    this.native.ondequeue = value;
   }
 
   configure(config: AudioDecoderConfig): void {
-    return (this.native as Record<string, Function>).configure(config) as void;
+    this.native.configure(config);
   }
-
   decode(chunk: EncodedAudioChunk): void {
-    return (this.native as Record<string, Function>).decode(chunk) as void;
+    this.native.decode(chunk);
   }
-
   flush(): Promise<void> {
-    return (this.native as Record<string, Function>).flush() as Promise<void>;
+    return this.native.flush();
   }
-
   reset(): void {
-    return (this.native as Record<string, Function>).reset() as void;
+    this.native.reset();
   }
-
   close(): void {
-    return (this.native as Record<string, Function>).close() as void;
+    this.native.close();
   }
 
   static isConfigSupported(config: AudioDecoderConfig): Promise<AudioDecoderSupport> {
-    return bindings.AudioDecoder.isConfigSupported(config) as Promise<AudioDecoderSupport>;
+    const NativeClass = bindings.AudioDecoder as NativeAudioDecoderConstructor;
+    return NativeClass.isConfigSupported(config);
   }
 }

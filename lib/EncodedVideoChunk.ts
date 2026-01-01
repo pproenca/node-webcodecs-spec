@@ -10,33 +10,47 @@ import type {
   EncodedVideoChunkType,
 } from '../types/webcodecs.js';
 
+// Native binding loader - require() necessary for native addons in ESM
+// See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
 const require = createRequire(import.meta.url);
 const bindings = require('bindings')('webcodecs');
 
+/** Native binding interface for EncodedVideoChunk - matches C++ NAPI class shape */
+interface NativeEncodedVideoChunk {
+  readonly type: EncodedVideoChunkType;
+  readonly timestamp: number;
+  readonly duration: number | null;
+  readonly byteLength: number;
+  copyTo(destination: AllowSharedBufferSource): void;
+}
+
+/** Native constructor interface for EncodedVideoChunk */
+interface NativeEncodedVideoChunkConstructor {
+  new (init: EncodedVideoChunkInit): NativeEncodedVideoChunk;
+}
+
 export class EncodedVideoChunk {
-  private readonly native: unknown;
+  private readonly native: NativeEncodedVideoChunk;
 
   constructor(init: EncodedVideoChunkInit) {
-    this.native = new bindings.EncodedVideoChunk(init);
+    const NativeClass = bindings.EncodedVideoChunk as NativeEncodedVideoChunkConstructor;
+    this.native = new NativeClass(init);
   }
 
   get type(): EncodedVideoChunkType {
-    return (this.native as Record<string, unknown>).type as EncodedVideoChunkType;
+    return this.native.type;
   }
-
   get timestamp(): number {
-    return (this.native as Record<string, unknown>).timestamp as number;
+    return this.native.timestamp;
   }
-
   get duration(): number | null {
-    return (this.native as Record<string, unknown>).duration as number | null;
+    return this.native.duration;
   }
-
   get byteLength(): number {
-    return (this.native as Record<string, unknown>).byteLength as number;
+    return this.native.byteLength;
   }
 
   copyTo(destination: AllowSharedBufferSource): void {
-    return (this.native as Record<string, Function>).copyTo(destination) as void;
+    this.native.copyTo(destination);
   }
 }
