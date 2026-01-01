@@ -65,25 +65,34 @@ function extractH2Sections(html: string): Section[] {
   const sections: Section[] = [];
 
   // Find all H2 elements that are section headings
-  const h2Elements = doc.querySelectorAll('h2[id]');
+  const h2Elements = Array.from(doc.querySelectorAll('h2.heading[id]'));
 
-  for (const h2 of h2Elements) {
-    const section = h2.closest('section');
-    if (!section) continue;
+  // Skip non-API sections (definitions, acknowledgements, etc.)
+  const skipSections = ['1', '11', '12', '13', '14', '15'];
 
+  for (let i = 0; i < h2Elements.length; i++) {
+    const h2 = h2Elements[i];
     const secno = h2.querySelector('.secno');
     const number = secno?.textContent?.trim().replace(/\.$/, '') || '';
+
+    if (!number || skipSections.includes(number)) continue;
 
     // Get title without section number
     const titleText = h2.textContent?.replace(secno?.textContent || '', '').trim() || '';
 
-    // Skip non-API sections (definitions, acknowledgements, etc.)
-    const skipSections = ['1', '11', '12', '13', '14', '15'];
-    if (skipSections.includes(number)) continue;
+    // Collect content from this H2 until next H2
+    const contentParts: string[] = [];
+    let sibling = h2.nextElementSibling;
+    const nextH2 = h2Elements[i + 1];
 
-    // Get section HTML content
-    const content = section.innerHTML;
+    while (sibling && sibling !== nextH2) {
+      // Stop if we hit the next H2
+      if (sibling.tagName === 'H2') break;
+      contentParts.push(sibling.outerHTML);
+      sibling = sibling.nextElementSibling;
+    }
 
+    const content = `<h2>${h2.innerHTML}</h2>\n${contentParts.join('\n')}`;
     sections.push({ number, title: titleText, content });
   }
 
@@ -137,9 +146,19 @@ async function createIssue(section: Section): Promise<void> {
   await fs.writeFile(tmpFile, body);
 
   console.log(`Creating issue: ${title}`);
-  execSync(`gh issue create --title "${title}" --body-file "${tmpFile}" --label "spec-section"`, {
-    stdio: 'inherit',
-  });
+
+  // Try with label, fall back to without if label doesn't exist
+  try {
+    execSync(`gh issue create --title "${title}" --body-file "${tmpFile}" --label "spec-section"`, {
+      stdio: 'inherit',
+    });
+  } catch {
+    // Label might not exist, create without it
+    console.log('  (creating without label - run: gh label create spec-section)');
+    execSync(`gh issue create --title "${title}" --body-file "${tmpFile}"`, {
+      stdio: 'inherit',
+    });
+  }
 
   await fs.unlink(tmpFile);
 }
