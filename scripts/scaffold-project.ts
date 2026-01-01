@@ -552,7 +552,7 @@ const TS_TYPE_MAP: Record<string, string> = {
   'USVString': 'string',
   'ByteString': 'string',
   'BufferSource': 'BufferSource',
-  'AllowSharedBufferSource': 'BufferSource',
+  'AllowSharedBufferSource': 'AllowSharedBufferSource',
   'ArrayBuffer': 'ArrayBuffer',
   'ArrayBufferView': 'ArrayBufferView',
   'Uint8Array': 'Uint8Array',
@@ -563,15 +563,28 @@ const TS_TYPE_MAP: Record<string, string> = {
   'EventTarget': 'EventTarget',
   'DOMException': 'DOMException',
   'DOMRectReadOnly': 'DOMRectReadOnly',
+  'DOMRectInit': 'DOMRectInit',
   'CanvasImageSource': 'CanvasImageSource',
+  // WebCodecs-specific types that should be preserved (not converted to 'any')
+  'BitrateMode': 'BitrateMode',
 };
 
 function getTsType(idlType: any): string {
   if (!idlType) return 'any';
 
   // Handle nullable types
+  // NOTE: webidl2 uses getters for properties like nullable, idlType, generic, union
+  // Object spread doesn't copy getters, so we must access them explicitly
   if (idlType.nullable) {
-    const baseType = getTsType({ ...idlType, nullable: false });
+    // Get the inner type directly instead of spreading
+    const innerType = idlType.idlType;
+    if (typeof innerType === 'string') {
+      // Simple nullable type like "VideoColorPrimaries?"
+      const baseType = TS_TYPE_MAP[innerType] || innerType;
+      return `${baseType} | null`;
+    }
+    // Complex nullable type - recurse with the inner type
+    const baseType = getTsType(innerType);
     return `${baseType} | null`;
   }
 
@@ -640,7 +653,11 @@ function generateTypeDefinitions(ast: any[]): string {
     '// These types are needed because Node.js doesn\'t have DOM globals',
     '',
     'export type BufferSource = ArrayBufferView | ArrayBuffer;',
+    'export type AllowSharedBufferSource = ArrayBufferView | ArrayBuffer | SharedArrayBuffer;',
     'export type EventHandler = ((event: Event) => void) | null;',
+    '',
+    '// BitrateMode is defined in MediaStream Recording spec, used by AudioEncoderConfig',
+    'export type BitrateMode = "constant" | "variable";',
     '',
     'export interface DOMRectInit {',
     '  height?: number;',
@@ -768,8 +785,14 @@ function generateInterface(item: any): string {
             .map((arg: any) => `${arg.name}${arg.optional ? '?' : ''}: ${getTsType(arg.idlType)}`)
             .join(', ');
           const returnType = getTsType(member.idlType);
-          const staticMod = member.special === 'static' ? 'static ' : '';
-          lines.push(`  ${staticMod}${member.name}(${params}): ${returnType};`);
+          // Static methods cannot be declared in interfaces in TypeScript
+          // Comment them out like constructors, or omit the 'static' keyword
+          // For type-checking purposes, static methods are available on the class, not instances
+          if (member.special === 'static') {
+            lines.push(`  // static ${member.name}(${params}): ${returnType};`);
+          } else {
+            lines.push(`  ${member.name}(${params}): ${returnType};`);
+          }
         }
         break;
       }

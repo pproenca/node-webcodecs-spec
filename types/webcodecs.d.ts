@@ -10,7 +10,11 @@
 // These types are needed because Node.js doesn't have DOM globals
 
 export type BufferSource = ArrayBufferView | ArrayBuffer;
+export type AllowSharedBufferSource = ArrayBufferView | ArrayBuffer | SharedArrayBuffer;
 export type EventHandler = ((event: Event) => void) | null;
+
+// BitrateMode is defined in MediaStream Recording spec, used by AudioEncoderConfig
+export type BitrateMode = "constant" | "variable";
 
 export interface DOMRectInit {
   height?: number;
@@ -48,10 +52,10 @@ export interface ImageDecoder {
   decode(options?: ImageDecodeOptions): Promise<ImageDecodeResult>;
   reset(): void;
   close(): void;
-  static isTypeSupported(type: string): Promise<boolean>;
+  // static isTypeSupported(type: string): Promise<boolean>;
 }
 
-export type ImageBufferSource = BufferSource | ReadableStream;
+export type ImageBufferSource = AllowSharedBufferSource | ReadableStream;
 
 export interface ImageDecoderInit {
   type: string;
@@ -77,7 +81,7 @@ export interface ImageTrackList {
   readonly ready: Promise<void>;
   readonly length: number;
   readonly selectedIndex: number;
-  readonly selectedTrack: any | null;
+  readonly selectedTrack: ImageTrack | null;
 }
 
 export interface ImageTrack {
@@ -97,7 +101,7 @@ export interface AudioDecoder extends EventTarget {
   flush(): Promise<void>;
   reset(): void;
   close(): void;
-  static isConfigSupported(config: AudioDecoderConfig): Promise<AudioDecoderSupport>;
+  // static isConfigSupported(config: AudioDecoderConfig): Promise<AudioDecoderSupport>;
 }
 
 export interface AudioDecoderInit {
@@ -117,7 +121,7 @@ export interface VideoDecoder extends EventTarget {
   flush(): Promise<void>;
   reset(): void;
   close(): void;
-  static isConfigSupported(config: VideoDecoderConfig): Promise<VideoDecoderSupport>;
+  // static isConfigSupported(config: VideoDecoderConfig): Promise<VideoDecoderSupport>;
 }
 
 export interface VideoDecoderInit {
@@ -137,7 +141,7 @@ export interface AudioEncoder extends EventTarget {
   flush(): Promise<void>;
   reset(): void;
   close(): void;
-  static isConfigSupported(config: AudioEncoderConfig): Promise<AudioEncoderSupport>;
+  // static isConfigSupported(config: AudioEncoderConfig): Promise<AudioEncoderSupport>;
 }
 
 export interface AudioEncoderInit {
@@ -161,7 +165,7 @@ export interface VideoEncoder extends EventTarget {
   flush(): Promise<void>;
   reset(): void;
   close(): void;
-  static isConfigSupported(config: VideoEncoderConfig): Promise<VideoEncoderSupport>;
+  // static isConfigSupported(config: VideoEncoderConfig): Promise<VideoEncoderSupport>;
 }
 
 export interface VideoEncoderInit {
@@ -205,12 +209,12 @@ export interface AudioDecoderConfig {
   codec: string;
   sampleRate: number;
   numberOfChannels: number;
-  description?: BufferSource;
+  description?: AllowSharedBufferSource;
 }
 
 export interface VideoDecoderConfig {
   codec: string;
-  description?: BufferSource;
+  description?: AllowSharedBufferSource;
   codedWidth?: number;
   codedHeight?: number;
   displayAspectWidth?: number;
@@ -266,16 +270,16 @@ export interface EncodedAudioChunk {
   // constructor(init: EncodedAudioChunkInit)
   readonly type: EncodedAudioChunkType;
   readonly timestamp: number;
-  readonly duration: any | null;
+  readonly duration: number | null;
   readonly byteLength: number;
-  copyTo(destination: BufferSource): void;
+  copyTo(destination: AllowSharedBufferSource): void;
 }
 
 export interface EncodedAudioChunkInit {
   type: EncodedAudioChunkType;
   timestamp: number;
   duration?: number;
-  data: BufferSource;
+  data: AllowSharedBufferSource;
   transfer?: ArrayBuffer[];
 }
 
@@ -285,16 +289,16 @@ export interface EncodedVideoChunk {
   // constructor(init: EncodedVideoChunkInit)
   readonly type: EncodedVideoChunkType;
   readonly timestamp: number;
-  readonly duration: any | null;
+  readonly duration: number | null;
   readonly byteLength: number;
-  copyTo(destination: BufferSource): void;
+  copyTo(destination: AllowSharedBufferSource): void;
 }
 
 export interface EncodedVideoChunkInit {
   type: EncodedVideoChunkType;
   timestamp: number;
   duration?: number;
-  data: BufferSource;
+  data: AllowSharedBufferSource;
   transfer?: ArrayBuffer[];
 }
 
@@ -302,14 +306,14 @@ export type EncodedVideoChunkType = "key" | "delta";
 
 export interface AudioData {
   // constructor(init: AudioDataInit)
-  readonly format: any | null;
+  readonly format: AudioSampleFormat | null;
   readonly sampleRate: number;
   readonly numberOfFrames: number;
   readonly numberOfChannels: number;
   readonly duration: number;
   readonly timestamp: number;
   allocationSize(options: AudioDataCopyToOptions): number;
-  copyTo(destination: BufferSource, options: AudioDataCopyToOptions): void;
+  copyTo(destination: AllowSharedBufferSource, options: AudioDataCopyToOptions): void;
   clone(): AudioData;
   close(): void;
 }
@@ -335,22 +339,22 @@ export type AudioSampleFormat = "u8" | "s16" | "s32" | "f32" | "u8-planar" | "s1
 
 export interface VideoFrame {
   // constructor(image: CanvasImageSource, init?: VideoFrameInit)
-  // constructor(data: BufferSource, init: VideoFrameBufferInit)
-  readonly format: any | null;
+  // constructor(data: AllowSharedBufferSource, init: VideoFrameBufferInit)
+  readonly format: VideoPixelFormat | null;
   readonly codedWidth: number;
   readonly codedHeight: number;
-  readonly codedRect: any | null;
-  readonly visibleRect: any | null;
+  readonly codedRect: DOMRectReadOnly | null;
+  readonly visibleRect: DOMRectReadOnly | null;
   readonly rotation: number;
   readonly flip: boolean;
   readonly displayWidth: number;
   readonly displayHeight: number;
-  readonly duration: any | null;
+  readonly duration: number | null;
   readonly timestamp: number;
   readonly colorSpace: VideoColorSpace;
   metadata(): VideoFrameMetadata;
   allocationSize(options?: VideoFrameCopyToOptions): number;
-  copyTo(destination: BufferSource, options?: VideoFrameCopyToOptions): Promise<PlaneLayout[]>;
+  copyTo(destination: AllowSharedBufferSource, options?: VideoFrameCopyToOptions): Promise<PlaneLayout[]>;
   clone(): VideoFrame;
   close(): void;
 }
@@ -403,18 +407,18 @@ export type VideoPixelFormat = "I420" | "I420P10" | "I420P12" | "I420A" | "I420A
 
 export interface VideoColorSpace {
   // constructor(init?: VideoColorSpaceInit)
-  readonly primaries: any | null;
-  readonly transfer: any | null;
-  readonly matrix: any | null;
-  readonly fullRange: any | null;
+  readonly primaries: VideoColorPrimaries | null;
+  readonly transfer: VideoTransferCharacteristics | null;
+  readonly matrix: VideoMatrixCoefficients | null;
+  readonly fullRange: boolean | null;
   toJSON(): VideoColorSpaceInit;
 }
 
 export interface VideoColorSpaceInit {
-  primaries?: any | null;
-  transfer?: any | null;
-  matrix?: any | null;
-  fullRange?: any | null;
+  primaries?: VideoColorPrimaries | null;
+  transfer?: VideoTransferCharacteristics | null;
+  matrix?: VideoMatrixCoefficients | null;
+  fullRange?: boolean | null;
 }
 
 export type VideoColorPrimaries = "bt709" | "bt470bg" | "smpte170m" | "bt2020" | "smpte432";
