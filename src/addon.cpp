@@ -9,11 +9,8 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-// Forward declarations for class registration
-#include "video_decoder.h"
-#include "video_encoder.h"
-#include "video_frame.h"
-#include "encoded_video_chunk.h"
+// Generated class headers
+#include "generated/index.h"
 
 namespace webcodecs {
 
@@ -69,18 +66,26 @@ struct AsyncDecodeContext {
 /**
  * Module initialization.
  *
- * Registers all WebCodecs classes as exports:
- * - VideoDecoder
- * - VideoEncoder
- * - VideoFrame
- * - EncodedVideoChunk
+ * Registers all WebCodecs classes as exports.
  */
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  // Register class constructors
+  // Video codec classes
   webcodecs::VideoDecoder::Init(env, exports);
   webcodecs::VideoEncoder::Init(env, exports);
   webcodecs::VideoFrame::Init(env, exports);
   webcodecs::EncodedVideoChunk::Init(env, exports);
+  webcodecs::VideoColorSpace::Init(env, exports);
+
+  // Audio codec classes
+  webcodecs::AudioDecoder::Init(env, exports);
+  webcodecs::AudioEncoder::Init(env, exports);
+  webcodecs::AudioData::Init(env, exports);
+  webcodecs::EncodedAudioChunk::Init(env, exports);
+
+  // Image codec classes
+  webcodecs::ImageDecoder::Init(env, exports);
+  webcodecs::ImageTrack::Init(env, exports);
+  webcodecs::ImageTrackList::Init(env, exports);
 
   return exports;
 }

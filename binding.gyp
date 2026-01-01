@@ -4,10 +4,6 @@
       "target_name": "webcodecs",
       "sources": [
         "src/addon.cpp",
-        "src/video_decoder.cpp",
-        "src/video_encoder.cpp",
-        "src/video_frame.cpp",
-        "src/encoded_video_chunk.cpp",
         "src/generated/ImageDecoder.cpp",
         "src/generated/ImageTrackList.cpp",
         "src/generated/ImageTrack.cpp",
