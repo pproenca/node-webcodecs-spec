@@ -2,18 +2,18 @@
 #include "shared/utils.h"  // Brings in FFmpeg headers and AsyncDecodeContext
 
 // WebCodecs class headers
-#include "VideoDecoder.h"
-#include "VideoEncoder.h"
-#include "VideoFrame.h"
-#include "EncodedVideoChunk.h"
-#include "VideoColorSpace.h"
-#include "AudioDecoder.h"
-#include "AudioEncoder.h"
-#include "AudioData.h"
-#include "EncodedAudioChunk.h"
-#include "ImageDecoder.h"
-#include "ImageTrack.h"
-#include "ImageTrackList.h"
+#include "video_decoder.h"
+#include "video_encoder.h"
+#include "video_frame.h"
+#include "encoded_video_chunk.h"
+#include "video_color_space.h"
+#include "audio_decoder.h"
+#include "audio_encoder.h"
+#include "audio_data.h"
+#include "encoded_audio_chunk.h"
+#include "image_decoder.h"
+#include "image_track.h"
+#include "image_track_list.h"
 
 /**
  * Module initialization.

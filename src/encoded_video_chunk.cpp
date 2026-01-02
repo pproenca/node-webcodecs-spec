@@ -1,4 +1,4 @@
-#include "EncodedVideoChunk.h"
+#include "encoded_video_chunk.h"
 
 namespace webcodecs {
 

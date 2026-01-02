@@ -1,4 +1,4 @@
-#include "VideoColorSpace.h"
+#include "video_color_space.h"
 
 namespace webcodecs {
 

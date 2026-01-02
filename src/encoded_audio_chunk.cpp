@@ -1,4 +1,4 @@
-#include "EncodedAudioChunk.h"
+#include "encoded_audio_chunk.h"
 
 namespace webcodecs {
 

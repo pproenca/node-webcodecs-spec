@@ -1,9 +1,9 @@
-#include "VideoDecoder.h"
+#include "video_decoder.h"
 
 #include <string>
 
-#include "VideoFrame.h"
-#include "EncodedVideoChunk.h"
+#include "video_frame.h"
+#include "encoded_video_chunk.h"
 #include "shared/codec_registry.h"
 #include "error_builder.h"
 #include "shared/buffer_utils.h"

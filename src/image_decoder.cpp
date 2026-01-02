@@ -1,4 +1,4 @@
-#include "ImageDecoder.h"
+#include "image_decoder.h"
 
 namespace webcodecs {
 
