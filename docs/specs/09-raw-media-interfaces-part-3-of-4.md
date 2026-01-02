@@ -8,19 +8,6 @@ title: '9. Raw Media Interfaces (Part 3 of 4)'
 
 ---
 
-1.  Let sourceRect be defaultRect
-2.  If overrideRect is not `undefined`:
-    1.  If either of overrideRect.[width](https://www.w3.org/TR/geometry-1/#dom-domrectinit-width) or [height](https://www.w3.org/TR/geometry-1/#dom-domrectinit-height) is `0`, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-    2.  If the sum of overrideRect.[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and overrideRect.[width](https://www.w3.org/TR/geometry-1/#dom-domrectinit-width) is greater than codedWidth, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-    3.  If the sum of overrideRect.[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y) and overrideRect.[height](https://www.w3.org/TR/geometry-1/#dom-domrectinit-height) is greater than codedHeight, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-    4.  Assign overrideRect to sourceRect.
-
-3.  Let validAlignment be the result of running the [Verify Rect Offset Alignment](https://www.w3.org/TR/webcodecs/#videoframe-verify-rect-offset-alignment) algorithm with format and sourceRect.
-4.  If validAlignment is `false`, throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-5.  Return sourceRect.
-
-Compute Layout and Allocation Size (with parsedRect, format, and layout)
-
 1.  Let numPlanes be the number of planes as defined by format.
 2.  If layout is not `undefined` and its length does not equal numPlanes, throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
 3.  Let minAllocationSize be `0`.
@@ -76,13 +63,13 @@ Compute Layout and Allocation Size (with parsedRect, format, and layout)
 
 9.  Return combinedLayout.
 
-Convert PredefinedColorSpace to VideoColorSpace (with colorSpace)
+#### Convert PredefinedColorSpace to VideoColorSpace (with colorSpace)
 
 1.  Assert: colorSpace is equal to one of [srgb](https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb) or [display-p3](https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3).
 2.  If colorSpace is equal to [srgb](https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb) return a new instance of the [sRGB Color Space](https://www.w3.org/TR/webcodecs/#srgb-color-space)
 3.  If colorSpace is equal to [display-p3](https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3) return a new instance of the [Display P3 Color Space](https://www.w3.org/TR/webcodecs/#display-p3-color-space)
 
-Convert to RGB frame (with frame, format and colorSpace)
+#### Convert to RGB frame (with frame, format and colorSpace)
 
 1.  This algorithm _MUST_ be called only if format is equal to one of [RGBA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgba), [RGBX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgbx), [BGRA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgra), [BGRX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgrx).
 2.  Let convertedFrame be a new [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe), constructed as follows:
@@ -98,7 +85,7 @@ Convert to RGB frame (with frame, format and colorSpace)
 
 3.  Return convertedFrame.
 
-Copy VideoFrame metadata (with metadata)
+#### Copy VideoFrame metadata (with metadata)
 
 1.  Let metadataCopySerialized be [StructuredSerialize](https://html.spec.whatwg.org/multipage/structured-data.html#structuredserialize)(metadata).
 2.  Let metadataCopy be [StructuredDeserialize](https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize)(metadataCopySerialized, [the current Realm](https://tc39.es/ecma262/#current-realm)).
@@ -106,32 +93,29 @@ Copy VideoFrame metadata (with metadata)
 
 The goal of this algorithm is to ensure that metadata owned by a [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) is immutable.
 
-#### 9.4.7. Transfer and Serialization[](https://www.w3.org/TR/webcodecs/#videoframe-transfer-serialization)
+#### [9.4.7. Transfer and Serialization](https://www.w3.org/TR/webcodecs/#videoframe-transfer-serialization)
 
-The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [transfer steps](https://html.spec.whatwg.org/multipage/structured-data.html#transfer-steps) (with value and dataHolder) are:
+**The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [transfer steps](https://html.spec.whatwg.org/multipage/structured-data.html#transfer-steps) (with value and dataHolder) are:**
 
 1.  If value’s [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) is `true`, throw a [DataCloneError](https://webidl.spec.whatwg.org/#datacloneerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
 2.  For all [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slots in value, assign the value of each internal slot to a field in dataHolder with the same name as the internal slot.
 3.  Run the [Close VideoFrame](https://www.w3.org/TR/webcodecs/#close-videoframe) algorithm with value.
+    **The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [transfer-receiving steps](https://html.spec.whatwg.org/multipage/structured-data.html#transfer-receiving-steps) (with dataHolder and value) are:**
 
-The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [transfer-receiving steps](https://html.spec.whatwg.org/multipage/structured-data.html#transfer-receiving-steps) (with dataHolder and value) are:
+4.  For all named fields in dataHolder, assign the value of each named field to the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slot in value with the same name as the named field.
+    **The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [serialization steps](https://html.spec.whatwg.org/multipage/structured-data.html#serialization-steps) (with value, serialized, and forStorage) are:**
 
-1.  For all named fields in dataHolder, assign the value of each named field to the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slot in value with the same name as the named field.
+5.  If value’s [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) is `true`, throw a [DataCloneError](https://webidl.spec.whatwg.org/#datacloneerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
+6.  If forStorage is `true`, throw a [DataCloneError](https://webidl.spec.whatwg.org/#datacloneerror).
+7.  Let resource be the [media resource](https://www.w3.org/TR/webcodecs/#media-resource) referenced by value’s [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot).
+8.  Let newReference be a new reference to resource.
+9.  Assign newReference to |serialized.resource reference|.
+10. For all remaining [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slots (excluding [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot)) in value, assign the value of each internal slot to a field in serialized with the same name as the internal slot.
+    **The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [deserialization steps](https://html.spec.whatwg.org/multipage/structured-data.html#deserialization-steps) (with serialized and value) are:**
 
-The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [serialization steps](https://html.spec.whatwg.org/multipage/structured-data.html#serialization-steps) (with value, serialized, and forStorage) are:
+11. For all named fields in serialized, assign the value of each named field to the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slot in value with the same name as the named field.
 
-1.  If value’s [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) is `true`, throw a [DataCloneError](https://webidl.spec.whatwg.org/#datacloneerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-2.  If forStorage is `true`, throw a [DataCloneError](https://webidl.spec.whatwg.org/#datacloneerror).
-3.  Let resource be the [media resource](https://www.w3.org/TR/webcodecs/#media-resource) referenced by value’s [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot).
-4.  Let newReference be a new reference to resource.
-5.  Assign newReference to |serialized.resource reference|.
-6.  For all remaining [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slots (excluding [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot)) in value, assign the value of each internal slot to a field in serialized with the same name as the internal slot.
-
-The [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [deserialization steps](https://html.spec.whatwg.org/multipage/structured-data.html#deserialization-steps) (with serialized and value) are:
-
-1.  For all named fields in serialized, assign the value of each named field to the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) internal slot in value with the same name as the named field.
-
-#### 9.4.8. Rendering[](https://www.w3.org/TR/webcodecs/#videoframe-rendering)
+#### [9.4.8. Rendering](https://www.w3.org/TR/webcodecs/#videoframe-rendering)
 
 When rendered, for example by [CanvasDrawImage](https://html.spec.whatwg.org/multipage/canvas.html#canvasdrawimage) [drawImage()](https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage), a [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) _MUST_ be converted to a color space compatible with the rendering target, unless color conversion is explicitly disabled.
 
@@ -139,14 +123,14 @@ Color space conversion during [ImageBitmap](https://html.spec.whatwg.org/multipa
 
 The rendering of a [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) is produced from the [media resource](https://www.w3.org/TR/webcodecs/#media-resource) by applying any necessary color space conversion, cropping to the [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect), rotating clockwise by [rotation](https://www.w3.org/TR/webcodecs/#dom-videoframe-rotation) degrees, and flipping horizontally if [flip](https://www.w3.org/TR/webcodecs/#dom-videoframe-flip) is `true`.
 
-### 9.5. VideoFrame CopyTo() Options[](https://www.w3.org/TR/webcodecs/#videoframe-copyto-options)
+### [9.5. VideoFrame CopyTo() Options](https://www.w3.org/TR/webcodecs/#videoframe-copyto-options)
 
 ```webidl
-dictionary `VideoFrameCopyToOptions` {
-  [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit) [rect](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-rect);
-  [sequence](https://webidl.spec.whatwg.org/#idl-sequence)<[PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout)\> [layout](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-layout);
-  [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat) [format](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-format);
-  [PredefinedColorSpace](https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace) [colorSpace](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-colorspace);
+dictionary VideoFrameCopyToOptions {
+  DOMRectInit rect;
+  sequence<PlaneLayout> layout;
+  VideoPixelFormat format;
+  PredefinedColorSpace colorSpace;
 };
 ```
 
@@ -155,89 +139,85 @@ NOTE: The steps of [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-co
 - The coordinates of [rect](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-rect) are sample-aligned as determined by [[[format]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-format-slot).
 - If [layout](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-layout) [exists](https://infra.spec.whatwg.org/#map-exists), a [PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout) is provided for all planes.
 
-`rect`, of type [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit)
+**`rect`, of type [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit)**
 
 A [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit) describing the rectangle of pixels to copy from the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe). If unspecified, the [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect) will be used.
 
 NOTE: The coded rectangle can be specified by passing [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)’s [codedRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedrect).
 
 NOTE: The default [rect](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-rect) does not necessarily meet the sample-alignment requirement and can result in [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto) or [allocationSize()](https://www.w3.org/TR/webcodecs/#dom-videoframe-allocationsize) rejecting.
-
-`layout`, of type sequence<[PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout)\>
+**`layout`, of type sequence<[PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout)\>**
 
 The [PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout) for each plane in [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe), affording the option to specify an offset and stride for each plane in the destination [BufferSource](https://webidl.spec.whatwg.org/#BufferSource). If unspecified, the planes will be tightly packed. It is invalid to specify planes that overlap.
-
-`format`, of type [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat)
+**`format`, of type [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat)**
 
 A [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat) for the pixel data in the destination [BufferSource](https://webidl.spec.whatwg.org/#BufferSource). Potential values are: [RGBA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgba), [RGBX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgbx), [BGRA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgra), [BGRX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgrx). If it does not [exist](https://infra.spec.whatwg.org/#map-exists), the destination [BufferSource](https://webidl.spec.whatwg.org/#BufferSource) will be in the same format as [format](https://www.w3.org/TR/webcodecs/#dom-videoframe-format) .
-
-`colorSpace`, of type [PredefinedColorSpace](https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace)
+**`colorSpace`, of type [PredefinedColorSpace](https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace)**
 
 A [PredefinedColorSpace](https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace) that _MUST_ be used as a target color space for the pixel data in the destination [BufferSource](https://webidl.spec.whatwg.org/#BufferSource), but only if [format](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-format) is one of [RGBA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgba), [RGBX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgbx), [BGRA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgra), [BGRX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgrx), otherwise it is ignored. If it does not [exist](https://infra.spec.whatwg.org/#map-exists), [srgb](https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb) is used.
 
-### 9.6. DOMRects in VideoFrame[](https://www.w3.org/TR/webcodecs/#videoframe-domrect)
+### [9.6. DOMRects in VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe-domrect)
 
 [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [DOMRect](https://www.w3.org/TR/geometry-1/#domrect) [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit) [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto) [allocationSize()](https://www.w3.org/TR/webcodecs/#dom-videoframe-allocationsize) [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [codedRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedrect) [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect)
 
 NOTE: VideoFrame pixels are only addressable by integer numbers. All floating point values provided to [DOMRectInit](https://www.w3.org/TR/geometry-1/#dictdef-domrectinit) will be truncated.
 
-### 9.7. Plane Layout[](https://www.w3.org/TR/webcodecs/#plane-layout)
+### [9.7. Plane Layout](https://www.w3.org/TR/webcodecs/#plane-layout)
 
 [PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout) [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [BufferSource](https://webidl.spec.whatwg.org/#BufferSource) [PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout) _MAY_ [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto) [BufferSource](https://webidl.spec.whatwg.org/#BufferSource) [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto) [PlaneLayout](https://www.w3.org/TR/webcodecs/#dictdef-planelayout)
 
 ```webidl
-dictionary `PlaneLayout` {
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] required [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [offset](https://www.w3.org/TR/webcodecs/#dom-planelayout-offset);
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] required [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [stride](https://www.w3.org/TR/webcodecs/#dom-planelayout-stride);
+dictionary PlaneLayout {
+  [EnforceRange] required unsigned long offset;
+  [EnforceRange] required unsigned long stride;
 };
 ```
 
-`offset`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)
+**`offset`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)**
 
 The offset in bytes where the given plane begins within a [BufferSource](https://webidl.spec.whatwg.org/#BufferSource).
-
-`stride`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)
+**`stride`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)**
 
 The number of bytes, including padding, used by each row of the plane within a [BufferSource](https://webidl.spec.whatwg.org/#BufferSource).
 
-### 9.8. Pixel Format[](https://www.w3.org/TR/webcodecs/#pixel-format)
+### [9.8. Pixel Format](https://www.w3.org/TR/webcodecs/#pixel-format)
 
 ```webidl
-enum `VideoPixelFormat` {
+enum VideoPixelFormat {
   // 4:2:0 Y, U, V
-  ["I420"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420),
-  ["I420P10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p10),
-  ["I420P12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p12),
+  "I420",
+  "I420P10",
+  "I420P12",
   // 4:2:0 Y, U, V, A
-  ["I420A"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420a),
-  ["I420AP10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420ap10),
-  ["I420AP12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420ap12),
+  "I420A",
+  "I420AP10",
+  "I420AP12",
   // 4:2:2 Y, U, V
-  ["I422"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422),
-  ["I422P10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422p10),
-  ["I422P12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422p12),
+  "I422",
+  "I422P10",
+  "I422P12",
   // 4:2:2 Y, U, V, A
-  ["I422A"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422a),
-  ["I422AP10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422ap10),
-  ["I422AP12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422ap12),
+  "I422A",
+  "I422AP10",
+  "I422AP12",
   // 4:4:4 Y, U, V
-  ["I444"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444),
-  ["I444P10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444p10),
-  ["I444P12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444p12),
+  "I444",
+  "I444P10",
+  "I444P12",
   // 4:4:4 Y, U, V, A
-  ["I444A"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444a),
-  ["I444AP10"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444ap10),
-  ["I444AP12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444ap12),
+  "I444A",
+  "I444AP10",
+  "I444AP12",
   // 4:2:0 Y, UV
-  ["NV12"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-nv12),
+  "NV12",
   // 4:4:4 RGBA
-  ["RGBA"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgba),
+  "RGBA",
   // 4:4:4 RGBX (opaque)
-  ["RGBX"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgbx),
+  "RGBX",
   // 4:4:4 BGRA
-  ["BGRA"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgra),
+  "BGRA",
   // 4:4:4 BGRX (opaque)
-  ["BGRX"](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgrx),
+  "BGRX",
 };
 ```
 
@@ -249,7 +229,7 @@ If a [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelforma
 
 Integer values are unsigned unless otherwise specified.
 
-`I420`
+**`I420`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order. It is also often refered to as Planar YUV 4:2:0.
 
@@ -262,8 +242,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have a number of rows equal to the result of the division of [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) by 2, rounded up to the nearest integer. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
-
-`I420P10`
+**`I420P10`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -276,8 +255,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have a number of rows equal to the result of the division of [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) by 2, rounded up to the nearest integer. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
-
-`I420P12`
+**`I420P12`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -290,8 +268,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have a number of rows equal to the result of the division of [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) by 2, rounded up to the nearest integer. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
-
-`I420A`
+**`I420A`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order. It is also often refered to as Planar YUV 4:2:0 with an alpha channel.
 
@@ -306,8 +283,7 @@ The U and V planes have a number of rows equal to the result of the division of 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
 
 [I420A](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420a)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I420](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420).
-
-`I420AP10`
+**`I420AP10`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -322,8 +298,7 @@ The U and V planes have a number of rows equal to the result of the division of 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
 
 [I420AP10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420ap10)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I420P10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p10).
-
-`I420AP12`
+**`I420AP12`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -338,8 +313,7 @@ The U and V planes have a number of rows equal to the result of the division of 
 The visible rectangle offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y)) _MUST_ be even.
 
 [I420AP12](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420ap12)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I420P12](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p12).
-
-`I422`
+**`I422`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order. It is also often refered to as Planar YUV 4:2:2.
 
@@ -352,8 +326,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
-
-`I422P10`
+**`I422P10`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -366,8 +339,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
-
-`I422P12`
+**`I422P12`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -380,8 +352,7 @@ There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidt
 The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows. Each row has a number of samples equal to the result of the division of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) by 2, rounded up to the nearest integer. Samples are arranged starting at the top left of the image.
 
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
-
-`I422A`
+**`I422A`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order. It is also often refered to as Planar YUV 4:2:2 with an alpha channel.
 
@@ -396,8 +367,7 @@ The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-video
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
 
 [I422A](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422a)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I422](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422).
-
-`I422AP10`
+**`I422AP10`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -412,8 +382,7 @@ The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-video
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
 
 [I422AP10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422ap10)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I420P10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p10).
-
-`I422AP12`
+**`I422AP12`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -428,8 +397,7 @@ The U and V planes have [codedHeight](https://www.w3.org/TR/webcodecs/#dom-video
 The visible rectangle horizontal offset ([visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x)) _MUST_ be even.
 
 [I422AP10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i422ap10)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I420P10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i420p10).
-
-`I444`
+**`I444`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order. It is also often refered to as Planar YUV 4:4:4.
 
@@ -438,8 +406,7 @@ This format does not use [sub-sampling](https://www.w3.org/TR/webcodecs/#sub-sam
 Each sample in this format is 8 bits.
 
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples (and therefore bytes) in all three planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
-
-`I444P10`
+**`I444P10`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -448,8 +415,7 @@ This format does not use [sub-sampling](https://www.w3.org/TR/webcodecs/#sub-sam
 Each sample in this format is 10 bits, encoded as a 16-bit integer in little-endian byte order.
 
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples in all three planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
-
-`I444P12`
+**`I444P12`**
 
 This format is composed of three distinct planes, one plane of Luma and two planes of Chroma, denoted Y, U and V, and present in this order.
 
@@ -458,8 +424,7 @@ This format does not use [sub-sampling](https://www.w3.org/TR/webcodecs/#sub-sam
 Each sample in this format is 12 bits, encoded as a 16-bit integer in little-endian byte order.
 
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples in all three planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
-
-`I444A`
+**`I444A`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -470,8 +435,7 @@ Each sample in this format is 8 bits.
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples (and therefore bytes) in all four planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
 [I444A](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444a)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I444](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444).
-
-`I444AP10`
+**`I444AP10`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -482,8 +446,7 @@ Each sample in this format is 10 bits, encoded as a 16-bit integer in little-end
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples in all four planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
 [I444AP10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444ap10)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I444P10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444p10).
-
-`I444AP12`
+**`I444AP12`**
 
 This format is composed of four distinct planes, one plane of Luma, two planes of Chroma, denoted Y, U and V, and one plane of Alpha values, all present in this order.
 
@@ -494,8 +457,7 @@ Each sample in this format is 12 bits, encoded as a 16-bit integer in little-end
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) samples in all four planes, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
 [I444AP10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444ap10)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [I444P10](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-i444p10).
-
-`NV12`
+**`NV12`**
 
 This format is composed of two distinct planes, one plane of Luma and then another plane for the two Chroma components. The two planes are present in this order, and are refered to as respectively the Y plane and the UV plane.
 
@@ -528,8 +490,7 @@ UVUVUVUVUVUVUVUV
 UVUVUVUVUVUVUVUV
 
 All samples being linear in memory.
-
-`RGBA`
+**`RGBA`**
 
 This format is composed of a single plane, that encodes four components: Red, Green, Blue, and an alpha value, present in this order.
 
@@ -538,16 +499,14 @@ Each sample in this format is 8 bits, and each pixel is therefore 32 bits.
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) \* 4 samples (and therefore bytes) in the single plane, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
 [RGBA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgba)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [RGBX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-rgbx).
-
-`RGBX`
+**`RGBX`**
 
 This format is composed of a single plane, that encodes four components: Red, Green, Blue, and a padding value, present in this order.
 
 Each sample in this format is 8 bits. The fourth element in each pixel is to be ignored, the image is always fully opaque.
 
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) \* 4 samples (and therefore bytes) in the single plane, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
-
-`BGRA`
+**`BGRA`**
 
 This format is composed of a single plane, that encodes four components: Blue, Green, Red, and an alpha value, present in this order.
 
@@ -556,8 +515,7 @@ Each sample in this format is 8 bits.
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) \* 4 samples (and therefore bytes) in the single plane, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
 [BGRA](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgra)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) is [BGRX](https://www.w3.org/TR/webcodecs/#dom-videopixelformat-bgrx).
-
-`BGRX`
+**`BGRX`**
 
 This format is composed of a single plane, that encodes four components: Blue, Green, Red, and a padding value, present in this order.
 
@@ -565,18 +523,125 @@ Each sample in this format is 8 bits. The fourth element in each pixel is to be 
 
 There are [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) \* [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) \* 4 samples (and therefore bytes) in the single plane, arranged starting at the top left of the image, in [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) rows of [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) samples.
 
-### 9.9. Video Color Space Interface[](https://www.w3.org/TR/webcodecs/#video-color-space-interface)
+### [9.9. Video Color Space Interface](https://www.w3.org/TR/webcodecs/#video-color-space-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker)\]
-interface `VideoColorSpace` {
-  [constructor](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-videocolorspace)(optional [VideoColorSpaceInit](https://www.w3.org/TR/webcodecs/#dictdef-videocolorspaceinit) `init` = {});
+[Exposed=(Window,DedicatedWorker)]
+interface VideoColorSpace {
+  constructor(optional VideoColorSpaceInit init = {});
 
-  readonly attribute [VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries)? [primaries](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries);
-  readonly attribute [VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics)? [transfer](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer);
-  readonly attribute [VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients)? [matrix](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix);
-  readonly attribute [boolean](https://webidl.spec.whatwg.org/#idl-boolean)? [fullRange](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-fullrange);
+  readonly attribute VideoColorPrimaries? primaries;
+  readonly attribute VideoTransferCharacteristics? transfer;
+  readonly attribute VideoMatrixCoefficients? matrix;
+  readonly attribute boolean? fullRange;
 
-  \[[Default](https://webidl.spec.whatwg.org/#Default)\] [VideoColorSpaceInit](https://www.w3.org/TR/webcodecs/#dictdef-videocolorspaceinit) `toJSON`();
+  [Default] VideoColorSpaceInit toJSON();
+};
+
+dictionary VideoColorSpaceInit {
+  VideoColorPrimaries? primaries = null;
+  VideoTransferCharacteristics? transfer = null;
+  VideoMatrixCoefficients? matrix = null;
+  boolean? fullRange = null;
 };
 ```
+
+#### [9.9.1. Internal Slots](https://www.w3.org/TR/webcodecs/#videocolorspace-internal-slots)
+
+**`[[primaries]]`**
+
+The color primaries.
+**`[[transfer]]`**
+
+The transfer characteristics.
+**`[[matrix]]`**
+
+The matrix coefficients.
+**`[[full range]]`**
+
+Indicates whether full-range color values are used.
+
+#### [9.9.2. Constructors](https://www.w3.org/TR/webcodecs/#videocolorspace-constructors)
+
+`VideoColorSpace(init)`
+
+1.  Let c be a new [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) object, initialized as follows:
+    1.  Assign `init.primaries` to [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot).
+    2.  Assign `init.transfer` to [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot).
+    3.  Assign `init.matrix` to [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot).
+    4.  Assign `init.fullRange` to [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot).
+
+2.  Return c.
+
+#### [9.9.3. Attributes](https://www.w3.org/TR/webcodecs/#videocolorspace-attributes)
+
+**`primaries`, of type [VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries), readonly, nullable**
+
+The [primaries](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries) getter steps are to return the value of [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot).
+**`transfer`, of type [VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics), readonly, nullable**
+
+The [transfer](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer) getter steps are to return the value of [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot).
+**`matrix`, of type [VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients), readonly, nullable**
+
+The [matrix](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix) getter steps are to return the value of [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot).
+**`fullRange`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly, nullable**
+
+The [fullRange](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-fullrange) getter steps are to return the value of [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot).
+
+### [9.10. Video Color Primaries](https://www.w3.org/TR/webcodecs/#videocolorprimaries)
+
+```webidl
+enum VideoColorPrimaries {
+  "bt709",
+  "bt470bg",
+  "smpte170m",
+  "bt2020",
+  "smpte432",
+};
+```
+
+**`bt709`**
+
+Color primaries used by BT.709 and sRGB, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.1 table 2 value 1.
+**`bt470bg`**
+
+Color primaries used by BT.601 PAL, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.1 table 2 value 5.
+**`smpte170m`**
+
+Color primaries used by BT.601 NTSC, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.1 table 2 value 6.
+**`bt2020`**
+
+Color primaries used by BT.2020 and BT.2100, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.1 table 2 value 9.
+**`smpte432`**
+
+Color primaries used by P3 D65, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.1 table 2 value 12.
+
+### [9.11. Video Transfer Characteristics](https://www.w3.org/TR/webcodecs/#videotransfercharacteristics)
+
+```webidl
+enum VideoTransferCharacteristics {
+  "bt709",
+  "smpte170m",
+  "iec61966-2-1",
+  "linear",
+  "pq",
+  "hlg",
+};
+```
+
+**`bt709`**
+
+Transfer characteristics used by BT.709, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.2 table 3 value 1.
+**`smpte170m`**
+
+Transfer characteristics used by BT.601, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.2 table 3 value 6. (Functionally the same as "bt709".)
+**`iec61966-2-1`**
+
+Transfer characteristics used by sRGB, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.2 table 3 value 13.
+**`linear`**
+
+Transfer characteristics used by linear RGB, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.2 table 3 value 8.
+**`pq`**
+
+Transfer characteristics used by BT.2100 PQ, as described by [\[H.273\]](https://www.w3.org/TR/webcodecs/#biblio-h273) section 8.2 table 3 value 16.
+**`hlg`**

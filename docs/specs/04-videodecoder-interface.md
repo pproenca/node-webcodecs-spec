@@ -4,89 +4,77 @@ title: '4. VideoDecoder Interface'
 
 > Section 4 from [W3C WebCodecs Specification](https://www.w3.org/TR/webcodecs/)
 
-## 4\. VideoDecoder Interface[](https://www.w3.org/TR/webcodecs/#videodecoder-interface)
+## [4. VideoDecoder Interface](https://www.w3.org/TR/webcodecs/#videodecoder-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker), [SecureContext](https://webidl.spec.whatwg.org/#SecureContext)\]
-interface `VideoDecoder` : [EventTarget](https://dom.spec.whatwg.org/#eventtarget) {
-  [constructor](https://www.w3.org/TR/webcodecs/#dom-videodecoder-videodecoder)([VideoDecoderInit](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderinit) `init`);
+[Exposed=(Window,DedicatedWorker), SecureContext]
+interface VideoDecoder : EventTarget {
+  constructor(VideoDecoderInit init);
 
-  readonly attribute [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate) [state](https://www.w3.org/TR/webcodecs/#dom-videodecoder-state);
-  readonly attribute [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [decodeQueueSize](https://www.w3.org/TR/webcodecs/#dom-videodecoder-decodequeuesize);
-  attribute [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler) [ondequeue](https://www.w3.org/TR/webcodecs/#dom-videodecoder-ondequeue);
+  readonly attribute CodecState state;
+  readonly attribute unsigned long decodeQueueSize;
+  attribute EventHandler ondequeue;
 
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [configure](https://www.w3.org/TR/webcodecs/#dom-videodecoder-configure)([VideoDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderconfig) `config`);
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [decode](https://www.w3.org/TR/webcodecs/#dom-videodecoder-decode)([EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) `chunk`);
-  [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\> [flush](https://www.w3.org/TR/webcodecs/#dom-videodecoder-flush)();
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [reset](https://www.w3.org/TR/webcodecs/#dom-videodecoder-reset)();
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [close](https://www.w3.org/TR/webcodecs/#dom-videodecoder-close)();
+  undefined configure(VideoDecoderConfig config);
+  undefined decode(EncodedVideoChunk chunk);
+  Promise<undefined> flush();
+  undefined reset();
+  undefined close();
 
-  static [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[VideoDecoderSupport](https://www.w3.org/TR/webcodecs/#dictdef-videodecodersupport)\> [isConfigSupported](https://www.w3.org/TR/webcodecs/#dom-videodecoder-isconfigsupported)([VideoDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderconfig) `config`);
+  static Promise<VideoDecoderSupport> isConfigSupported(VideoDecoderConfig config);
 };
 
-dictionary `VideoDecoderInit` {
-  required [VideoFrameOutputCallback](https://www.w3.org/TR/webcodecs/#callbackdef-videoframeoutputcallback) `output`;
-  required [WebCodecsErrorCallback](https://www.w3.org/TR/webcodecs/#callbackdef-webcodecserrorcallback) `error`;
+dictionary VideoDecoderInit {
+  required VideoFrameOutputCallback output;
+  required WebCodecsErrorCallback error;
 };
 
-callback `VideoFrameOutputCallback` = [undefined](https://webidl.spec.whatwg.org/#idl-undefined)([VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) `output`);
+callback VideoFrameOutputCallback = undefined(VideoFrame output);
 ```
 
-### 4.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#videodecoder-internal-slots)
+### [4.1. Internal Slots](https://www.w3.org/TR/webcodecs/#videodecoder-internal-slots)
 
-`[[control message queue]]`
+**`[[control message queue]]`**
 
 A [queue](https://infra.spec.whatwg.org/#queue) of [control messages](https://www.w3.org/TR/webcodecs/#control-message) to be performed upon this [codec](https://www.w3.org/TR/webcodecs/#codec) instance. See [\[\[control message queue\]\]](https://www.w3.org/TR/webcodecs/#control-message-queue-slot).
-
-`[[message queue blocked]]`
+**`[[message queue blocked]]`**
 
 A boolean indicating when processing the [[[control message queue]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-control-message-queue-slot) is blocked by a pending [control message](https://www.w3.org/TR/webcodecs/#control-message). See [\[\[message queue blocked\]\]](https://www.w3.org/TR/webcodecs/#message-queue-blocked).
-
-`[[codec implementation]]`
+**`[[codec implementation]]`**
 
 Underlying decoder implementation provided by the User Agent. See [\[\[codec implementation\]\]](https://www.w3.org/TR/webcodecs/#codec-implementation).
-
-`[[codec work queue]]`
+**`[[codec work queue]]`**
 
 A [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue) used for running parallel steps that reference the [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-codec-implementation-slot). See [\[\[codec work queue\]\]](https://www.w3.org/TR/webcodecs/#codec-work-queue).
-
-`[[codec saturated]]`
+**`[[codec saturated]]`**
 
 A boolean indicating when the [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-codec-implementation-slot) is unable to accept additional decoding work.
-
-`[[output callback]]`
+**`[[output callback]]`**
 
 Callback given at construction for decoded outputs.
-
-`[[error callback]]`
+**`[[error callback]]`**
 
 Callback given at construction for decode errors.
-
-`[[active decoder config]]`
+**`[[active decoder config]]`**
 
 The [VideoDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderconfig) that is actively applied.
-
-`[[key chunk required]]`
+**`[[key chunk required]]`**
 
 A boolean indicating that the next chunk passed to [decode()](https://www.w3.org/TR/webcodecs/#dom-videodecoder-decode) _MUST_ describe a [key chunk](https://www.w3.org/TR/webcodecs/#key-chunk) as indicated by [type](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type).
-
-`[[state]]`
+**`[[state]]`**
 
 The current [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate) of this [VideoDecoder](https://www.w3.org/TR/webcodecs/#videodecoder).
-
-`[[decodeQueueSize]]`
+**`[[decodeQueueSize]]`**
 
 The number of pending decode requests. This number will decrease as the underlying codec is ready to accept new input.
-
-`[[pending flush promises]]`
+**`[[pending flush promises]]`**
 
 A list of unresolved promises returned by calls to [flush()](https://www.w3.org/TR/webcodecs/#dom-videodecoder-flush).
-
-`[[dequeue event scheduled]]`
+**`[[dequeue event scheduled]]`**
 
 A boolean indicating whether a [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-videodecoder-dequeue) event is already scheduled to fire. Used to avoid event spam.
 
-### 4.2. Constructors[](https://www.w3.org/TR/webcodecs/#videodecoder-constructors)
+### [4.2. Constructors](https://www.w3.org/TR/webcodecs/#videodecoder-constructors)
 
 `VideoDecoder(init)`
 
@@ -106,29 +94,27 @@ A boolean indicating whether a [dequeue](https://www.w3.org/TR/webcodecs/#eventd
 14. Assign `false` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-dequeue-event-scheduled-slot).
 15. Return d.
 
-### 4.3. Attributes[](https://www.w3.org/TR/webcodecs/#videodecoder-attributes)
+### [4.3. Attributes](https://www.w3.org/TR/webcodecs/#videodecoder-attributes)
 
-`state`, of type [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate), readonly
+**`state`, of type [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate), readonly**
 
 Returns the value of [[[state]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-state-slot).
-
-`decodeQueueSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`decodeQueueSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Returns the value of [[[decodeQueueSize]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-decodequeuesize-slot).
-
-`ondequeue`, of type [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler)
+**`ondequeue`, of type [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler)**
 
 An [event handler IDL attribute](https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-idl-attributes) whose [event handler event type](https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-event-type) is [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-videodecoder-dequeue).
 
-### 4.4. Event Summary[](https://www.w3.org/TR/webcodecs/#videodecoder-event-summary)
+### [4.4. Event Summary](https://www.w3.org/TR/webcodecs/#videodecoder-event-summary)
 
-`dequeue`
+**`dequeue`**
 
 Fired at the [VideoDecoder](https://www.w3.org/TR/webcodecs/#videodecoder) when the [decodeQueueSize](https://www.w3.org/TR/webcodecs/#dom-videodecoder-decodequeuesize) has decreased.
 
-### 4.5. Methods[](https://www.w3.org/TR/webcodecs/#videodecoder-methods)
+### [4.5. Methods](https://www.w3.org/TR/webcodecs/#videodecoder-methods)
 
-`configure(config)`
+**`configure(config)`**
 
 [Enqueues a control message](https://www.w3.org/TR/webcodecs/#enqueues-a-control-message) to configure the video decoder for decoding chunks as described by config.
 
@@ -156,8 +142,7 @@ When invoked, run these steps:
         2.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to [Process the control message queue](https://www.w3.org/TR/webcodecs/#process-the-control-message-queue).
 
 3.  Return `"processed"`.
-
-`decode(chunk)`
+    **`decode(chunk)`**
 
 [Enqueues a control message](https://www.w3.org/TR/webcodecs/#enqueues-a-control-message) to decode the given chunk.
 
@@ -193,8 +178,7 @@ When invoked, run these steps:
     5.  If decoded outputs is not empty, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Output VideoFrame](https://www.w3.org/TR/webcodecs/#output-videoframes) algorithm with decoded outputs.
 
 5.  Return `"processed"`.
-
-`flush()`
+    **`flush()`**
 
 Completes all [control messages](https://www.w3.org/TR/webcodecs/#control-message) in the [control message queue](https://www.w3.org/TR/webcodecs/#control-message-queue) and emits all outputs.
 
@@ -219,20 +203,17 @@ When invoked, run these steps:
         3.  Resolve promise.
 
 2.  Return `"processed"`.
-
-`reset()`
+    **`reset()`**
 
 Immediately resets all state including configuration, [control messages](https://www.w3.org/TR/webcodecs/#control-message) in the [control message queue](https://www.w3.org/TR/webcodecs/#control-message-queue), and all pending callbacks.
 
 When invoked, run the [Reset VideoDecoder](https://www.w3.org/TR/webcodecs/#reset-videodecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`close()`
+**`close()`**
 
 Immediately aborts all pending work and releases [system resources](https://www.w3.org/TR/webcodecs/#system-resources). Close is final.
 
 When invoked, run the [Close VideoDecoder](https://www.w3.org/TR/webcodecs/#close-videodecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`isConfigSupported(config)`
+**`isConfigSupported(config)`**
 
 Returns a promise indicating whether the provided config is supported by the User Agent.
 
@@ -254,9 +235,9 @@ When invoked, run these steps:
 
 5.  Return p.
 
-### 4.6. Algorithms[](https://www.w3.org/TR/webcodecs/#videodecoder-algorithms)
+### [4.6. Algorithms](https://www.w3.org/TR/webcodecs/#videodecoder-algorithms)
 
-Schedule Dequeue Event
+#### Schedule Dequeue Event
 
 1.  If [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-dequeue-event-scheduled-slot) equals `true`, return.
 2.  Assign `true` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-dequeue-event-scheduled-slot).
@@ -264,7 +245,7 @@ Schedule Dequeue Event
     1.  Fire a simple event named [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-videodecoder-dequeue) at [this](https://webidl.spec.whatwg.org/#this).
     2.  Assign `false` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-dequeue-event-scheduled-slot).
 
-Output VideoFrames (with outputs)
+#### Output VideoFrames (with outputs)
 
 Run these steps:
 
@@ -281,7 +262,7 @@ Run these steps:
     7.  Let frame be the result of running the [Create a VideoFrame](https://www.w3.org/TR/webcodecs/#create-a-videoframe) algorithm with output, timestamp, duration, displayAspectWidth, displayAspectHeight, colorSpace, rotation, and flip.
     8.  Invoke [[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-output-callback-slot) with frame.
 
-Reset VideoDecoder (with exception)
+#### Reset VideoDecoder (with exception)
 
 Run these steps:
 
@@ -297,7 +278,7 @@ Run these steps:
     1.  Reject promise with exception.
     2.  Remove promise from [[[pending flush promises]]](https://www.w3.org/TR/webcodecs/#dom-videodecoder-pending-flush-promises-slot).
 
-Close VideoDecoder (with exception)
+#### Close VideoDecoder (with exception)
 
 Run these steps:
 

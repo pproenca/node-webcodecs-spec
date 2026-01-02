@@ -8,46 +8,6 @@ title: '9. Raw Media Interfaces (Part 2 of 4)'
 
 ---
 
-1.  [Check the usability of the image argument](https://html.spec.whatwg.org/multipage/canvas.html#check-the-usability-of-the-image-argument). If this throws an exception or returns bad, then throw an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-2.  If image [is not origin-clean](https://html.spec.whatwg.org/multipage/canvas.html#the-image-argument-is-not-origin-clean), then throw a [SecurityError](https://webidl.spec.whatwg.org/#securityerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-3.  Let frame be a new [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe).
-4.  Switch on image:
-
-    NOTE: Authors are encouraged to provide a meaningful timestamp unless it is implicitly provided by the [CanvasImageSource](https://html.spec.whatwg.org/multipage/canvas.html#canvasimagesource) at construction. Interfaces that consume [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)s can rely on this value for timing decisions. For example, [VideoEncoder](https://www.w3.org/TR/webcodecs/#videoencoder) can use [timestamp](https://www.w3.org/TR/webcodecs/#dom-videoframe-timestamp) values to guide rate control (see [framerate](https://www.w3.org/TR/webcodecs/#dom-videoencoderconfig-framerate)).
-    - [HTMLImageElement](https://html.spec.whatwg.org/multipage/embedded-content.html#htmlimageelement)
-    - [SVGImageElement](https://www.w3.org/TR/SVG2/embedded.html#InterfaceSVGImageElement)
-      1.  If [timestamp](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-timestamp) does not [exist](https://infra.spec.whatwg.org/#map-exists) in init, throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-      2.  If image’s media data has no [natural dimensions](https://www.w3.org/TR/css-images-3/#natural-dimensions) (e.g., it’s a vector graphic with no specified content size), then throw an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-      3.  Let resource be a new [media resource](https://www.w3.org/TR/webcodecs/#media-resource) containing a copy of image’s media data. If this is an animated image, image’s [bitmap data](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#concept-imagebitmap-bitmap-data) _MUST_ only be taken from the default image of the animation (the one that the format defines is to be used when animation is not supported or is disabled), or, if there is no such image, the first frame of the animation.
-      4.  Let codedWidth and codedHeight be the width and height of resource.
-      5.  Let baseRotation and baseFlip describe the rotation and flip of image relative to resource.
-      6.  Let defaultDisplayWidth and defaultDisplayHeight be the [natural width](https://www.w3.org/TR/css-images-3/#natural-width) and [natural height](https://www.w3.org/TR/css-images-3/#natural-height) of image.
-      7.  Run the [Initialize Frame With Resource](https://www.w3.org/TR/webcodecs/#videoframe-initialize-frame-with-resource) algorithm with init, frame, resource, codedWidth, codedHeight, baseRotation, baseFlip, defaultDisplayWidth, and defaultDisplayHeight.
-
-    - [HTMLVideoElement](https://html.spec.whatwg.org/multipage/media.html#htmlvideoelement)
-      1.  If image’s [networkState](https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate) attribute is [NETWORK_EMPTY](https://html.spec.whatwg.org/multipage/media.html#dom-media-network_empty), then throw an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-      2.  Let currentPlaybackFrame be the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) at the [current playback position](https://html.spec.whatwg.org/multipage/media.html#current-playback-position).
-      3.  If [metadata](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-metadata) does not [exist](https://infra.spec.whatwg.org/#map-exists) in init, assign currentPlaybackFrame.[[[metadata]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-metadata-slot) to it.
-      4.  Run the [Initialize Frame From Other Frame](https://www.w3.org/TR/webcodecs/#videoframe-initialize-frame-from-other-frame) algorithm with init, frame, and currentPlaybackFrame.
-
-    - [HTMLCanvasElement](https://html.spec.whatwg.org/multipage/canvas.html#htmlcanvaselement)
-    - [ImageBitmap](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmap)
-    - [OffscreenCanvas](https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas)
-      1.  If [timestamp](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-timestamp) does not [exist](https://infra.spec.whatwg.org/#map-exists) in init, throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
-      2.  Let resource be a new [media resource](https://www.w3.org/TR/webcodecs/#media-resource) containing a copy of image’s [bitmap data](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#concept-imagebitmap-bitmap-data).
-
-          NOTE: Implementers are encouraged to avoid a deep copy by using reference counting where feasible.
-
-      3.  Let width be `image.width` and height be `image.height`.
-      4.  Run the [Initialize Frame With Resource](https://www.w3.org/TR/webcodecs/#videoframe-initialize-frame-with-resource) algorithm with init, frame, resource, width, height, `0`, `false`, width, and height.
-
-    - [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)
-      1.  Run the [Initialize Frame From Other Frame](https://www.w3.org/TR/webcodecs/#videoframe-initialize-frame-from-other-frame) algorithm with init, frame, and image.
-
-5.  Return frame.
-
-`VideoFrame(data, init)`
-
 1.  If init is not a [valid VideoFrameBufferInit](https://www.w3.org/TR/webcodecs/#valid-videoframebufferinit), throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
 2.  Let defaultRect be «\[ "x:" → `0`, "y" → `0`, "width" → init.[codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-codedwidth), "height" → init.[codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-codedwidth) \]».
 3.  Let overrideRect be `undefined`.
@@ -114,27 +74,24 @@ title: '9. Raw Media Interfaces (Part 2 of 4)'
 
 22. Return frame.
 
-#### 9.4.3. Attributes[](https://www.w3.org/TR/webcodecs/#videoframe-attributes)
+#### [9.4.3. Attributes](https://www.w3.org/TR/webcodecs/#videoframe-attributes)
 
-`format`, of type [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat), readonly, nullable
+**`format`, of type [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat), readonly, nullable**
 
 Describes the arrangement of bytes in each plane as well as the number and order of the planes. Will be `null` whenever the underlying format does not map to a [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat) or when [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) is `true`.
 
 The [format](https://www.w3.org/TR/webcodecs/#dom-videoframe-format) getter steps are to return [[[format]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-format-slot).
-
-`codedWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`codedWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Width of the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) in pixels, potentially including non-visible padding, and prior to considering potential ratio adjustments.
 
 The [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) getter steps are to return [[[coded width]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-coded-width-slot).
-
-`codedHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`codedHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Height of the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) in pixels, potentially including non-visible padding, and prior to considering potential ratio adjustments.
 
 The [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) getter steps are to return [[[coded height]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-coded-height-slot).
-
-`codedRect`, of type [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly), readonly, nullable
+**`codedRect`, of type [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly), readonly, nullable**
 
 A [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly) with [width](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-width) and [height](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-height) matching [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth) and [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight) and [x](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-x) and [y](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-y) at `(0,0)`. Offered for convenience for use with [allocationSize()](https://www.w3.org/TR/webcodecs/#dom-videoframe-allocationsize) and [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto).
 
@@ -146,8 +103,7 @@ The [codedRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedrect) gette
     2.  Assign [[[coded width]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-coded-width-slot) and [[[coded height]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-coded-height-slot) to [width](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-width) and [height](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-height) respectively.
 
 3.  Return rect.
-
-`visibleRect`, of type [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly), readonly, nullable
+    **`visibleRect`, of type [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly), readonly, nullable**
 
 A [DOMRectReadOnly](https://www.w3.org/TR/geometry-1/#domrectreadonly) describing the visible rectangle of pixels for this [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe).
 
@@ -158,50 +114,43 @@ The [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect) g
     1.  Assign [[[visible left]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-visible-left-slot), [[[visible top]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-visible-top-slot), [[[visible width]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-visible-width-slot), and [[[visible height]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-visible-height-slot) to [x](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-x), [y](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-y), [width](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-width), and [height](https://www.w3.org/TR/geometry-1/#dom-domrectreadonly-height) respectively.
 
 3.  Return rect.
-
-`rotation`, of type [double](https://webidl.spec.whatwg.org/#idl-double), readonly
+    **`rotation`, of type [double](https://webidl.spec.whatwg.org/#idl-double), readonly**
 
 The rotation to applied to the VideoFrame when rendered, in degrees clockwise. Rotation applies before flip.
 
 The [rotation](https://www.w3.org/TR/webcodecs/#dom-videoframe-rotation) getter steps are to return [[[rotation]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-rotation-slot).
-
-`flip`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly
+**`flip`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly**
 
 Whether a horizontal flip is applied to the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) when rendered. Flip applies after rotation.
 
 The [flip](https://www.w3.org/TR/webcodecs/#dom-videoframe-flip) getter steps are to return [[[flip]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-flip-slot).
-
-`displayWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`displayWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Width of the VideoFrame when displayed after applying rotation and aspect ratio adjustments.
 
 The [displayWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-displaywidth) getter steps are to return [[[display width]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-display-width-slot).
-
-`displayHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`displayHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Height of the VideoFrame when displayed after applying rotation and aspect ratio adjustments.
 
 The [displayHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-displayheight) getter steps are to return [[[display height]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-display-height-slot).
-
-`timestamp`, of type [long long](https://webidl.spec.whatwg.org/#idl-long-long), readonly
+**`timestamp`, of type [long long](https://webidl.spec.whatwg.org/#idl-long-long), readonly**
 
 The presentation timestamp, given in microseconds. For decode, timestamp is copied from the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) corresponding to this [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe). For encode, timestamp is copied to the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)s corresponding to this [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe).
 
 The [timestamp](https://www.w3.org/TR/webcodecs/#dom-videoframe-timestamp) getter steps are to return [[[timestamp]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-timestamp-slot).
-
-`duration`, of type [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long), readonly, nullable
+**`duration`, of type [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long), readonly, nullable**
 
 The presentation duration, given in microseconds. The duration is copied from the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) corresponding to this VideoFrame.
 
 The [duration](https://www.w3.org/TR/webcodecs/#dom-videoframe-duration) getter steps are to return [[[duration]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-duration-slot).
-
-`colorSpace`, of type [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace), readonly
+**`colorSpace`, of type [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace), readonly**
 
 The [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) associated with this frame.
 
 The [colorSpace](https://www.w3.org/TR/webcodecs/#dom-videoframe-colorspace) getter steps are to return [[[color space]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-color-space-slot).
 
-#### 9.4.4. Internal Structures[](https://www.w3.org/TR/webcodecs/#videoframe-internal-structures)
+#### [9.4.4. Internal Structures](https://www.w3.org/TR/webcodecs/#videoframe-internal-structures)
 
 combined buffer layout [struct](https://infra.spec.whatwg.org/#struct)
 
@@ -217,9 +166,9 @@ A computed plane layout is a [struct](https://infra.spec.whatwg.org/#struct) tha
 - A sourceLeftBytes (an [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long))
 - A sourceWidthBytes (an [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long))
 
-#### 9.4.5. Methods[](https://www.w3.org/TR/webcodecs/#videoframe-methods)
+#### [9.4.5. Methods](https://www.w3.org/TR/webcodecs/#videoframe-methods)
 
-`allocationSize(options)`
+**`allocationSize(options)`**
 
 Returns the minimum byte length for a valid destination [BufferSource](https://webidl.spec.whatwg.org/#BufferSource) to be used with [copyTo()](https://www.w3.org/TR/webcodecs/#dom-videoframe-copyto) with the given options.
 
@@ -230,8 +179,7 @@ When invoked, run these steps:
 3.  Let combinedLayout be the result of running the [Parse VideoFrameCopyToOptions](https://www.w3.org/TR/webcodecs/#videoframe-parse-videoframecopytooptions) algorithm with options.
 4.  If combinedLayout is an exception, throw combinedLayout.
 5.  Return combinedLayout’s [allocationSize](https://www.w3.org/TR/webcodecs/#combined-buffer-layout-allocationsize).
-
-`copyTo(destination, options)`
+    **`copyTo(destination, options)`**
 
 Asynchronously copies the planes of this frame into destination according to options. The format of the data is options.[format](https://www.w3.org/TR/webcodecs/#dom-videoframecopytooptions-format), if it [exists](https://infra.spec.whatwg.org/#map-exists) or [this](https://webidl.spec.whatwg.org/#this) [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)’s [format](https://www.w3.org/TR/webcodecs/#dom-videoframe-format) otherwise.
 
@@ -278,8 +226,7 @@ When invoked, run these steps:
     5.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to resolve p with planeLayouts.
 
 11. Return p.
-
-`clone()`
+    **`clone()`**
 
 Creates a new [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) with a reference to the same [media resource](https://www.w3.org/TR/webcodecs/#media-resource).
 
@@ -287,14 +234,12 @@ When invoked, run these steps:
 
 1.  If the value of frame’s [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) internal slot is `true`, throw an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
 2.  Return the result of running the [Clone VideoFrame](https://www.w3.org/TR/webcodecs/#clone-videoframe) algorithm with [this](https://webidl.spec.whatwg.org/#this).
-
-`close()`
+    **`close()`**
 
 Clears all state and releases the reference to the [media resource](https://www.w3.org/TR/webcodecs/#media-resource). Close is final.
 
 When invoked, run the [Close VideoFrame](https://www.w3.org/TR/webcodecs/#close-videoframe) algorithm with [this](https://webidl.spec.whatwg.org/#this).
-
-`metadata()`
+**`metadata()`**
 
 Gets the [VideoFrameMetadata](https://www.w3.org/TR/webcodecs/#dictdef-videoframemetadata) associated with this frame.
 
@@ -303,9 +248,9 @@ When invoked, run these steps:
 1.  If [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached) is `true`, throw an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
 2.  Return the result of calling [Copy VideoFrame metadata](https://www.w3.org/TR/webcodecs/#videoframe-copy-videoframe-metadata) with [[[metadata]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-metadata-slot).
 
-#### 9.4.6. Algorithms[](https://www.w3.org/TR/webcodecs/#videoframe-algorithms)
+#### [9.4.6. Algorithms](https://www.w3.org/TR/webcodecs/#videoframe-algorithms)
 
-Create a VideoFrame (with output, timestamp, duration, displayAspectWidth, displayAspectHeight, colorSpace, rotation, and flip)
+#### Create a VideoFrame (with output, timestamp, duration, displayAspectWidth, displayAspectHeight, colorSpace, rotation, and flip)
 
 1.  Let frame be a new [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe), constructed as follows:
     1.  Assign `false` to [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached).
@@ -324,7 +269,7 @@ Create a VideoFrame (with output, timestamp, duration, displayAspectWidth, displ
 
 2.  Return frame.
 
-Pick Color Space (with overrideColorSpace and format)
+#### Pick Color Space (with overrideColorSpace and format)
 
 1.  If overrideColorSpace is provided, return a new [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) constructed with overrideColorSpace.
 
@@ -333,7 +278,7 @@ Pick Color Space (with overrideColorSpace and format)
 2.  Otherwise, if [[[format]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-format-slot) is an [RGB format](https://www.w3.org/TR/webcodecs/#rgb-format) return a new instance of the [sRGB Color Space](https://www.w3.org/TR/webcodecs/#srgb-color-space)
 3.  Otherwise, return a new instance of the [REC709 Color Space](https://www.w3.org/TR/webcodecs/#rec709-color-space).
 
-Validate VideoFrameInit (with format, codedWidth, and codedHeight):
+#### Validate VideoFrameInit (with format, codedWidth, and codedHeight):
 
 1.  If [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-visiblerect) [exists](https://infra.spec.whatwg.org/#map-exists):
     1.  Let validAlignment be the result of running the [Verify Rect Offset Alignment](https://www.w3.org/TR/webcodecs/#videoframe-verify-rect-offset-alignment) with format and visibleRect.
@@ -348,7 +293,7 @@ Validate VideoFrameInit (with format, codedWidth, and codedHeight):
 4.  If [displayWidth](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-displaywidth) == `0` or [displayHeight](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-displayheight) == `0`, return `false`.
 5.  Return `true`.
 
-To check if a [VideoFrameBufferInit](https://www.w3.org/TR/webcodecs/#dictdef-videoframebufferinit) is a valid VideoFrameBufferInit, run these steps:
+#### To check if a [VideoFrameBufferInit](https://www.w3.org/TR/webcodecs/#dictdef-videoframebufferinit) is a valid VideoFrameBufferInit, run these steps:
 
 1.  If [codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-codedwidth) = 0 or [codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-codedheight) = 0,return `false`.
 2.  If any attribute of [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-visiblerect) is negative or not finite, return `false`.
@@ -358,7 +303,7 @@ To check if a [VideoFrameBufferInit](https://www.w3.org/TR/webcodecs/#dictdef-vi
 6.  If [displayWidth](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-displaywidth) = 0 or [displayHeight](https://www.w3.org/TR/webcodecs/#dom-videoframebufferinit-displayheight) = 0, return `false`.
 7.  Return `true`.
 
-Initialize Frame From Other Frame (with init, frame, and otherFrame)
+#### Initialize Frame From Other Frame (with init, frame, and otherFrame)
 
 1.  Let format be otherFrame.[format](https://www.w3.org/TR/webcodecs/#dom-videoframe-format).
 2.  If init.[alpha](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-alpha) is [discard](https://www.w3.org/TR/webcodecs/#dom-alphaoption-discard), assign otherFrame.[format](https://www.w3.org/TR/webcodecs/#dom-videoframe-format)’s [equivalent opaque format](https://www.w3.org/TR/webcodecs/#equivalent-opaque-format) format.
@@ -376,7 +321,7 @@ Initialize Frame From Other Frame (with init, frame, and otherFrame)
 14. Assign format to frame.[[[format]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-format-slot).
 15. Assign the result of calling [Copy VideoFrame metadata](https://www.w3.org/TR/webcodecs/#videoframe-copy-videoframe-metadata) with init’s [metadata](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-metadata) to frame.[[[metadata]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-metadata-slot).
 
-Initialize Frame With Resource (with init, frame, resource, codedWidth, codedHeight, baseRotation, baseFlip, defaultDisplayWidth, and defaultDisplayHeight)
+#### Initialize Frame With Resource (with init, frame, resource, codedWidth, codedHeight, baseRotation, baseFlip, defaultDisplayWidth, and defaultDisplayHeight)
 
 1.  Let format be `null`.
 2.  If resource uses a recognized [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat), assign the [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat) of resource to format.
@@ -393,7 +338,7 @@ Initialize Frame With Resource (with init, frame, resource, codedWidth, codedHei
 13. If resource has a known [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace), assign its value to [[[color space]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-color-space-slot).
 14. Otherwise, assign a new [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace), constructed with an empty [VideoColorSpaceInit](https://www.w3.org/TR/webcodecs/#dictdef-videocolorspaceinit), to [[[color space]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-color-space-slot).
 
-Initialize Visible Rect, Orientation, and Display Size (with init, frame, defaultVisibleRect, baseRotation, baseFlip, defaultDisplayWidth and defaultDisplayHeight)
+#### Initialize Visible Rect, Orientation, and Display Size (with init, frame, defaultVisibleRect, baseRotation, baseFlip, defaultDisplayWidth and defaultDisplayHeight)
 
 1.  Let visibleRect be defaultVisibleRect.
 2.  If init.[visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframeinit-visiblerect) [exists](https://infra.spec.whatwg.org/#map-exists), assign it to visibleRect.
@@ -421,7 +366,7 @@ Initialize Visible Rect, Orientation, and Display Size (with init, frame, defaul
         1.  Assign displayHeight to frame’s [[[display width]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-display-width-slot).
         2.  Assign displayWidth to frame’s [[[display height]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-display-height-slot).
 
-Clone VideoFrame (with frame)
+#### Clone VideoFrame (with frame)
 
 1.  Let clone be a new [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) initialized as follows:
     1.  Let resource be the [media resource](https://www.w3.org/TR/webcodecs/#media-resource) referenced by frame’s [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot).
@@ -431,7 +376,7 @@ Clone VideoFrame (with frame)
 
 2.  Return clone.
 
-Close VideoFrame (with frame)
+#### Close VideoFrame (with frame)
 
 1.  Assign `null` to frame’s [[[resource reference]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-resource-reference-slot).
 2.  Assign `true` to frame’s [[[Detached]]](https://html.spec.whatwg.org/multipage/structured-data.html#detached).
@@ -440,19 +385,19 @@ Close VideoFrame (with frame)
 5.  Assign `false` to frame’s [[[flip]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-flip-slot).
 6.  Assign a new [VideoFrameMetadata](https://www.w3.org/TR/webcodecs/#dictdef-videoframemetadata) to frame.[[[metadata]]](https://www.w3.org/TR/webcodecs/#dom-videoframe-metadata-slot).
 
-Parse Rotation (with rotation)
+#### Parse Rotation (with rotation)
 
 1.  Let alignedRotation be the nearest multiple of `90` to rotation, rounding ties towards positive infinity.
 2.  Let fullTurns be the greatest multiple of `360` less than or equal to alignedRotation.
 3.  Return `|alignedRotation| - |fullTurns|`.
 
-Add Rotations (with baseRotation, baseFlip, and rotation)
+#### Add Rotations (with baseRotation, baseFlip, and rotation)
 
 1.  If baseFlip is `false`, let combinedRotation be `|baseRotation| + |rotation|`. Otherwise, let combinedRotation be `|baseRotation| - |rotation|`.
 2.  Let fullTurns be the greatest multiple of `360` less than or equal to combinedRotation.
 3.  Return `|combinedRotation| - |fullTurns|`.
 
-Parse VideoFrameCopyToOptions (with options)
+#### Parse VideoFrameCopyToOptions (with options)
 
 1.  Let defaultRect be the result of performing the getter steps for [visibleRect](https://www.w3.org/TR/webcodecs/#dom-videoframe-visiblerect).
 2.  Let overrideRect be `undefined`.
@@ -467,7 +412,7 @@ Parse VideoFrameCopyToOptions (with options)
 11. Let combinedLayout be the result of running the [Compute Layout and Allocation Size](https://www.w3.org/TR/webcodecs/#videoframe-compute-layout-and-allocation-size) algorithm with parsedRect, format, and optLayout.
 12. Return combinedLayout.
 
-Verify Rect Offset Alignment (with format and rect)
+#### Verify Rect Offset Alignment (with format and rect)
 
 1.  If format is `null`, return `true`.
 2.  Let planeIndex be `0`.
@@ -482,4 +427,17 @@ Verify Rect Offset Alignment (with format and rect)
 
 5.  Return `true`.
 
-Parse Visible Rect (with defaultRect, overrideRect, codedWidth, codedHeight, and format)
+#### Parse Visible Rect (with defaultRect, overrideRect, codedWidth, codedHeight, and format)
+
+1.  Let sourceRect be defaultRect
+2.  If overrideRect is not `undefined`:
+    1.  If either of overrideRect.[width](https://www.w3.org/TR/geometry-1/#dom-domrectinit-width) or [height](https://www.w3.org/TR/geometry-1/#dom-domrectinit-height) is `0`, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
+    2.  If the sum of overrideRect.[x](https://www.w3.org/TR/geometry-1/#dom-domrectinit-x) and overrideRect.[width](https://www.w3.org/TR/geometry-1/#dom-domrectinit-width) is greater than codedWidth, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
+    3.  If the sum of overrideRect.[y](https://www.w3.org/TR/geometry-1/#dom-domrectinit-y) and overrideRect.[height](https://www.w3.org/TR/geometry-1/#dom-domrectinit-height) is greater than codedHeight, return a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
+    4.  Assign overrideRect to sourceRect.
+
+3.  Let validAlignment be the result of running the [Verify Rect Offset Alignment](https://www.w3.org/TR/webcodecs/#videoframe-verify-rect-offset-alignment) algorithm with format and sourceRect.
+4.  If validAlignment is `false`, throw a [TypeError](https://webidl.spec.whatwg.org/#exceptiondef-typeerror).
+5.  Return sourceRect.
+
+#### Compute Layout and Allocation Size (with parsedRect, format, and layout)

@@ -28,11 +28,11 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins with the prefix "hev1." or "hvc1.", with a suffix of four dot-separated fields as described in Section E.3 of [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-iso14496-15).
 
-## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#encodedvideochunk-data)
+## [2. EncodedVideoChunk data](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#encodedvideochunk-data)
 
 [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be an access unit as defined in [\[ITU-T-REC-H.265\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-itu-t-rec-h265) section 7.4.2.4.
 
@@ -44,7 +44,7 @@ If the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-hevc-codec-regis
 
 NOTE: Since [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is inherently byte-aligned, implementations are not required to recover byte-alignment.
 
-## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videodecoderconfig-description)
+## [3. VideoDecoderConfig description](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videodecoderconfig-description)
 
 If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is present, it is assumed to be an `HEVCDecoderConfigurationRecord`, as defined by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-iso14496-15), section 8.3.3.1, and the bitstream is assumed to be in [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-hevc) format.
 
@@ -54,7 +54,7 @@ If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-des
 
 NOTE: "annexb" format is described in greater detail by [\[ITU-T-REC-H.265\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-itu-t-rec-h265), Annex B. This format is commonly used in live-streaming applications, where including the VPS, SPS, and PPS data periodically allows users to easily start from the middle of the stream.
 
-## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#encodedvideochunk-type)
+## [4. EncodedVideoChunk type](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#encodedvideochunk-type)
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-hevc) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a base layer primary coded picture that is an instantaneous decoding refresh (IDR), clean random access (CRA), or broken link access (BLA) picture.
 
@@ -62,88 +62,87 @@ NOTE: If the bitstream is in [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-r
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-annexb) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain both a base layer coded picture that is an instantaneous decoding refresh (IDR), clean random access (CRA), or broken link access (BLA) picture, and all parameter sets necessary to decode all video data NAL units in the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk).
 
-## 5\. VideoEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videoencoderconfig-extensions)
+## [5. VideoEncoderConfig extensions](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videoencoderconfig-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig) {
-  [HevcEncoderConfig](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-hevcencoderconfig) [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderconfig-hevc);
+partial dictionary VideoEncoderConfig {
+  HevcEncoderConfig hevc;
 };
 ```
 
-`hevc`, of type [HevcEncoderConfig](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-hevcencoderconfig)
+**`hevc`, of type [HevcEncoderConfig](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-hevcencoderconfig)**
 
 Contains codec specific configuration options for the HEVC (H.265) codec.
 
-### 5.1. HevcEncoderConfig[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-encoder-config)
+### [5.1. HevcEncoderConfig](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-encoder-config)
 
 ```webidl
-dictionary `HevcEncoderConfig` {
-  [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat) [format](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcencoderconfig-format) = "hevc";
+dictionary HevcEncoderConfig {
+  HevcBitstreamFormat format = "hevc";
 };
 ```
 
-`format`, of type [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat), defaulting to `"hevc"`
+**`format`, of type [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat), defaulting to `"hevc"`**
 
 Configures the format of output [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)s. See [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat).
 
-### 5.2. HevcBitstreamFormat[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-bitstream-format)
+### [5.2. HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-bitstream-format)
 
 ```webidl
-enum `HevcBitstreamFormat` {
-  ["annexb"](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-annexb),
-  ["hevc"](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-hevc),
+enum HevcBitstreamFormat {
+  "annexb",
+  "hevc",
 };
 ```
 
 The [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat) determines the location of HEVC parameter sets, and mechanisms for packaging the bitstream.
 
-`annexb`
+**`annexb`**
 
 Parameter sets are included periodically throughout the bitstream.
 
 NOTE: This format is described in greater detail by [\[ITU-T-REC-H.265\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-itu-t-rec-h265), Annex B. This format is commonly used in live-streaming applications, where including the parameter set data periodically allows users to easily start from the middle of the stream.
-
-`hevc`
+**`hevc`**
 
 Parameter sets are not included in the bitstream and are instead emitted via the [[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-videoencoder-output-callback-slot) as the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) of the [EncodedVideoChunkMetadata.decoderConfig](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunkmetadata-decoderconfig).
 
 NOTE: This format is described in greater detail by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-iso14496-15), section 8.3. This format is commonly used in .MP4 files, where the player generally has random access to the media data.
 
-## 6\. VideoEncoderEncodeOptions extensions[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videoencoderencodeoptions-extensions)
+## [6. VideoEncoderEncodeOptions extensions](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#videoencoderencodeoptions-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc) [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderencodeoptions-hevc);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForHevc hevc;
 };
 ```
 
-`hevc`, of type [VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc)
+**`hevc`, of type [VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc)**
 
 Contains codec specific encode options for the [\[ITU-T-REC-H.265\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-itu-t-rec-h265) codec.
 
-### 6.1. VideoEncoderEncodeOptionsForHevc[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-encode-options)
+### [6.1. VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#hevc-encode-options)
 
 ```webidl
-dictionary `VideoEncoderEncodeOptionsForHevc` {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderencodeoptionsforhevc-quantizer);
+dictionary VideoEncoderEncodeOptionsForHevc {
+  unsigned short? quantizer;
 };
 ```
 
-`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable
+**`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable**
 
 Sets per-frame quantizer value. In [\[ITU-T-REC-H.265\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-itu-t-rec-h265) the quantizer threshold can be varied from 0 to 51.
 
-## 7\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#privacy-considerations)
+## [7. Privacy Considerations](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-webcodecs).
 
-## 8\. Security Considerations[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#security-considerations)
+## [8. Security Considerations](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -159,9 +158,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index-defined-here)
 
 - ["annexb"](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-annexb), in § 5.2
 - [annexb](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-annexb), in § 5.2
@@ -176,7 +175,7 @@ Note, this is an informative note.
 - [quantizer](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderencodeoptionsforhevc-quantizer), in § 6.1
 - [VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc), in § 6.1
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -191,58 +190,58 @@ Note, this is an informative note.
 - \[WEBIDL\] defines the following terms:
   - unsigned short
 
-## References[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#informative)
 
-\[ISO14496-15\]
+**\[ISO14496-15\]**
 
 [ISO/IEC 14496-15:2024 Information technology — Coding of audio-visual objects — Part 15: Carriage of network abstraction layer (NAL) unit structured video in the ISO base media file format](https://www.iso.org/standard/89118.html). October 2024. URL: [https://www.iso.org/standard/89118.html](https://www.iso.org/standard/89118.html)
-
-\[ITU-T-REC-H.265\]
+**\[ITU-T-REC-H.265\]**
 
 [H.265 : High efficiency video coding](https://www.itu.int/rec/T-REC-H.265). August 2021. URL: [https://www.itu.int/rec/T-REC-H.265](https://www.itu.int/rec/T-REC-H.265)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig) {
-  [HevcEncoderConfig](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-hevcencoderconfig) [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderconfig-hevc);
+partial dictionary VideoEncoderConfig {
+  HevcEncoderConfig hevc;
 };
 
-dictionary [`HevcEncoderConfig`](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-hevcencoderconfig) {
-  [HevcBitstreamFormat](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat) [format](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcencoderconfig-format) = "hevc";
+
+dictionary HevcEncoderConfig {
+  HevcBitstreamFormat format = "hevc";
 };
 
-enum [`HevcBitstreamFormat`](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#enumdef-hevcbitstreamformat) {
-  ["annexb"](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-annexb),
-  ["hevc"](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-hevcbitstreamformat-hevc),
+
+enum HevcBitstreamFormat {
+  "annexb",
+  "hevc",
 };
 
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForHevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc) [hevc](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderencodeoptions-hevc);
+
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForHevc hevc;
 };
 
-dictionary [`VideoEncoderEncodeOptionsForHevc`](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dictdef-videoencoderencodeoptionsforhevc) {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-hevc-codec-registration/#dom-videoencoderencodeoptionsforhevc-quantizer);
+
+dictionary VideoEncoderEncodeOptionsForHevc {
+  unsigned short? quantizer;
 };
 ```
 

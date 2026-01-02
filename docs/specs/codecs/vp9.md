@@ -28,57 +28,57 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins with the prefix `"vp09."`, followed by a variable length suffix as described in the "Codecs Parameter String" Section of [\[VP9-ISOBMFF\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9-isobmff).
 
-## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-data)
+## [2. EncodedVideoChunk data](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-data)
 
 [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be a frame as described in Section 6 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
 
-## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videodecoderconfig-description)
+## [3. VideoDecoderConfig description](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videodecoderconfig-description)
 
 The [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is not used for this codec.
 
-## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-type)
+## [4. EncodedVideoChunk type](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-type)
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a frame with a `frame_type` of `KEY_FRAME` as defined in Section 7.2 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
 
-## 5\. VideoEncoderEncodeOptions extensions[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videoencoderencodeoptions-extensions)
+## [5. VideoEncoderEncodeOptions extensions](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videoencoderencodeoptions-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9) [vp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptions-vp9);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForVp9 vp9;
 };
 ```
 
-`vp9`, of type [VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9)
+**`vp9`, of type [VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9)**
 
 Contains codec specific encode options for the [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9) codec.
 
-### 5.1. VideoEncoderEncodeOptionsForVp9[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#vp9-encode-options)
+### [5.1. VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#vp9-encode-options)
 
 ```webidl
-dictionary `VideoEncoderEncodeOptionsForVp9` {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptionsforvp9-quantizer);
+dictionary VideoEncoderEncodeOptionsForVp9 {
+  unsigned short? quantizer;
 };
 ```
 
-`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable
+**`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable**
 
 Sets per-frame quantizer value. In [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9) the quantizer threshold can be varied from 0 to 63
 
-## 6\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#privacy-considerations)
+## [6. Privacy Considerations](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-webcodecs).
 
-## 7\. Security Considerations[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#security-considerations)
+## [7. Security Considerations](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -94,15 +94,15 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index-defined-here)
 
 - [quantizer](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptionsforvp9-quantizer), in § 5.1
 - [VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9), in § 5.1
 - [vp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptions-vp9), in § 5
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -114,45 +114,42 @@ Note, this is an informative note.
 - \[WEBIDL\] defines the following terms:
   - unsigned short
 
-## References[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#informative)
 
-\[VP9\]
+**\[VP9\]**
 
 [VP9 Bitstream & Decoding Process Specification](https://storage.googleapis.com/downloads.webmproject.org/docs/vp9/vp9-bitstream-specification-v0.6-20160331-draft.pdf). URL: [https://storage.googleapis.com/downloads.webmproject.org/docs/vp9/vp9-bitstream-specification-v0.6-20160331-draft.pdf](https://storage.googleapis.com/downloads.webmproject.org/docs/vp9/vp9-bitstream-specification-v0.6-20160331-draft.pdf)
-
-\[VP9-ISOBMFF\]
+**\[VP9-ISOBMFF\]**
 
 [VP Codec ISO Media File Format Binding](https://github.com/webmproject/vp9-dash/blob/master/VPCodecISOMediaFileFormatBinding.md). URL: [https://github.com/webmproject/vp9-dash/blob/master/VPCodecISOMediaFileFormatBinding.md](https://github.com/webmproject/vp9-dash/blob/master/VPCodecISOMediaFileFormatBinding.md)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForVp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9) [vp9](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptions-vp9);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForVp9 vp9;
 };
 
-dictionary [`VideoEncoderEncodeOptionsForVp9`](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dictdef-videoencoderencodeoptionsforvp9) {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#dom-videoencoderencodeoptionsforvp9-quantizer);
+
+dictionary VideoEncoderEncodeOptionsForVp9 {
+  unsigned short? quantizer;
 };
 ```
 

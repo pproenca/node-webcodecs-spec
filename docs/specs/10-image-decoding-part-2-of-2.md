@@ -8,48 +8,6 @@ title: '10. Image Decoding (Part 2 of 2)'
 
 ---
 
-`[[ImageTrackList]]`
-
-The [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist) instance that lists this [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack).
-
-`[[animated]]`
-
-Indicates whether this track contains an animated image with multiple frames.
-
-`[[frame count]]`
-
-The number of frames in this track.
-
-`[[repetition count]]`
-
-The number of times the animation is intended to repeat.
-
-`[[selected]]`
-
-Indicates whether this track is selected for decoding.
-
-#### 10.7.2. Attributes[](https://www.w3.org/TR/webcodecs/#imagetrack-attributes)
-
-`animated`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly
-
-The [animated](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated) getter steps are to return the value of [[[animated]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated-slot).
-
-NOTE: This attribute provides an early indication that [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) will ultimately exceed 0 for images where the [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) starts at `0` and later increments as new chunks of the [ReadableStream](https://streams.spec.whatwg.org/#readablestream) [data](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-data) arrive.
-
-`frameCount`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
-
-The [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) getter steps are to return the value of [[[frame count]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-frame-count-slot).
-
-`repetitionCount`, of type [unrestricted float](https://webidl.spec.whatwg.org/#idl-unrestricted-float), readonly
-
-The [repetitionCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-repetitioncount) getter steps are to return the value of [[[repetition count]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-repetition-count-slot).
-
-`selected`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)
-
-The [selected](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected) getter steps are to return the value of [[[selected]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected-slot).
-
-The [selected](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected) setter steps are:
-
 1.  If [[[ImageDecoder]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-imagedecoder-slot)’s [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot) slot is `true`, abort these steps.
 2.  Let newValue be [the given value](https://webidl.spec.whatwg.org/#the-given-value).
 3.  If newValue equals [[[selected]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected-slot), abort these steps.

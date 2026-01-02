@@ -4,9 +4,9 @@ title: '2. Codec Processing Model'
 
 > Section 2 from [W3C WebCodecs Specification](https://www.w3.org/TR/webcodecs/)
 
-## 2\. Codec Processing Model[](https://www.w3.org/TR/webcodecs/#codec-processing-model-section)
+## [2. Codec Processing Model](https://www.w3.org/TR/webcodecs/#codec-processing-model-section)
 
-### 2.1. Background[](https://www.w3.org/TR/webcodecs/#processing-model-background)
+### [2.1. Background](https://www.w3.org/TR/webcodecs/#processing-model-background)
 
 This section is non-normative.
 
@@ -14,7 +14,7 @@ The codec interfaces defined by the specification are designed such that new cod
 
 This section describes threading behaviors as they are visible from the perspective of web authors. Implementers can choose to use more threads, as long as the externally visible behaviors of blocking and sequencing are maintained as follows.
 
-### 2.2. Control Messages[](https://www.w3.org/TR/webcodecs/#control-messages)
+### [2.2. Control Messages](https://www.w3.org/TR/webcodecs/#control-messages)
 
 A control message defines a sequence of steps corresponding to a method invocation on a [codec](https://www.w3.org/TR/webcodecs/#codec) instance (e.g. `encode()`).
 
@@ -36,7 +36,7 @@ To Process the control message queue, run these steps:
     3.  If outcome equals `"not processed"`, break.
     4.  Otherwise, dequeue front message from the [\[\[control message queue\]\]](https://www.w3.org/TR/webcodecs/#control-message-queue-slot).
 
-### 2.3. Codec Work Parallel Queue[](https://www.w3.org/TR/webcodecs/#codec-work-parallel-queue)
+### [2.3. Codec Work Parallel Queue](https://www.w3.org/TR/webcodecs/#codec-work-parallel-queue)
 
 Each [codec](https://www.w3.org/TR/webcodecs/#codec) instance has an internal slot named \[\[codec work queue\]\] that is a [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue).
 

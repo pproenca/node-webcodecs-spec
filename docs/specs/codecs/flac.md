@@ -28,15 +28,15 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-flac-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) is `"flac"`.
 
-## 2\. EncodedAudioChunk data[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#encodedaudiochunk-data)
+## [2. EncodedAudioChunk data](https://www.w3.org/TR/webcodecs-flac-codec-registration/#encodedaudiochunk-data)
 
 [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-internal-data-slot) is expected to be a "FRAME" as described in [\[FLAC\]](https://www.w3.org/TR/webcodecs-flac-codec-registration/#biblio-flac).
 
-## 3\. AudioDecoderConfig description[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#audiodecoderconfig-description)
+## [3. AudioDecoderConfig description](https://www.w3.org/TR/webcodecs-flac-codec-registration/#audiodecoderconfig-description)
 
 [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) is required, and has to be the following:
 
@@ -48,30 +48,30 @@ The [sampleRate](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-sampler
 
 NOTE: This corresponds to the beginning of a FLAC bitstream, before the audio frames.
 
-## 4\. EncodedAudioChunk type[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#encodedaudiochunk-type)
+## [4. EncodedAudioChunk type](https://www.w3.org/TR/webcodecs-flac-codec-registration/#encodedaudiochunk-type)
 
 The [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot) for an [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing FLAC is always "[key](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunktype-key)".
 
 NOTE: Once the initialization has succeeded, any FLAC packet can be decoded at any time without error, but this might not result in the expected audio output.
 
-## 5\. AudioEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#audioencoderconfig-extensions)
+## [5. AudioEncoderConfig extensions](https://www.w3.org/TR/webcodecs-flac-codec-registration/#audioencoderconfig-extensions)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig) [flac](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-audioencoderconfig-flac);
+partial dictionary AudioEncoderConfig {
+  FlacEncoderConfig flac;
 };
 ```
 
-`flac`, of type [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig)
+**`flac`, of type [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig)**
 
 Contains codec specific configuration options for the FLAC codec.
 
-### 5.1. FlacEncoderConfig[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#flac-encoder-config)
+### [5.1. FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#flac-encoder-config)
 
 ```webidl
-dictionary `FlacEncoderConfig` {
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [blockSize](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-blocksize) = 0;
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [compressLevel](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-compresslevel) = 5;
+dictionary FlacEncoderConfig {
+  [EnforceRange] unsigned long blockSize = 0;
+  [EnforceRange] unsigned long compressLevel = 5;
 };
 ```
 
@@ -81,27 +81,26 @@ To check if an [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-re
 2.  If [compressLevel](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-compresslevel) is specified and not within the range of `0` (fastest, least compression) and `8` (slowest, most compression) inclusively, return `false`.
 3.  Return `true`.
 
-`blockSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`
+**`blockSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`**
 
 Configures the number of samples to use per frame, of output [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s.
 
 NOTE: Use 0 to let the encoder estimate a blocksize by default.
-
-`compressLevel`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `5`
+**`compressLevel`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `5`**
 
 Configures the compression level to use while encoding.
 
-## 6\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#privacy-considerations)
+## [6. Privacy Considerations](https://www.w3.org/TR/webcodecs-flac-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-flac-codec-registration/#biblio-webcodecs).
 
-## 7\. Security Considerations[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#security-considerations)
+## [7. Security Considerations](https://www.w3.org/TR/webcodecs-flac-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-flac-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-flac-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-flac-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -117,16 +116,16 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index-defined-here)
 
 - [blockSize](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-blocksize), in § 5.1
 - [compressLevel](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-compresslevel), in § 5.1
 - [flac](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-audioencoderconfig-flac), in § 5
 - [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig), in § 5.1
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-flac-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -141,42 +140,40 @@ Note, this is an informative note.
   - EnforceRange
   - unsigned long
 
-## References[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-flac-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-flac-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-flac-codec-registration/#informative)
 
-\[FLAC\]
+**\[FLAC\]**
 
 [Free Lossless Audio Codec](https://datatracker.ietf.org/doc/draft-ietf-cellar-flac). URL: [https://datatracker.ietf.org/doc/draft-ietf-cellar-flac](https://datatracker.ietf.org/doc/draft-ietf-cellar-flac)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-flac-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-flac-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [FlacEncoderConfig](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig) [flac](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-audioencoderconfig-flac);
+partial dictionary AudioEncoderConfig {
+  FlacEncoderConfig flac;
 };
 
-dictionary [`FlacEncoderConfig`](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dictdef-flacencoderconfig) {
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [blockSize](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-blocksize) = 0;
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [compressLevel](https://www.w3.org/TR/webcodecs-flac-codec-registration/#dom-flacencoderconfig-compresslevel) = 5;
+
+dictionary FlacEncoderConfig {
+  [EnforceRange] unsigned long blockSize = 0;
+  [EnforceRange] unsigned long compressLevel = 5;
 };
 ```
 

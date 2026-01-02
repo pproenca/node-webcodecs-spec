@@ -4,7 +4,7 @@ title: '14. Best Practices for Authors Using WebCodecs'
 
 > Section 14 from [W3C WebCodecs Specification](https://www.w3.org/TR/webcodecs/)
 
-## 14\. Best Practices for Authors Using WebCodecs[](https://www.w3.org/TR/webcodecs/#best-practices-developers)
+## [14. Best Practices for Authors Using WebCodecs](https://www.w3.org/TR/webcodecs/#best-practices-developers)
 
 This section is non-normative.
 

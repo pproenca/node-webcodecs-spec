@@ -8,9 +8,9 @@ title: '10. Image Decoding (Part 1 of 2)'
 
 ---
 
-## 10\. Image Decoding[](https://www.w3.org/TR/webcodecs/#image-decoding)
+## [10. Image Decoding](https://www.w3.org/TR/webcodecs/#image-decoding)
 
-### 10.1. Background[](https://www.w3.org/TR/webcodecs/#image-decoding-background)
+### [10.1. Background](https://www.w3.org/TR/webcodecs/#image-decoding-background)
 
 This section is non-normative.
 
@@ -18,91 +18,77 @@ Image codec definitions are typically accompanied by a definition for a correspo
 
 In spite of these differences, [ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder) uses the same [codec processing model](https://www.w3.org/TR/webcodecs/#codec-processing-model) as the other codec interfaces. Additionally, [ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder) uses the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) interface to describe decoded outputs.
 
-### 10.2. ImageDecoder Interface[](https://www.w3.org/TR/webcodecs/#imagedecoder-interface)
+### [10.2. ImageDecoder Interface](https://www.w3.org/TR/webcodecs/#imagedecoder-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker), [SecureContext](https://webidl.spec.whatwg.org/#SecureContext)\]
-interface `ImageDecoder` {
-  [constructor](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-imagedecoder)([ImageDecoderInit](https://www.w3.org/TR/webcodecs/#dictdef-imagedecoderinit) `init`);
+[Exposed=(Window,DedicatedWorker), SecureContext]
+interface ImageDecoder {
+  constructor(ImageDecoderInit init);
 
-  readonly attribute [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString) [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-type);
-  readonly attribute [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete);
-  readonly attribute [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\> [completed](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed);
-  readonly attribute [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist) [tracks](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks);
+  readonly attribute DOMString type;
+  readonly attribute boolean complete;
+  readonly attribute Promise<undefined> completed;
+  readonly attribute ImageTrackList tracks;
 
-  [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[ImageDecodeResult](https://www.w3.org/TR/webcodecs/#dictdef-imagedecoderesult)\> [decode](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-decode)(optional [ImageDecodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-imagedecodeoptions) `options` = {});
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [reset](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-reset)();
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [close](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-close)();
+  Promise<ImageDecodeResult> decode(optional ImageDecodeOptions options = {});
+  undefined reset();
+  undefined close();
 
-  static [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[boolean](https://webidl.spec.whatwg.org/#idl-boolean)\> [isTypeSupported](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-istypesupported)([DOMString](https://webidl.spec.whatwg.org/#idl-DOMString) `type`);
+  static Promise<boolean> isTypeSupported(DOMString type);
 };
 ```
 
-#### 10.2.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#imagedecoder-internal-slots)
+#### [10.2.1. Internal Slots](https://www.w3.org/TR/webcodecs/#imagedecoder-internal-slots)
 
-`[[control message queue]]`
+**`[[control message queue]]`**
 
 A [queue](https://infra.spec.whatwg.org/#queue) of [control messages](https://www.w3.org/TR/webcodecs/#control-message) to be performed upon this [codec](https://www.w3.org/TR/webcodecs/#codec) instance. See [\[\[control message queue\]\]](https://www.w3.org/TR/webcodecs/#control-message-queue-slot).
-
-`[[message queue blocked]]`
+**`[[message queue blocked]]`**
 
 A boolean indicating when processing the [[[control message queue]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-control-message-queue-slot) is blocked by a pending [control message](https://www.w3.org/TR/webcodecs/#control-message). See [\[\[message queue blocked\]\]](https://www.w3.org/TR/webcodecs/#message-queue-blocked).
-
-`[[codec work queue]]`
+**`[[codec work queue]]`**
 
 A [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue) used for running parallel steps that reference the [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-codec-implementation-slot). See [\[\[codec work queue\]\]](https://www.w3.org/TR/webcodecs/#codec-work-queue).
-
-`[[ImageTrackList]]`
+**`[[ImageTrackList]]`**
 
 An [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist) describing the tracks found in [[[encoded data]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-encoded-data-slot)
-
-`[[type]]`
+**`[[type]]`**
 
 A string reflecting the value of the MIME [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-type) given at construction.
-
-`[[complete]]`
+**`[[complete]]`**
 
 A boolean indicating whether [[[encoded data]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-encoded-data-slot) is completely buffered.
-
-`[[completed promise]]`
+**`[[completed promise]]`**
 
 The promise used to signal when [[[complete]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete-slot) becomes `true`.
-
-`[[codec implementation]]`
+**`[[codec implementation]]`**
 
 An underlying image decoder implementation provided by the User Agent. See [\[\[codec implementation\]\]](https://www.w3.org/TR/webcodecs/#codec-implementation).
-
-`[[encoded data]]`
+**`[[encoded data]]`**
 
 A [byte sequence](https://infra.spec.whatwg.org/#byte-sequence) containing the encoded image data to be decoded.
-
-`[[prefer animation]]`
+**`[[prefer animation]]`**
 
 A boolean reflecting the value of [preferAnimation](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-preferanimation) given at construction.
-
-`[[pending decode promises]]`
+**`[[pending decode promises]]`**
 
 A list of unresolved promises returned by calls to decode().
-
-`[[internal selected track index]]`
+**`[[internal selected track index]]`**
 
 Identifies the image track within [[[encoded data]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-encoded-data-slot) that is used by decoding algorithms.
-
-`[[tracks established]]`
+**`[[tracks established]]`**
 
 A boolean indicating whether the track list has been established in [[[ImageTrackList]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-imagetracklist-slot).
-
-`[[closed]]`
+**`[[closed]]`**
 
 A boolean indicating that the [ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder) is in a permanent closed state and can no longer be used.
-
-`[[progressive frame generations]]`
+**`[[progressive frame generations]]`**
 
 A mapping of frame indices to [Progressive Image Frame Generations](https://www.w3.org/TR/webcodecs/#progressive-image-frame-generation). The values represent the Progressive Image Frame Generation for the [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) which was most recently output by a call to [decode()](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-decode) with the given frame index.
 
-#### 10.2.2. Constructor[](https://www.w3.org/TR/webcodecs/#imagedecoder-constructor)
+#### [10.2.2. Constructor](https://www.w3.org/TR/webcodecs/#imagedecoder-constructor)
 
-`ImageDecoder(init)`
+**`ImageDecoder(init)`**
 
 NOTE: Calling [decode()](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-decode) on the constructed [ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder) will trigger a [NotSupportedError](https://webidl.spec.whatwg.org/#notsupportederror) if the User Agent does not support type. Authors are encouraged to first check support by calling [isTypeSupported()](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-istypesupported) with type. User Agents don’t have to support any particular type.
 
@@ -174,35 +160,32 @@ When invoked, run these steps:
 1.  Enqueue the following steps to the [[[codec work queue]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-codec-work-queue-slot):
     1.  Run the [Establish Tracks](https://www.w3.org/TR/webcodecs/#imagedecoder-establish-tracks) algorithm.
 
-#### 10.2.3. Attributes[](https://www.w3.org/TR/webcodecs/#imagedecoder-attributes)
+#### [10.2.3. Attributes](https://www.w3.org/TR/webcodecs/#imagedecoder-attributes)
 
-`type`, of type [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString), readonly
+**`type`, of type [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString), readonly**
 
 A string reflecting the value of the MIME [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-type) given at construction.
 
 The [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-type) getter steps are to return [[[type]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-type-slot).
-
-`complete`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly
+**`complete`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly**
 
 Indicates whether [[[encoded data]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-encoded-data-slot) is completely buffered.
 
 The [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete) getter steps are to return [[[complete]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete-slot).
-
-`completed`, of type Promise<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\>, readonly
+**`completed`, of type Promise<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\>, readonly**
 
 The promise used to signal when [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete) becomes `true`.
 
 The [completed](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed) getter steps are to return [[[completed promise]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed-promise-slot).
-
-`tracks`, of type [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist), readonly
+**`tracks`, of type [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist), readonly**
 
 Returns a [live](https://html.spec.whatwg.org/multipage/infrastructure.html#live) [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist), which provides metadata for the available tracks and a mechanism for selecting a track to decode.
 
 The [tracks](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks) getter steps are to return [[[ImageTrackList]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-imagetracklist-slot).
 
-#### 10.2.4. Methods[](https://www.w3.org/TR/webcodecs/#imagedecoder-methods)
+#### [10.2.4. Methods](https://www.w3.org/TR/webcodecs/#imagedecoder-methods)
 
-`decode(options)`
+**`decode(options)`**
 
 Enqueues a control message to decode the frame according to options.
 
@@ -219,24 +202,23 @@ When invoked, run these steps:
 
 [Running a control message](https://www.w3.org/TR/webcodecs/#running-a-control-message) to decode the image means running these steps:
 
-1.  Enqueue the following steps to the [[[codec work queue]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-codec-work-queue-slot):
-    1.  Wait for [[[tracks established]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks-established-slot) to become `true`.
-    2.  If options.[completeFramesOnly](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-completeframesonly) is `false` and the image is a [Progressive Image](https://www.w3.org/TR/webcodecs/#progressive-image) for which the User Agent supports progressive decoding, run the [Decode Progressive Frame](https://www.w3.org/TR/webcodecs/#imagedecoder-decode-progressive-frame) algorithm with options.[frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) and promise.
-    3.  Otherwise, run the [Decode Complete Frame](https://www.w3.org/TR/webcodecs/#imagedecoder-decode-complete-frame) algorithm with options.[frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) and promise.
+1.  Enqueue the following steps to the [[[codec work queue]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-codec-work-queue-slot): 1. Wait for [[[tracks established]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks-established-slot) to become `true`.
 
-`reset()`
+        2.  If options.[completeFramesOnly](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-completeframesonly) is `false` and the image is a [Progressive Image](https://www.w3.org/TR/webcodecs/#progressive-image) for which the User Agent supports progressive decoding, run the [Decode Progressive Frame](https://www.w3.org/TR/webcodecs/#imagedecoder-decode-progressive-frame) algorithm with options.[frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) and promise.
+
+        3.  Otherwise, run the [Decode Complete Frame](https://www.w3.org/TR/webcodecs/#imagedecoder-decode-complete-frame) algorithm with options.[frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) and promise.
+
+    **`reset()`**
 
 Immediately aborts all pending work.
 
 When invoked, run the [Reset ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-reset-imagedecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`close()`
+**`close()`**
 
 Immediately aborts all pending work and releases system resources. Close is final.
 
 When invoked, run the [Close ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-close-imagedecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`isTypeSupported(type)`
+**`isTypeSupported(type)`**
 
 Returns a promise indicating whether the provided config is supported by the User Agent.
 
@@ -247,15 +229,15 @@ When invoked, run these steps:
 3.  In parallel, resolve p with the result of running the [Check Type Support](https://www.w3.org/TR/webcodecs/#imagedecoder-check-type-support) algorithm with type.
 4.  Return p.
 
-#### 10.2.5. Algorithms[](https://www.w3.org/TR/webcodecs/#imagedecoder-algorithms)
+#### [10.2.5. Algorithms](https://www.w3.org/TR/webcodecs/#imagedecoder-algorithms)
 
-Fetch Stream Data Loop (with reader)
+#### Fetch Stream Data Loop (with reader)
 
 Run these steps:
 
 1.  Let readRequest be the following [read request](https://streams.spec.whatwg.org/#read-request).
 
-    [chunk steps](https://streams.spec.whatwg.org/#read-request-chunk-steps), given chunk
+    **[chunk steps](https://streams.spec.whatwg.org/#read-request-chunk-steps), given chunk**
     1.  If [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot) is `true`, abort these steps.
     2.  If chunk is not a Uint8Array object, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-close-imagedecoder) algorithm with a [DataError](https://webidl.spec.whatwg.org/#dataerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException) and abort these steps.
     3.  Let bytes be the byte sequence represented by the Uint8Array object.
@@ -263,17 +245,15 @@ Run these steps:
     5.  If [[[tracks established]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks-established-slot) is `false`, run the [Establish Tracks](https://www.w3.org/TR/webcodecs/#imagedecoder-establish-tracks) algorithm.
     6.  Otherwise, run the [Update Tracks](https://www.w3.org/TR/webcodecs/#imagedecoder-update-tracks) algorithm.
     7.  Run the [Fetch Stream Data Loop](https://www.w3.org/TR/webcodecs/#imagedecoder-fetch-stream-data-loop) algorithm with reader.
-
-    [close steps](https://streams.spec.whatwg.org/#read-request-close-steps)
-    1.  Assign `true` to [[[complete]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete-slot)
-    2.  Resolve [[[completed promise]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed-promise-slot).
-
-    [error steps](https://streams.spec.whatwg.org/#read-request-error-steps)
-    1.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-close-imagedecoder) algorithm with a [NotReadableError](https://webidl.spec.whatwg.org/#notreadableerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)
+        **[close steps](https://streams.spec.whatwg.org/#read-request-close-steps)**
+    8.  Assign `true` to [[[complete]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete-slot)
+    9.  Resolve [[[completed promise]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed-promise-slot).
+        **[error steps](https://streams.spec.whatwg.org/#read-request-error-steps)**
+    10. [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Close ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-close-imagedecoder) algorithm with a [NotReadableError](https://webidl.spec.whatwg.org/#notreadableerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException)
 
 2.  Read a chunk from reader given readRequest.
 
-Establish Tracks
+#### Establish Tracks
 
 Run these steps:
 
@@ -311,7 +291,7 @@ Run these steps:
     2.  Assign selectedTrackIndex to [tracks](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks) [[[selected index]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selected-index-slot).
     3.  Resolve [[[ready promise]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-ready-promise-slot).
 
-Get Default Selected Track Index (with trackList)
+#### Get Default Selected Track Index (with trackList)
 
 Run these steps:
 
@@ -324,7 +304,7 @@ Run these steps:
 2.  If any [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack)s in trackList have [animated](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated) equal to [[[prefer animation]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-prefer-animation-slot), return the position of the earliest such track in trackList.
 3.  Return `0`.
 
-Update Tracks
+#### Update Tracks
 
 A track update struct is a [struct](https://infra.spec.whatwg.org/#struct) that consists of a track index ([unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)) and a frame count ([unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)).
 
@@ -347,7 +327,7 @@ Run these steps:
         1.  Let updateTrack be the [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack) at position `update.trackIndex` within [tracks](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks)' [[[track list]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-track-list-slot).
         2.  Assign `update.frameCount` to updateTrack’s [[[frame count]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-frame-count-slot).
 
-Decode Complete Frame (with frameIndex and promise)
+#### Decode Complete Frame (with frameIndex and promise)
 
 1.  Assert that [[[tracks established]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks-established-slot) is `true`.
 2.  Assert that [[[internal selected track index]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-internal-selected-track-index-slot) is not `-1`.
@@ -378,7 +358,7 @@ Decode Complete Frame (with frameIndex and promise)
 
 12. Run the [Resolve Decode](https://www.w3.org/TR/webcodecs/#imagedecoder-resolve-decode) algorithm with promise and decodeResult.
 
-Decode Progressive Frame (with frameIndex and promise)
+#### Decode Progressive Frame (with frameIndex and promise)
 
 1.  Assert that [[[tracks established]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-tracks-established-slot) is `true`.
 2.  Assert that [[[internal selected track index]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-internal-selected-track-index-slot) is not `-1`.
@@ -418,7 +398,7 @@ Decode Progressive Frame (with frameIndex and promise)
 19. Remove promise from [[[pending decode promises]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-pending-decode-promises-slot).
 20. Resolve promise with decodeResult.
 
-Resolve Decode (with promise and result)
+#### Resolve Decode (with promise and result)
 
 1.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform these steps:
     1.  If [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot), abort these steps.
@@ -426,7 +406,7 @@ Resolve Decode (with promise and result)
     3.  Remove promise from [[[pending decode promises]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-pending-decode-promises-slot).
     4.  Resolve promise with result.
 
-Reject Infeasible Decode (with promise)
+#### Reject Infeasible Decode (with promise)
 
 1.  Assert that [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete) is `true` or [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot) is `true`.
 2.  If [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete) is `true`, let exception be a [RangeError](https://webidl.spec.whatwg.org/#exceptiondef-rangeerror). Otherwise, let exception be an [InvalidStateError](https://webidl.spec.whatwg.org/#invalidstateerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
@@ -436,25 +416,25 @@ Reject Infeasible Decode (with promise)
     3.  Remove promise from [[[pending decode promises]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-pending-decode-promises-slot).
     4.  Reject promise with exception.
 
-Fatally Reject Bad Data
+#### Fatally Reject Bad Data
 
 1.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to perform these steps:
     1.  If [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot), abort these steps.
     2.  Run the [Close ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-close-imagedecoder) algorithm with an [EncodingError](https://webidl.spec.whatwg.org/#encodingerror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
 
-Check Type Support (with type)
+#### Check Type Support (with type)
 
 1.  If the User Agent can provide a codec to support decoding type, return `true`.
 2.  Otherwise, return `false`.
 
-Reset ImageDecoder (with exception)
+#### Reset ImageDecoder (with exception)
 
 1.  Signal [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-codec-implementation-slot) to abort any active decoding operation.
 2.  For each decodePromise in [[[pending decode promises]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-pending-decode-promises-slot):
     1.  Reject decodePromise with exception.
     2.  Remove decodePromise from [[[pending decode promises]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-pending-decode-promises-slot).
 
-Close ImageDecoder (with exception)
+#### Close ImageDecoder (with exception)
 
 1.  Run the [Reset ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder-reset-imagedecoder) algorithm with exception.
 2.  Assign `true` to [[[closed]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-closed-slot).
@@ -465,18 +445,18 @@ Close ImageDecoder (with exception)
 
 5.  If [[[complete]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete-slot) is false resolve [[[completed promise]]](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-completed-promise-slot) with exception.
 
-### 10.3. ImageDecoderInit Interface[](https://www.w3.org/TR/webcodecs/#imagedecoderinit-interface)
+### [10.3. ImageDecoderInit Interface](https://www.w3.org/TR/webcodecs/#imagedecoderinit-interface)
 
 ```webidl
-typedef ([AllowSharedBufferSource](https://webidl.spec.whatwg.org/#AllowSharedBufferSource) or [ReadableStream](https://streams.spec.whatwg.org/#readablestream)) `ImageBufferSource`;
-dictionary `ImageDecoderInit` {
-  required [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString) [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-type);
-  required [ImageBufferSource](https://www.w3.org/TR/webcodecs/#typedefdef-imagebuffersource) [data](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-data);
-  [ColorSpaceConversion](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion) [colorSpaceConversion](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-colorspaceconversion) = "default";
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [desiredWidth](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-desiredwidth);
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [desiredHeight](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-desiredheight);
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [preferAnimation](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-preferanimation);
-  [sequence](https://webidl.spec.whatwg.org/#idl-sequence)<[ArrayBuffer](https://webidl.spec.whatwg.org/#idl-ArrayBuffer)\> `transfer` = \[\];
+typedef (AllowSharedBufferSource or ReadableStream) ImageBufferSource;
+dictionary ImageDecoderInit {
+  required DOMString type;
+  required ImageBufferSource data;
+  ColorSpaceConversion colorSpaceConversion = "default";
+  [EnforceRange] unsigned long desiredWidth;
+  [EnforceRange] unsigned long desiredHeight;
+  boolean preferAnimation;
+  sequence<ArrayBuffer> transfer = [];
 };
 ```
 
@@ -494,46 +474,40 @@ To determine if an [ImageDecoderInit](https://www.w3.org/TR/webcodecs/#dictdef-i
 
 A valid image MIME type is a string that is a [valid MIME type string](https://mimesniff.spec.whatwg.org/#valid-mime-type) and for which the `type`, per Section 8.3.1 of [\[RFC9110\]](https://www.w3.org/TR/webcodecs/#biblio-rfc9110), is `image`.
 
-`type`, of type [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString)
+**`type`, of type [DOMString](https://webidl.spec.whatwg.org/#idl-DOMString)**
 
 String containing the MIME type of the image file to be decoded.
-
-`data`, of type [ImageBufferSource](https://www.w3.org/TR/webcodecs/#typedefdef-imagebuffersource)
+**`data`, of type [ImageBufferSource](https://www.w3.org/TR/webcodecs/#typedefdef-imagebuffersource)**
 
 [BufferSource](https://webidl.spec.whatwg.org/#BufferSource) or [ReadableStream](https://streams.spec.whatwg.org/#readablestream) of bytes representing an encoded image file as described by [type](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-type).
-
-`colorSpaceConversion`, of type [ColorSpaceConversion](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion), defaulting to `"default"`
+**`colorSpaceConversion`, of type [ColorSpaceConversion](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion), defaulting to `"default"`**
 
 Controls whether decoded outputs' color space is converted or ignored, as defined by [colorSpaceConversion](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-colorspaceconversion) in [ImageBitmapOptions](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmapoptions).
-
-`desiredWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)
+**`desiredWidth`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)**
 
 Indicates a desired width for decoded outputs. Implementation is best effort; decoding to a desired width _MAY_ not be supported by all formats/ decoders.
-
-`desiredHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)
+**`desiredHeight`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)**
 
 Indicates a desired height for decoded outputs. Implementation is best effort; decoding to a desired height _MAY_ not be supported by all formats/decoders.
-
-`preferAnimation`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)
+**`preferAnimation`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)**
 
 For images with multiple tracks, this indicates whether the initial track selection _SHOULD_ prefer an animated track.
 
 NOTE: See the [Get Default Selected Track Index](https://www.w3.org/TR/webcodecs/#imagedecoder-get-default-selected-track-index) algorithm.
 
-### 10.4. ImageDecodeOptions Interface[](https://www.w3.org/TR/webcodecs/#imagedecodeoptions-interface)
+### [10.4. ImageDecodeOptions Interface](https://www.w3.org/TR/webcodecs/#imagedecodeoptions-interface)
 
 ```webidl
-dictionary `ImageDecodeOptions` {
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) = 0;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [completeFramesOnly](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-completeframesonly) = true;
+dictionary ImageDecodeOptions {
+  [EnforceRange] unsigned long frameIndex = 0;
+  boolean completeFramesOnly = true;
 };
 ```
 
-`frameIndex`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`
+**`frameIndex`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`**
 
 The index of the frame to decode.
-
-`completeFramesOnly`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `true`
+**`completeFramesOnly`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `true`**
 
 For [Progressive Images](https://www.w3.org/TR/webcodecs/#progressive-image), a value of `false` indicates that the decoder _MAY_ output an [image](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-image) with reduced detail. Each subsequent call to [decode()](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-decode) for the same [frameIndex](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-frameindex) will resolve to produce an image with a higher [Progressive Image Frame Generation](https://www.w3.org/TR/webcodecs/#progressive-image-frame-generation) (more image detail) than the previous call, until finally the full-detail image is produced.
 
@@ -543,90 +517,118 @@ NOTE: For [Progressive Images](https://www.w3.org/TR/webcodecs/#progressive-imag
 
 Upon decoding the full detail image, the [ImageDecodeResult](https://www.w3.org/TR/webcodecs/#dictdef-imagedecoderesult)’s [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-complete) will be set to true.
 
-### 10.5. ImageDecodeResult Interface[](https://www.w3.org/TR/webcodecs/#imagedecoderesult-interface)
+### [10.5. ImageDecodeResult Interface](https://www.w3.org/TR/webcodecs/#imagedecoderesult-interface)
 
 ```webidl
-dictionary `ImageDecodeResult` {
-  required [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) [image](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-image);
-  required [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-complete);
+dictionary ImageDecodeResult {
+  required VideoFrame image;
+  required boolean complete;
 };
 ```
 
-`image`, of type [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)
+**`image`, of type [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)**
 
 The decoded image.
-
-`complete`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)
+**`complete`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)**
 
 Indicates whether [image](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-image) contains the final full-detail output.
 
 NOTE: [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoderesult-complete) is always `true` when [decode()](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-decode) is invoked with [completeFramesOnly](https://www.w3.org/TR/webcodecs/#dom-imagedecodeoptions-completeframesonly) set to `true`.
 
-### 10.6. ImageTrackList Interface[](https://www.w3.org/TR/webcodecs/#imagetracklist-interface)
+### [10.6. ImageTrackList Interface](https://www.w3.org/TR/webcodecs/#imagetracklist-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker), [SecureContext](https://webidl.spec.whatwg.org/#SecureContext)\]
-interface `ImageTrackList` {
-  getter [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack) ([unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) `index`);
+[Exposed=(Window,DedicatedWorker), SecureContext]
+interface ImageTrackList {
+  getter ImageTrack (unsigned long index);
 
-  readonly attribute [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\> [ready](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-ready);
-  readonly attribute [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [length](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-length);
-  readonly attribute [long](https://webidl.spec.whatwg.org/#idl-long) [selectedIndex](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selectedindex);
-  readonly attribute [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack)? [selectedTrack](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selectedtrack);
+  readonly attribute Promise<undefined> ready;
+  readonly attribute unsigned long length;
+  readonly attribute long selectedIndex;
+  readonly attribute ImageTrack? selectedTrack;
 };
 ```
 
-#### 10.6.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#imagetracklist-internal-slots)
+#### [10.6.1. Internal Slots](https://www.w3.org/TR/webcodecs/#imagetracklist-internal-slots)
 
-`[[ready promise]]`
+**`[[ready promise]]`**
 
 The promise used to signal when the [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist) has been populated with [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack)s.
 
 NOTE: [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack) [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) can receive subsequent updates until [complete](https://www.w3.org/TR/webcodecs/#dom-imagedecoder-complete) is `true`.
-
-`[[track list]]`
+**`[[track list]]`**
 
 The list of [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack)s describe by this [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist).
-
-`[[selected index]]`
+**`[[selected index]]`**
 
 The index of the selected track in [[[track list]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-track-list-slot). A value of `-1` indicates that no track is selected. The initial value is `-1`.
 
-#### 10.6.2. Attributes[](https://www.w3.org/TR/webcodecs/#imagetracklist-attributes)
+#### [10.6.2. Attributes](https://www.w3.org/TR/webcodecs/#imagetracklist-attributes)
 
-`ready`, of type Promise<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\>, readonly
+**`ready`, of type Promise<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\>, readonly**
 
 The [ready](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-ready) getter steps are to return the [[[ready promise]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-ready-promise-slot).
-
-`length`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`length`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 The [length](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-length) getter steps are to return the length of [[[track list]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-track-list-slot).
-
-`selectedIndex`, of type [long](https://webidl.spec.whatwg.org/#idl-long), readonly
+**`selectedIndex`, of type [long](https://webidl.spec.whatwg.org/#idl-long), readonly**
 
 The [selectedIndex](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selectedindex) getter steps are to return [[[selected index]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selected-index-slot);
-
-`selectedTrack`, of type [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack), readonly, nullable
+**`selectedTrack`, of type [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack), readonly, nullable**
 
 The [selectedTrack](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selectedtrack) getter steps are:
 
 1.  If [[[selected index]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selected-index-slot) is `-1`, return `null`.
 2.  Otherwise, return the ImageTrack from [[[track list]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-track-list-slot) at the position indicated by [[[selected index]]](https://www.w3.org/TR/webcodecs/#dom-imagetracklist-selected-index-slot).
 
-### 10.7. ImageTrack Interface[](https://www.w3.org/TR/webcodecs/#imagetrack-interface)
+### [10.7. ImageTrack Interface](https://www.w3.org/TR/webcodecs/#imagetrack-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker), [SecureContext](https://webidl.spec.whatwg.org/#SecureContext)\]
-interface `ImageTrack` {
-  readonly attribute [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [animated](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated);
-  readonly attribute [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount);
-  readonly attribute [unrestricted float](https://webidl.spec.whatwg.org/#idl-unrestricted-float) [repetitionCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-repetitioncount);
-  attribute [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [selected](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected);
+[Exposed=(Window,DedicatedWorker), SecureContext]
+interface ImageTrack {
+  readonly attribute boolean animated;
+  readonly attribute unsigned long frameCount;
+  readonly attribute unrestricted float repetitionCount;
+  attribute boolean selected;
 };
 ```
 
-#### 10.7.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#imagetrack-internal-slots)
+#### [10.7.1. Internal Slots](https://www.w3.org/TR/webcodecs/#imagetrack-internal-slots)
 
-`[[ImageDecoder]]`
+**`[[ImageDecoder]]`**
 
 The [ImageDecoder](https://www.w3.org/TR/webcodecs/#imagedecoder) instance that constructed this [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack).
+**`[[ImageTrackList]]`**
+
+The [ImageTrackList](https://www.w3.org/TR/webcodecs/#imagetracklist) instance that lists this [ImageTrack](https://www.w3.org/TR/webcodecs/#imagetrack).
+**`[[animated]]`**
+
+Indicates whether this track contains an animated image with multiple frames.
+**`[[frame count]]`**
+
+The number of frames in this track.
+**`[[repetition count]]`**
+
+The number of times the animation is intended to repeat.
+**`[[selected]]`**
+
+Indicates whether this track is selected for decoding.
+
+#### [10.7.2. Attributes](https://www.w3.org/TR/webcodecs/#imagetrack-attributes)
+
+**`animated`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly**
+
+The [animated](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated) getter steps are to return the value of [[[animated]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-animated-slot).
+
+NOTE: This attribute provides an early indication that [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) will ultimately exceed 0 for images where the [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) starts at `0` and later increments as new chunks of the [ReadableStream](https://streams.spec.whatwg.org/#readablestream) [data](https://www.w3.org/TR/webcodecs/#dom-imagedecoderinit-data) arrive.
+**`frameCount`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
+
+The [frameCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-framecount) getter steps are to return the value of [[[frame count]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-frame-count-slot).
+**`repetitionCount`, of type [unrestricted float](https://webidl.spec.whatwg.org/#idl-unrestricted-float), readonly**
+
+The [repetitionCount](https://www.w3.org/TR/webcodecs/#dom-imagetrack-repetitioncount) getter steps are to return the value of [[[repetition count]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-repetition-count-slot).
+**`selected`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean)**
+
+The [selected](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected) getter steps are to return the value of [[[selected]]](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected-slot).
+
+The [selected](https://www.w3.org/TR/webcodecs/#dom-imagetrack-selected) setter steps are:

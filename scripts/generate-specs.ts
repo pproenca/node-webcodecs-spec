@@ -205,14 +205,70 @@ function createTurndownService(specUrl: string): TurndownService {
     codeBlockStyle: 'fenced',
   });
 
-  // Custom rule for WebIDL code blocks
+  // Custom rule for WebIDL code blocks - use raw text to strip all HTML tags
   turndown.addRule('webidl', {
     filter: (node) => {
       return node.nodeName === 'PRE' && node.classList.contains('idl');
     },
-    replacement: (content) => {
-      return '\n```webidl\n' + content.trim() + '\n```\n';
+    replacement: (_content, node) => {
+      // Get raw text content, stripping all HTML tags including links
+      const rawText = (node as HTMLElement).textContent || '';
+      return '\n```webidl\n' + rawText.trim() + '\n```\n';
     },
+  });
+
+  // Linked headings - make header text link to W3C spec section
+  turndown.addRule('linkedHeading', {
+    filter: ['h2', 'h3', 'h4'],
+    replacement: (content, node) => {
+      const el = node as HTMLElement;
+      const selfLink = el.querySelector('a.self-link');
+      const href = selfLink?.getAttribute('href') || '';
+      const level = parseInt(el.tagName[1]);
+      const hashes = '#'.repeat(level);
+
+      // Clean up: remove self-link, unescape periods after numbers
+      const cleanContent = content
+        .replace(/\[\]\([^)]*\)$/, '') // Remove trailing empty self-link
+        .replace(/(\d+)\\\./g, '$1.') // Unescape periods after numbers
+        .trim();
+
+      if (href) {
+        const absoluteHref = href.startsWith('#') ? specUrl + href : href;
+        return `\n${hashes} [${cleanContent}](${absoluteHref})\n\n`;
+      }
+      return `\n${hashes} ${cleanContent}\n\n`;
+    },
+  });
+
+  // Definition list handling
+  turndown.addRule('definitionList', {
+    filter: 'dl',
+    replacement: (content) => '\n' + content + '\n',
+  });
+
+  // Definition terms - algorithm definitions become #### headings, others become bold
+  turndown.addRule('definitionTerm', {
+    filter: 'dt',
+    replacement: (content, node) => {
+      const el = node as HTMLElement;
+      const dfn = el.querySelector('dfn[data-dfn-type="dfn"]');
+
+      // Algorithm definitions become #### headings
+      if (dfn) {
+        const text = content.trim();
+        return `\n#### ${text}\n\n`;
+      }
+
+      // Regular definition terms (internal slots, attributes) become bold
+      return '\n**' + content.trim() + '**\n\n';
+    },
+  });
+
+  // Definition descriptions
+  turndown.addRule('definitionDescription', {
+    filter: 'dd',
+    replacement: (content) => content.trim() + '\n',
   });
 
   // Handle <code> tags containing links - render as link without backticks

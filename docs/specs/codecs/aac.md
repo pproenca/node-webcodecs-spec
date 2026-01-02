@@ -28,7 +28,7 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-aac-codec-registration/#fully-qualified-codec-strings)
 
 This codec has multiple possible [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string):
 
@@ -39,13 +39,13 @@ This codec has multiple possible [codec strings](https://www.w3.org/TR/webcodecs
 - `"mp4a.40.29"` — MPEG-4 HE-AAC v2 (AAC LC + SBR + PS)
 - `"mp4a.67"` — MPEG-2 AAC LC
 
-## 2\. EncodedAudioChunk data[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#encodedaudiochunk-data)
+## [2. EncodedAudioChunk data](https://www.w3.org/TR/webcodecs-aac-codec-registration/#encodedaudiochunk-data)
 
 If the bitstream is in [adts](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-adts) format, the [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-internal-data-slot) of [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s are expected to be an ADTS frame, as described in section 1.A.3.2 of [\[iso14496-3\]](https://www.w3.org/TR/webcodecs-aac-codec-registration/#biblio-iso14496-3).
 
 If the bitstream is in [aac](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-aac) format, the [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-internal-data-slot) of [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s are expected to be a raw AAC frame (syntax element `raw_data_block()`), as described in section 4.4.2.1 of [\[iso14496-3\]](https://www.w3.org/TR/webcodecs-aac-codec-registration/#biblio-iso14496-3).
 
-## 3\. AudioDecoderConfig description[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#audiodecoderconfig-description)
+## [3. AudioDecoderConfig description](https://www.w3.org/TR/webcodecs-aac-codec-registration/#audiodecoderconfig-description)
 
 If [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) is present, it is assumed to a `AudioSpecificConfig` as defined in [\[iso14496-3\]](https://www.w3.org/TR/webcodecs-aac-codec-registration/#biblio-iso14496-3) section 1.6.2.1, Table 1.15, and the bitstream is assumed to be in [aac](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-aac).
 
@@ -53,66 +53,65 @@ If the [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-des
 
 The [sampleRate](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-samplerate) and [numberOfChannels](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-numberofchannels) members are ignored.
 
-## 4\. EncodedAudioChunk type[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#encodedaudiochunk-type)
+## [4. EncodedAudioChunk type](https://www.w3.org/TR/webcodecs-aac-codec-registration/#encodedaudiochunk-type)
 
 The [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot) for an [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing AAC is always "[key](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunktype-key)".
 
 NOTE: Once the initialization has succeeded, any AAC packet can be decoded at any time without error, but this might not result in the expected audio output.
 
-## 5\. AudioEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#audioencoderconfig-extensions)
+## [5. AudioEncoderConfig extensions](https://www.w3.org/TR/webcodecs-aac-codec-registration/#audioencoderconfig-extensions)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [AacEncoderConfig](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dictdef-aacencoderconfig) [aac](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-audioencoderconfig-aac);
+partial dictionary AudioEncoderConfig {
+  AacEncoderConfig aac;
 };
 ```
 
-`aac`, of type [AacEncoderConfig](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dictdef-aacencoderconfig)
+**`aac`, of type [AacEncoderConfig](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dictdef-aacencoderconfig)**
 
 Contains codec specific configuration options for the AAC codec.
 
-### 5.1. AacEncoderConfig[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#aac-encoder-config)
+### [5.1. AacEncoderConfig](https://www.w3.org/TR/webcodecs-aac-codec-registration/#aac-encoder-config)
 
 ```webidl
-dictionary `AacEncoderConfig` {
-  [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat) [format](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacencoderconfig-format) = "aac";
+dictionary AacEncoderConfig {
+  AacBitstreamFormat format = "aac";
 };
 ```
 
-`format`, of type [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat), defaulting to `"aac"`
+**`format`, of type [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat), defaulting to `"aac"`**
 
 Configures the format of output [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s. See [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat).
 
-### 5.2. AacBitstreamFormat[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#aac-bitstream-format)
+### [5.2. AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#aac-bitstream-format)
 
 ```webidl
-enum `AacBitstreamFormat` {
-  ["aac"](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-aac),
-  ["adts"](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-adts),
+enum AacBitstreamFormat {
+  "aac",
+  "adts",
 };
 ```
 
 The [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat) determines the location of the metadata necessary to decode the encoded audio stream.
 
-`aac`
+**`aac`**
 
 The metadata of the encoded audio stream are provided at configuration via [AudioDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description).
-
-`adts`
+**`adts`**
 
 The metadata of the encoded audio stream are provided in each ADTS frame, and therefore no [AudioDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) is necessary.
 
-## 6\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#privacy-considerations)
+## [6. Privacy Considerations](https://www.w3.org/TR/webcodecs-aac-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-aac-codec-registration/#biblio-webcodecs).
 
-## 7\. Security Considerations[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#security-considerations)
+## [7. Security Considerations](https://www.w3.org/TR/webcodecs-aac-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-aac-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-aac-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-aac-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -128,9 +127,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index-defined-here)
 
 - ["aac"](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-aac), in § 5.2
 - aac
@@ -142,7 +141,7 @@ Note, this is an informative note.
 - [adts](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-adts), in § 5.2
 - [format](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacencoderconfig-format), in § 5.1
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-aac-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -154,42 +153,42 @@ Note, this is an informative note.
   - numberOfChannels
   - sampleRate
 
-## References[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-aac-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-aac-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-aac-codec-registration/#informative)
 
-\[ISO14496-3\]
+**\[ISO14496-3\]**
 
 [ISO/IEC 14496-3:2009 - Information technology — Coding of audio-visual objects — Part 3: Audio](https://www.iso.org/standard/53943.html). 2009-09. URL: [https://www.iso.org/standard/53943.html](https://www.iso.org/standard/53943.html)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-aac-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-aac-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [AacEncoderConfig](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dictdef-aacencoderconfig) [aac](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-audioencoderconfig-aac);
+partial dictionary AudioEncoderConfig {
+  AacEncoderConfig aac;
 };
 
-dictionary [`AacEncoderConfig`](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dictdef-aacencoderconfig) {
-  [AacBitstreamFormat](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat) [format](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacencoderconfig-format) = "aac";
+
+dictionary AacEncoderConfig {
+  AacBitstreamFormat format = "aac";
 };
 
-enum [`AacBitstreamFormat`](https://www.w3.org/TR/webcodecs-aac-codec-registration/#enumdef-aacbitstreamformat) {
-  ["aac"](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-aac),
-  ["adts"](https://www.w3.org/TR/webcodecs-aac-codec-registration/#dom-aacbitstreamformat-adts),
+
+enum AacBitstreamFormat {
+  "aac",
+  "adts",
 };
 ```
 

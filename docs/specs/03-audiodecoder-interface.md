@@ -4,85 +4,74 @@ title: '3. AudioDecoder Interface'
 
 > Section 3 from [W3C WebCodecs Specification](https://www.w3.org/TR/webcodecs/)
 
-## 3\. AudioDecoder Interface[](https://www.w3.org/TR/webcodecs/#audiodecoder-interface)
+## [3. AudioDecoder Interface](https://www.w3.org/TR/webcodecs/#audiodecoder-interface)
 
 ```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker), [SecureContext](https://webidl.spec.whatwg.org/#SecureContext)\]
-interface `AudioDecoder` : [EventTarget](https://dom.spec.whatwg.org/#eventtarget) {
-  [constructor](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-audiodecoder)([AudioDecoderInit](https://www.w3.org/TR/webcodecs/#dictdef-audiodecoderinit) `init`);
+[Exposed=(Window,DedicatedWorker), SecureContext]
+interface AudioDecoder : EventTarget {
+  constructor(AudioDecoderInit init);
 
-  readonly attribute [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate) [state](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-state);
-  readonly attribute [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [decodeQueueSize](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-decodequeuesize);
-  attribute [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler) [ondequeue](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-ondequeue);
+  readonly attribute CodecState state;
+  readonly attribute unsigned long decodeQueueSize;
+  attribute EventHandler ondequeue;
 
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [configure](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-configure)([AudioDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audiodecoderconfig) `config`);
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [decode](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-decode)([EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) `chunk`);
-  [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[undefined](https://webidl.spec.whatwg.org/#idl-undefined)\> [flush](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-flush)();
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [reset](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-reset)();
-  [undefined](https://webidl.spec.whatwg.org/#idl-undefined) [close](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-close)();
+  undefined configure(AudioDecoderConfig config);
+  undefined decode(EncodedAudioChunk chunk);
+  Promise<undefined> flush();
+  undefined reset();
+  undefined close();
 
-  static [Promise](https://webidl.spec.whatwg.org/#idl-promise)<[AudioDecoderSupport](https://www.w3.org/TR/webcodecs/#dictdef-audiodecodersupport)\> [isConfigSupported](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-isconfigsupported)([AudioDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audiodecoderconfig) `config`);
+  static Promise<AudioDecoderSupport> isConfigSupported(AudioDecoderConfig config);
 };
 
-dictionary `AudioDecoderInit` {
-  required [AudioDataOutputCallback](https://www.w3.org/TR/webcodecs/#callbackdef-audiodataoutputcallback) `output`;
-  required [WebCodecsErrorCallback](https://www.w3.org/TR/webcodecs/#callbackdef-webcodecserrorcallback) `error`;
+dictionary AudioDecoderInit {
+  required AudioDataOutputCallback output;
+  required WebCodecsErrorCallback error;
 };
 
-callback `AudioDataOutputCallback` = [undefined](https://webidl.spec.whatwg.org/#idl-undefined)([AudioData](https://www.w3.org/TR/webcodecs/#audiodata) `output`);
+callback AudioDataOutputCallback = undefined(AudioData output);
 ```
 
-### 3.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#audiodecoder-internal-slots)
+### [3.1. Internal Slots](https://www.w3.org/TR/webcodecs/#audiodecoder-internal-slots)
 
-`[[control message queue]]`
+**`[[control message queue]]`**
 
 A [queue](https://infra.spec.whatwg.org/#queue) of [control messages](https://www.w3.org/TR/webcodecs/#control-message) to be performed upon this [codec](https://www.w3.org/TR/webcodecs/#codec) instance. See [\[\[control message queue\]\]](https://www.w3.org/TR/webcodecs/#control-message-queue-slot).
-
-`[[message queue blocked]]`
+**`[[message queue blocked]]`**
 
 A boolean indicating when processing the [[[control message queue]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-control-message-queue-slot) is blocked by a pending [control message](https://www.w3.org/TR/webcodecs/#control-message). See [\[\[message queue blocked\]\]](https://www.w3.org/TR/webcodecs/#message-queue-blocked).
-
-`[[codec implementation]]`
+**`[[codec implementation]]`**
 
 Underlying decoder implementation provided by the User Agent. See [\[\[codec implementation\]\]](https://www.w3.org/TR/webcodecs/#codec-implementation).
-
-`[[codec work queue]]`
+**`[[codec work queue]]`**
 
 A [parallel queue](https://html.spec.whatwg.org/multipage/infrastructure.html#parallel-queue) used for running parallel steps that reference the [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-codec-implementation-slot). See [\[\[codec work queue\]\]](https://www.w3.org/TR/webcodecs/#codec-work-queue).
-
-`[[codec saturated]]`
+**`[[codec saturated]]`**
 
 A boolean indicating when the [[[codec implementation]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-codec-implementation-slot) is unable to accept additional decoding work.
-
-`[[output callback]]`
+**`[[output callback]]`**
 
 Callback given at construction for decoded outputs.
-
-`[[error callback]]`
+**`[[error callback]]`**
 
 Callback given at construction for decode errors.
-
-`[[key chunk required]]`
+**`[[key chunk required]]`**
 
 A boolean indicating that the next chunk passed to [decode()](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-decode) _MUST_ describe a [key chunk](https://www.w3.org/TR/webcodecs/#key-chunk) as indicated by [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot).
-
-`[[state]]`
+**`[[state]]`**
 
 The current [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate) of this [AudioDecoder](https://www.w3.org/TR/webcodecs/#audiodecoder).
-
-`[[decodeQueueSize]]`
+**`[[decodeQueueSize]]`**
 
 The number of pending decode requests. This number will decrease as the underlying codec is ready to accept new input.
-
-`[[pending flush promises]]`
+**`[[pending flush promises]]`**
 
 A list of unresolved promises returned by calls to [flush()](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-flush).
-
-`[[dequeue event scheduled]]`
+**`[[dequeue event scheduled]]`**
 
 A boolean indicating whether a [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-audiodecoder-dequeue) event is already scheduled to fire. Used to avoid event spam.
 
-### 3.2. Constructors[](https://www.w3.org/TR/webcodecs/#audiodecoder-constructors)
+### [3.2. Constructors](https://www.w3.org/TR/webcodecs/#audiodecoder-constructors)
 
 `AudioDecoder(init)`
 
@@ -101,29 +90,27 @@ A boolean indicating whether a [dequeue](https://www.w3.org/TR/webcodecs/#eventd
 13. Assign `false` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-dequeue-event-scheduled-slot).
 14. Return d.
 
-### 3.3. Attributes[](https://www.w3.org/TR/webcodecs/#audiodecoder-attributes)
+### [3.3. Attributes](https://www.w3.org/TR/webcodecs/#audiodecoder-attributes)
 
-`state`, of type [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate), readonly
+**`state`, of type [CodecState](https://www.w3.org/TR/webcodecs/#enumdef-codecstate), readonly**
 
 Returns the value of [[[state]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-state-slot).
-
-`decodeQueueSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly
+**`decodeQueueSize`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), readonly**
 
 Returns the value of [[[decodeQueueSize]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-decodequeuesize-slot).
-
-`ondequeue`, of type [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler)
+**`ondequeue`, of type [EventHandler](https://html.spec.whatwg.org/multipage/webappapis.html#eventhandler)**
 
 An [event handler IDL attribute](https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-idl-attributes) whose [event handler event type](https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-event-type) is [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-audiodecoder-dequeue).
 
-### 3.4. Event Summary[](https://www.w3.org/TR/webcodecs/#audiodecoder-event-summary)
+### [3.4. Event Summary](https://www.w3.org/TR/webcodecs/#audiodecoder-event-summary)
 
-`dequeue`
+**`dequeue`**
 
 Fired at the [AudioDecoder](https://www.w3.org/TR/webcodecs/#audiodecoder) when the [decodeQueueSize](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-decodequeuesize) has decreased.
 
-### 3.5. Methods[](https://www.w3.org/TR/webcodecs/#audiodecoder-methods)
+### [3.5. Methods](https://www.w3.org/TR/webcodecs/#audiodecoder-methods)
 
-`configure(config)`
+**`configure(config)`**
 
 [Enqueues a control message](https://www.w3.org/TR/webcodecs/#enqueues-a-control-message) to configure the audio decoder for decoding chunks as described by config.
 
@@ -151,8 +138,7 @@ When invoked, run these steps:
         2.  [Queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to [Process the control message queue](https://www.w3.org/TR/webcodecs/#process-the-control-message-queue).
 
 3.  Return `"processed"`.
-
-`decode(chunk)`
+    **`decode(chunk)`**
 
 [Enqueues a control message](https://www.w3.org/TR/webcodecs/#enqueues-a-control-message) to decode the given chunk.
 
@@ -184,8 +170,7 @@ When invoked, run these steps:
     5.  If decoded outputs is not empty, [queue a task](https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task) to run the [Output AudioData](https://www.w3.org/TR/webcodecs/#output-audiodata) algorithm with decoded outputs.
 
 5.  Return `"processed"`.
-
-`flush()`
+    **`flush()`**
 
 Completes all [control messages](https://www.w3.org/TR/webcodecs/#control-message) in the [control message queue](https://www.w3.org/TR/webcodecs/#control-message-queue) and emits all outputs.
 
@@ -210,20 +195,17 @@ When invoked, run these steps:
         3.  Resolve promise.
 
 2.  Return `"processed"`.
-
-`reset()`
+    **`reset()`**
 
 Immediately resets all state including configuration, [control messages](https://www.w3.org/TR/webcodecs/#control-message) in the [control message queue](https://www.w3.org/TR/webcodecs/#control-message-queue), and all pending callbacks.
 
 When invoked, run the [Reset AudioDecoder](https://www.w3.org/TR/webcodecs/#reset-audiodecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`close()`
+**`close()`**
 
 Immediately aborts all pending work and releases [system resources](https://www.w3.org/TR/webcodecs/#system-resources). Close is final.
 
 When invoked, run the [Close AudioDecoder](https://www.w3.org/TR/webcodecs/#close-audiodecoder) algorithm with an [AbortError](https://webidl.spec.whatwg.org/#aborterror) [DOMException](https://webidl.spec.whatwg.org/#idl-DOMException).
-
-`isConfigSupported(config)`
+**`isConfigSupported(config)`**
 
 Returns a promise indicating whether the provided config is supported by the User Agent.
 
@@ -245,9 +227,9 @@ When invoked, run these steps:
 
 5.  Return p.
 
-### 3.6. Algorithms[](https://www.w3.org/TR/webcodecs/#audiodecoder-algorithms)
+### [3.6. Algorithms](https://www.w3.org/TR/webcodecs/#audiodecoder-algorithms)
 
-Schedule Dequeue Event
+#### Schedule Dequeue Event
 
 1.  If [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-dequeue-event-scheduled-slot) equals `true`, return.
 2.  Assign `true` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-dequeue-event-scheduled-slot).
@@ -255,7 +237,7 @@ Schedule Dequeue Event
     1.  Fire a simple event named [dequeue](https://www.w3.org/TR/webcodecs/#eventdef-audiodecoder-dequeue) at [this](https://webidl.spec.whatwg.org/#this).
     2.  Assign `false` to [[[dequeue event scheduled]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-dequeue-event-scheduled-slot).
 
-Output AudioData (with outputs)
+#### Output AudioData (with outputs)
 
 Run these steps:
 
@@ -272,7 +254,7 @@ Run these steps:
 
     2.  Invoke [[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-output-callback-slot) with data.
 
-Reset AudioDecoder (with exception)
+#### Reset AudioDecoder (with exception)
 
 Run these steps:
 
@@ -288,7 +270,7 @@ Run these steps:
     1.  Reject promise with exception.
     2.  Remove promise from [[[pending flush promises]]](https://www.w3.org/TR/webcodecs/#dom-audiodecoder-pending-flush-promises-slot).
 
-Close AudioDecoder (with exception)
+#### Close AudioDecoder (with exception)
 
 Run these steps:
 

@@ -28,7 +28,7 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#fully-qualified-codec-strings)
 
 This codec has multiple equivalent [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string):
 
@@ -36,33 +36,33 @@ This codec has multiple equivalent [codec strings](https://www.w3.org/TR/webcode
 - `"mp4a.69"`
 - `"mp4a.6B"`
 
-## 2\. EncodedAudioChunk data[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#encodedaudiochunk-data)
+## [2. EncodedAudioChunk data](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#encodedaudiochunk-data)
 
 [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-internal-data-slot) is expected to be a "frame", as described in the section 2.4.2.2 of the [\[MP3\]](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#biblio-mp3) specification.
 
-## 3\. AudioDecoderConfig description[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#audiodecoderconfig-description)
+## [3. AudioDecoderConfig description](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#audiodecoderconfig-description)
 
 [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) is not used for this codec.
 
 The [sampleRate](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-samplerate) and [numberOfChannels](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-numberofchannels) members are ignored.
 
-## 4\. EncodedAudioChunk type[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#encodedaudiochunk-type)
+## [4. EncodedAudioChunk type](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#encodedaudiochunk-type)
 
 The [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot) for an [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing mp3 is always "[key](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunktype-key)".
 
 NOTE: Once the initialization has succeeded, any mp3 packet can be decoded at any time without error, but this might not result in the expected audio output.
 
-## 5\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#privacy-considerations)
+## [5. Privacy Considerations](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#biblio-webcodecs).
 
-## 6\. Security Considerations[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#security-considerations)
+## [6. Security Considerations](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -78,9 +78,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#index)
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -91,25 +91,23 @@ Note, this is an informative note.
   - numberOfChannels
   - sampleRate
 
-## References[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-mp3-codec-registration/#informative)
 
-\[MP3\]
+**\[MP3\]**
 
 [ISO/IEC 13818-3:1998 - Information technology — Generic coding of moving pictures and associated audio information — Part 3: Audio](https://www.iso.org/standard/26797.html). 1998-04. URL: [https://www.iso.org/standard/26797.html](https://www.iso.org/standard/26797.html)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 

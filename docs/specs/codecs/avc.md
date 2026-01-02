@@ -28,11 +28,11 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-avc-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins with the prefix "avc1." or "avc3.", with a suffix of 6 characters as described respectively in Section 3.4 of [\[rfc6381\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-rfc6381) and Section 5.4.1 of [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15).
 
-## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-data)
+## [2. EncodedVideoChunk data](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-data)
 
 [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be an access unit as defined in [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) section 7.4.1.2.
 
@@ -44,7 +44,7 @@ If the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-avc-codec-regist
 
 NOTE: Since [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is inherently byte-aligned, implementations are not required to recover byte-alignment.
 
-## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videodecoderconfig-description)
+## [3. VideoDecoderConfig description](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videodecoderconfig-description)
 
 If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is present, it is assumed to be an `AVCDecoderConfigurationRecord`, as defined by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15), section 5.3.3.1, and the bitstream is assumed to be in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format.
 
@@ -54,7 +54,7 @@ If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-des
 
 NOTE: "annexb" format is described in greater detail by [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264), Annex B. This format is commonly used in live-streaming applications, where including the SPS and PPS data periodically allows users to easily start from the middle of the stream.
 
-## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-type)
+## [4. EncodedVideoChunk type](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-type)
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a primary coded picture that is an instantaneous decoding refresh (IDR) picture.
 
@@ -62,88 +62,87 @@ NOTE: If the bitstream is in [avc](https://www.w3.org/TR/webcodecs-avc-codec-reg
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain both a primary coded picture that is an instantaneous decoding refresh (IDR) picture, and all parameter sets necessary to decode all video data NAL units in the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk).
 
-## 5\. VideoEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videoencoderconfig-extensions)
+## [5. VideoEncoderConfig extensions](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videoencoderconfig-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig) {
-  [AvcEncoderConfig](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-avcencoderconfig) [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderconfig-avc);
+partial dictionary VideoEncoderConfig {
+  AvcEncoderConfig avc;
 };
 ```
 
-`avc`, of type [AvcEncoderConfig](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-avcencoderconfig)
+**`avc`, of type [AvcEncoderConfig](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-avcencoderconfig)**
 
 Contains codec specific configuration options for the AVC (H.264) codec.
 
-### 5.1. AvcEncoderConfig[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-encoder-config)
+### [5.1. AvcEncoderConfig](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-encoder-config)
 
 ```webidl
-dictionary `AvcEncoderConfig` {
-  [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat) [format](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcencoderconfig-format) = "avc";
+dictionary AvcEncoderConfig {
+  AvcBitstreamFormat format = "avc";
 };
 ```
 
-`format`, of type [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat), defaulting to `"avc"`
+**`format`, of type [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat), defaulting to `"avc"`**
 
 Configures the format of output [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)s. See [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat).
 
-### 5.2. AvcBitstreamFormat[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-bitstream-format)
+### [5.2. AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-bitstream-format)
 
 ```webidl
-enum `AvcBitstreamFormat` {
-  ["annexb"](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb),
-  ["avc"](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc),
+enum AvcBitstreamFormat {
+  "annexb",
+  "avc",
 };
 ```
 
 The [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat) determines the location of AVC parameter sets, and mechanisms for packaging the bitstream.
 
-`annexb`
+**`annexb`**
 
 SPS and PPS data are included periodically throughout the bitstream.
 
 NOTE: This format is described in greater detail by [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264), Annex B. This format is commonly used in live-streaming applications, where including the SPS and PPS data periodically allows users to easily start from the middle of the stream.
-
-`avc`
+**`avc`**
 
 SPS and PPS data are not included in the bitstream and are instead emitted via the [[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-videoencoder-output-callback-slot) as the [VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) of the [EncodedVideoChunkMetadata.decoderConfig](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunkmetadata-decoderconfig).
 
 NOTE: This format is described in greater detail by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15), section 5.3. This format is commonly used in .MP4 files, where the player generally has random access to the media data.
 
-## 6\. VideoEncoderEncodeOptions extensions[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videoencoderencodeoptions-extensions)
+## [6. VideoEncoderEncodeOptions extensions](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videoencoderencodeoptions-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc) [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderencodeoptions-avc);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForAvc avc;
 };
 ```
 
-`avc`, of type [VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc)
+**`avc`, of type [VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc)**
 
 Contains codec specific encode options for the [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) codec.
 
-### 6.1. VideoEncoderEncodeOptionsForAvc[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-encode-options)
+### [6.1. VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-encode-options)
 
 ```webidl
-dictionary `VideoEncoderEncodeOptionsForAvc` {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderencodeoptionsforavc-quantizer);
+dictionary VideoEncoderEncodeOptionsForAvc {
+  unsigned short? quantizer;
 };
 ```
 
-`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable
+**`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable**
 
 Sets per-frame quantizer value. In [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) the quantizer threshold can be varied from 0 to 51.
 
-## 7\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#privacy-considerations)
+## [7. Privacy Considerations](https://www.w3.org/TR/webcodecs-avc-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-webcodecs).
 
-## 8\. Security Considerations[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#security-considerations)
+## [8. Security Considerations](https://www.w3.org/TR/webcodecs-avc-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-avc-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-avc-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -159,9 +158,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index-defined-here)
 
 - ["annexb"](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb), in § 5.2
 - [annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb), in § 5.2
@@ -176,7 +175,7 @@ Note, this is an informative note.
 - [quantizer](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderencodeoptionsforavc-quantizer), in § 6.1
 - [VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc), in § 6.1
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-avc-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -191,62 +190,61 @@ Note, this is an informative note.
 - \[WEBIDL\] defines the following terms:
   - unsigned short
 
-## References[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-avc-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-avc-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-avc-codec-registration/#informative)
 
-\[ISO14496-15\]
+**\[ISO14496-15\]**
 
 [ISO/IEC 14496-15:2024 Information technology — Coding of audio-visual objects — Part 15: Carriage of network abstraction layer (NAL) unit structured video in the ISO base media file format](https://www.iso.org/standard/89118.html). October 2024. URL: [https://www.iso.org/standard/89118.html](https://www.iso.org/standard/89118.html)
-
-\[ITU-T-REC-H.264\]
+**\[ITU-T-REC-H.264\]**
 
 [H.264 : Advanced video coding for generic audiovisual services](https://www.itu.int/rec/T-REC-H.264). June 2019. URL: [https://www.itu.int/rec/T-REC-H.264](https://www.itu.int/rec/T-REC-H.264)
-
-\[RFC6381\]
+**\[RFC6381\]**
 
 R. Gellens; D. Singer; P. Frojdh. [The 'Codecs' and 'Profiles' Parameters for "Bucket" Media Types](https://www.rfc-editor.org/rfc/rfc6381). August 2011. Proposed Standard. URL: [https://www.rfc-editor.org/rfc/rfc6381](https://www.rfc-editor.org/rfc/rfc6381)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-avc-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig) {
-  [AvcEncoderConfig](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-avcencoderconfig) [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderconfig-avc);
+partial dictionary VideoEncoderConfig {
+  AvcEncoderConfig avc;
 };
 
-dictionary [`AvcEncoderConfig`](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-avcencoderconfig) {
-  [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat) [format](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcencoderconfig-format) = "avc";
+
+dictionary AvcEncoderConfig {
+  AvcBitstreamFormat format = "avc";
 };
 
-enum [`AvcBitstreamFormat`](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat) {
-  ["annexb"](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb),
-  ["avc"](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc),
+
+enum AvcBitstreamFormat {
+  "annexb",
+  "avc",
 };
 
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForAvc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc) [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderencodeoptions-avc);
+
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForAvc avc;
 };
 
-dictionary [`VideoEncoderEncodeOptionsForAvc`](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dictdef-videoencoderencodeoptionsforavc) {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-videoencoderencodeoptionsforavc-quantizer);
+
+dictionary VideoEncoderEncodeOptionsForAvc {
+  unsigned short? quantizer;
 };
 ```
 

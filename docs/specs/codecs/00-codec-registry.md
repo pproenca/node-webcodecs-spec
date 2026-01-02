@@ -30,11 +30,11 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Organization[](https://www.w3.org/TR/webcodecs-codec-registry/#organization)
+## [1. Organization](https://www.w3.org/TR/webcodecs-codec-registry/#organization)
 
 This registry maintains a mapping between codec strings and registration specifications as described below.
 
-## 2\. Registration Entry Requirements[](https://www.w3.org/TR/webcodecs-codec-registry/#registration-entry-requirements)
+## [2. Registration Entry Requirements](https://www.w3.org/TR/webcodecs-codec-registry/#registration-entry-requirements)
 
 1.  Each entry must include a unique codec string, a common name string, and a link to the codec’s specification.
 2.  The codec string must be crafted as follows:
@@ -52,7 +52,7 @@ This registry maintains a mapping between codec strings and registration specifi
 5.  Candidate entries must be announced by filing an issue in the [WebCodecs GitHub issue tracker](https://github.com/w3c/webcodecs/issues/) so they can be discussed and evaluated for compliance before being added to the registry. The Media Working Group may seek expertise from outside the Working Group as part of its evaluation, e.g., from the codec specification editors or relevant standards group. If the codec specification is not publicly available, it must be made available to the Working Group for evaluation. If the Working Group reaches consensus to accept the candidate, a pull request should be drafted (either by editors or by the party requesting the candidate registration) to register the candidate. The registry editors will review and merge the pull request.
 6.  Existing entries cannot be deleted or deprecated. They may be changed after being published through the same process as candidate entries. Possible changes include expansion of the codec string to better qualify the codec, adjustments to the codec name string, and modification of the link to the codec’s specification.
 
-## 3\. Audio Codec Registry[](https://www.w3.org/TR/webcodecs-codec-registry/#audio-codec-registry)
+## [3. Audio Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/#audio-codec-registry)
 
 **codec string**
 
@@ -108,7 +108,7 @@ Linear PCM
 
 [Linear PCM WebCodecs Registration](https://www.w3.org/TR/webcodecs-pcm-codec-registration/) [\[WEBCODECS-PCM-CODEC-REGISTRATION\]](https://www.w3.org/TR/webcodecs-codec-registry/#biblio-webcodecs-pcm-codec-registration)
 
-## 4\. Video Codec Registry[](https://www.w3.org/TR/webcodecs-codec-registry/#video-codec-registry)
+## [4. Video Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/#video-codec-registry)
 
 **codec string**
 
@@ -146,17 +146,17 @@ VP9
 
 [VP9 codec registration](https://www.w3.org/TR/webcodecs-vp9-codec-registration/) [\[WEBCODECS-VP9-CODEC-REGISTRATION\]](https://www.w3.org/TR/webcodecs-codec-registry/#biblio-webcodecs-vp9-codec-registration)
 
-## 5\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-codec-registry/#privacy-considerations)
+## [5. Privacy Considerations](https://www.w3.org/TR/webcodecs-codec-registry/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-codec-registry/#biblio-webcodecs).
 
-## 6\. Security Considerations[](https://www.w3.org/TR/webcodecs-codec-registry/#security-considerations)
+## [6. Security Considerations](https://www.w3.org/TR/webcodecs-codec-registry/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-codec-registry/#biblio-webcodecs).
 
-## Index[](https://www.w3.org/TR/webcodecs-codec-registry/#index)
+## [Index](https://www.w3.org/TR/webcodecs-codec-registry/#index)
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-codec-registry/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-codec-registry/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - AudioDecoderConfig
@@ -167,65 +167,53 @@ Please refer to the section [Security Considerations](https://www.w3.org/TR/webc
   - VideoEncoderConfig
   - \[\[type\]\]
 
-## References[](https://www.w3.org/TR/webcodecs-codec-registry/#references)
+## [References](https://www.w3.org/TR/webcodecs-codec-registry/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-codec-registry/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-codec-registry/#normative)
 
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Bernard Aboba; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 July 2024. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-codec-registry/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-codec-registry/#informative)
 
-\[WEBCODECS-AAC-CODEC-REGISTRATION\]
+**\[WEBCODECS-AAC-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [AAC WebCodecs Registration](https://www.w3.org/TR/webcodecs-aac-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-aac-codec-registration/](https://www.w3.org/TR/webcodecs-aac-codec-registration/)
-
-\[WEBCODECS-ALAW-CODEC-REGISTRATION\]
+**\[WEBCODECS-ALAW-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [A-law PCM WebCodecs Registration](https://www.w3.org/TR/webcodecs-alaw-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-alaw-codec-registration/](https://www.w3.org/TR/webcodecs-alaw-codec-registration/)
-
-\[WEBCODECS-AV1-CODEC-REGISTRATION\]
+**\[WEBCODECS-AV1-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [AV1 WebCodecs Registration](https://www.w3.org/TR/webcodecs-av1-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-av1-codec-registration/](https://www.w3.org/TR/webcodecs-av1-codec-registration/)
-
-\[WEBCODECS-AVC-CODEC-REGISTRATION\]
+**\[WEBCODECS-AVC-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [AVC (H.264) WebCodecs Registration](https://www.w3.org/TR/webcodecs-avc-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-avc-codec-registration/](https://www.w3.org/TR/webcodecs-avc-codec-registration/)
-
-\[WEBCODECS-FLAC-CODEC-REGISTRATION\]
+**\[WEBCODECS-FLAC-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [FLAC WebCodecs Registration](https://www.w3.org/TR/webcodecs-flac-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-flac-codec-registration/](https://www.w3.org/TR/webcodecs-flac-codec-registration/)
-
-\[WEBCODECS-HEVC-CODEC-REGISTRATION\]
+**\[WEBCODECS-HEVC-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [HEVC (H.265) WebCodecs Registration](https://www.w3.org/TR/webcodecs-hevc-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-hevc-codec-registration/](https://www.w3.org/TR/webcodecs-hevc-codec-registration/)
-
-\[WEBCODECS-MP3-CODEC-REGISTRATION\]
+**\[WEBCODECS-MP3-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [MP3 WebCodecs Registration](https://www.w3.org/TR/webcodecs-mp3-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-mp3-codec-registration/](https://www.w3.org/TR/webcodecs-mp3-codec-registration/)
-
-\[WEBCODECS-OPUS-CODEC-REGISTRATION\]
+**\[WEBCODECS-OPUS-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [Opus WebCodecs Registration](https://www.w3.org/TR/webcodecs-opus-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-opus-codec-registration/](https://www.w3.org/TR/webcodecs-opus-codec-registration/)
-
-\[WEBCODECS-PCM-CODEC-REGISTRATION\]
+**\[WEBCODECS-PCM-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [Linear PCM WebCodecs Registration](https://www.w3.org/TR/webcodecs-pcm-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-pcm-codec-registration/](https://www.w3.org/TR/webcodecs-pcm-codec-registration/)
-
-\[WEBCODECS-ULAW-CODEC-REGISTRATION\]
+**\[WEBCODECS-ULAW-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [u-law PCM WebCodecs Registration](https://www.w3.org/TR/webcodecs-ulaw-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-ulaw-codec-registration/](https://www.w3.org/TR/webcodecs-ulaw-codec-registration/)
-
-\[WEBCODECS-VORBIS-CODEC-REGISTRATION\]
+**\[WEBCODECS-VORBIS-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [Vorbis WebCodecs Registration](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-vorbis-codec-registration/](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/)
-
-\[WEBCODECS-VP8-CODEC-REGISTRATION\]
+**\[WEBCODECS-VP8-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [VP8 WebCodecs Registration](https://www.w3.org/TR/webcodecs-vp8-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-vp8-codec-registration/](https://www.w3.org/TR/webcodecs-vp8-codec-registration/)
-
-\[WEBCODECS-VP9-CODEC-REGISTRATION\]
+**\[WEBCODECS-VP9-CODEC-REGISTRATION\]**
 
 Paul Adenot; Bernard Aboba. [VP9 WebCodecs Registration](https://www.w3.org/TR/webcodecs-vp9-codec-registration/). 17 July 2024. NOTE. URL: [https://www.w3.org/TR/webcodecs-vp9-codec-registration/](https://www.w3.org/TR/webcodecs-vp9-codec-registration/)
 

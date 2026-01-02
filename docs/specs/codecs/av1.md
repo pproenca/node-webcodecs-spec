@@ -28,57 +28,57 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-av1-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins with the prefix `"av01."`, followed by a variable length suffix as described in Section 5 of [\[AV1-ISOBMFF\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-av1-isobmff).
 
-## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#encodedvideochunk-data)
+## [2. EncodedVideoChunk data](https://www.w3.org/TR/webcodecs-av1-codec-registration/#encodedvideochunk-data)
 
 [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be data compliant to the "low-overhead bitstream format" as described in Section 5 of [\[AV1\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-av1).
 
-## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#videodecoderconfig-description)
+## [3. VideoDecoderConfig description](https://www.w3.org/TR/webcodecs-av1-codec-registration/#videodecoderconfig-description)
 
 [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is not used for this codec.
 
-## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#encodedvideochunk-type)
+## [4. EncodedVideoChunk type](https://www.w3.org/TR/webcodecs-av1-codec-registration/#encodedvideochunk-type)
 
 If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a frame with a `frame_type` of `KEY_FRAME` as defined in Section 6.8.2 of [\[AV1\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-av1).
 
-## 5\. VideoEncoderEncodeOptions extensions[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#videoencoderencodeoptions-extensions)
+## [5. VideoEncoderEncodeOptions extensions](https://www.w3.org/TR/webcodecs-av1-codec-registration/#videoencoderencodeoptions-extensions)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1) [av1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptions-av1);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForAv1 av1;
 };
 ```
 
-`av1`, of type [VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1)
+**`av1`, of type [VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1)**
 
 Contains codec specific encode options for the [\[AV1\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-av1) codec.
 
-### 5.1. VideoEncoderEncodeOptionsForAv1[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#av1-encode-options)
+### [5.1. VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#av1-encode-options)
 
 ```webidl
-dictionary `VideoEncoderEncodeOptionsForAv1` {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptionsforav1-quantizer);
+dictionary VideoEncoderEncodeOptionsForAv1 {
+  unsigned short? quantizer;
 };
 ```
 
-`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable
+**`quantizer`, of type [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short), nullable**
 
 Sets per-frame quantizer value. In [\[AV1\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-av1) the quantizer threshold can be varied from 0 to 63
 
-## 6\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#privacy-considerations)
+## [6. Privacy Considerations](https://www.w3.org/TR/webcodecs-av1-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-webcodecs).
 
-## 7\. Security Considerations[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#security-considerations)
+## [7. Security Considerations](https://www.w3.org/TR/webcodecs-av1-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-av1-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-av1-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-av1-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -94,15 +94,15 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index-defined-here)
 
 - [av1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptions-av1), in § 5
 - [quantizer](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptionsforav1-quantizer), in § 5.1
 - [VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1), in § 5.1
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-av1-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -115,45 +115,42 @@ Note, this is an informative note.
 - \[WEBIDL\] defines the following terms:
   - unsigned short
 
-## References[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-av1-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-av1-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-av1-codec-registration/#informative)
 
-\[AV1\]
+**\[AV1\]**
 
 [AV1 Bitstream & Decoding Process Specification](https://aomediacodec.github.io/av1-spec/). URL: [https://aomediacodec.github.io/av1-spec/](https://aomediacodec.github.io/av1-spec/)
-
-\[AV1-ISOBMFF\]
+**\[AV1-ISOBMFF\]**
 
 [AV1 Codec ISO Media File Format Binding](https://aomediacodec.github.io/av1-isobmff/). URL: [https://aomediacodec.github.io/av1-isobmff/](https://aomediacodec.github.io/av1-isobmff/)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-av1-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-av1-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions) {
-  [VideoEncoderEncodeOptionsForAv1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1) [av1](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptions-av1);
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForAv1 av1;
 };
 
-dictionary [`VideoEncoderEncodeOptionsForAv1`](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dictdef-videoencoderencodeoptionsforav1) {
-  [unsigned short](https://webidl.spec.whatwg.org/#idl-unsigned-short)? [quantizer](https://www.w3.org/TR/webcodecs-av1-codec-registration/#dom-videoencoderencodeoptionsforav1-quantizer);
+
+dictionary VideoEncoderEncodeOptionsForAv1 {
+  unsigned short? quantizer;
 };
 ```
 

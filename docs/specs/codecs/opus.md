@@ -28,11 +28,11 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-opus-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) is `"opus"`.
 
-## 2\. EncodedAudioChunk data[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#encodedaudiochunk-data)
+## [2. EncodedAudioChunk data](https://www.w3.org/TR/webcodecs-opus-codec-registration/#encodedaudiochunk-data)
 
 An [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing Opus can be in two different formats.
 
@@ -40,7 +40,7 @@ If the bitstream is in [opus](https://www.w3.org/TR/webcodecs-opus-codec-registr
 
 If the bitstream is in [ogg](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-ogg) format, [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) have to be audio data packets, as described in [section 3](https://datatracker.ietf.org/doc/html/rfc7845#section-3) of [\[OPUS-IN-OGG\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-opus-in-ogg).
 
-## 3\. AudioDecoderConfig description[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#audiodecoderconfig-description)
+## [3. AudioDecoderConfig description](https://www.w3.org/TR/webcodecs-opus-codec-registration/#audiodecoderconfig-description)
 
 [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) can be optionally set to an Identification Header, described in section 5.1 of [\[OPUS-IN-OGG\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-opus-in-ogg).
 
@@ -48,36 +48,36 @@ If a [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-descr
 
 If a [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) has not been set, the bitstream is assumed to be in [opus](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-opus) format.
 
-## 4\. EncodedAudioChunk type[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#encodedaudiochunk-type)
+## [4. EncodedAudioChunk type](https://www.w3.org/TR/webcodecs-opus-codec-registration/#encodedaudiochunk-type)
 
 The [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot) for an [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing Opus is always "[key](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunktype-key)".
 
 NOTE: Once the initialization has succeeded, any packet can be decoded at any time without error, but this might not result in the expected audio output.
 
-## 5\. AudioEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#audioencoderconfig-extensions)
+## [5. AudioEncoderConfig extensions](https://www.w3.org/TR/webcodecs-opus-codec-registration/#audioencoderconfig-extensions)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dictdef-opusencoderconfig) [opus](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-audioencoderconfig-opus);
+partial dictionary AudioEncoderConfig {
+  OpusEncoderConfig opus;
 };
 ```
 
-`opus`, of type [OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dictdef-opusencoderconfig)
+**`opus`, of type [OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dictdef-opusencoderconfig)**
 
 Contains codec specific configuration options for the Opus codec.
 
-### 5.1. OpusEncoderConfig[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-encoder-config)
+### [5.1. OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-encoder-config)
 
 ```webidl
-dictionary `OpusEncoderConfig` {
-  [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat) [format](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-format) = "opus";
-  [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal) [signal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-signal) = "auto";
-  [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication) [application](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-application) = "audio";
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long) [frameDuration](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-frameduration) = 20000;
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [complexity](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-complexity);
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [packetlossperc](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-packetlossperc) = 0;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [useinbandfec](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-useinbandfec) = false;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [usedtx](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-usedtx) = false;
+dictionary OpusEncoderConfig {
+  OpusBitstreamFormat format = "opus";
+  OpusSignal signal = "auto";
+  OpusApplication application = "audio";
+  [EnforceRange] unsigned long long frameDuration = 20000;
+  [EnforceRange] unsigned long complexity;
+  [EnforceRange] unsigned long packetlossperc = 0;
+  boolean useinbandfec = false;
+  boolean usedtx = false;
 };
 ```
 
@@ -88,118 +88,106 @@ To check if an [OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-re
 3.  If [packetlossperc](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-packetlossperc) is specified and not within the range of `0` and `100` inclusively, return `false`.
 4.  Return `true`.
 
-`format`, of type [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat), defaulting to `"opus"`
+**`format`, of type [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat), defaulting to `"opus"`**
 
 Configures the format of output [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s. See [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat).
-
-`signal`, of type [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal), defaulting to `"auto"`
+**`signal`, of type [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal), defaulting to `"auto"`**
 
 Specificies the type of audio signal being encoded. See [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal).
-
-`application`, of type [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication), defaulting to `"audio"`
+**`application`, of type [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication), defaulting to `"audio"`**
 
 Specificies the encoder’s intended application. See [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication).
-
-`frameDuration`, of type [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long), defaulting to `20000`
+**`frameDuration`, of type [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long), defaulting to `20000`**
 
 Configures the frame duration, in microseconds, of output [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)s.
-
-`complexity`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)
+**`complexity`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long)**
 
 Configures the encoder’s computational complexity, as described in section 2.1.9. of [\[RFC6716\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-rfc6716). The valid range is `0` to `10`, with `10` representing the highest complexity. If no value is specificied, the default value is platform-specific: User Agents _SHOULD_ set a default of `5` for mobile platforms, and a default of `9` for all other platforms.
-
-`packetlossperc`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`
+**`packetlossperc`, of type [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long), defaulting to `0`**
 
 Configures the encoder’s expected packet loss percentage. The valid range is `0` to `100`.
 
 NOTE: The packet loss percentage might be updated over the course of an encoding, and it is recommended for User Agents to support these reconfigurations.
-
-`useinbandfec`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `false`
+**`useinbandfec`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `false`**
 
 Specifies whether the encoder provides Opus in-band Forward Error Correction (FEC), as described by section 2.1.7. of [\[RFC6716\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-rfc6716).
-
-`usedtx`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `false`
+**`usedtx`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), defaulting to `false`**
 
 Specifies if the encoder uses Discontinuous Transmission (DTX), as described by section 2.1.9. of [\[RFC6716\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-rfc6716).
 
-### 5.2. OpusBitstreamFormat[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-bitstream-format)
+### [5.2. OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-bitstream-format)
 
 ```webidl
-enum `OpusBitstreamFormat` {
-  ["opus"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-opus),
-  ["ogg"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-ogg),
+enum OpusBitstreamFormat {
+  "opus",
+  "ogg",
 };
 ```
 
 The [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat) determines if extra-data are necessary to decode the encoded audio stream.
 
-`opus`
+**`opus`**
 
 No metadata are necessary to decode the encoded audio stream.
-
-`ogg`
+**`ogg`**
 
 The metadata of the encoded audio stream are provided at configuration via [AudioDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description).
 
-### 5.3. OpusSignal[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-signal)
+### [5.3. OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-signal)
 
 ```webidl
-enum `OpusSignal` {
-  ["auto"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-auto),
-  ["music"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-music),
-  ["voice"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-voice),
+enum OpusSignal {
+  "auto",
+  "music",
+  "voice",
 };
 ```
 
 The [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal) indicates the default value for the type of signal being encoded.
 
-`auto`
+**`auto`**
 
 The audio signal is not specified to be of a particular type.
-
-`music`
+**`music`**
 
 The audio signal is music.
-
-`voice`
+**`voice`**
 
 The audio signal is voice or speech.
 
-### 5.4. OpusApplication[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-application)
+### [5.4. OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#opus-application)
 
 ```webidl
-enum `OpusApplication` {
-  ["voip"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-voip),
-  ["audio"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-audio),
-  ["lowdelay"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-lowdelay),
+enum OpusApplication {
+  "voip",
+  "audio",
+  "lowdelay",
 };
 ```
 
 The [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication) indicates the default value for the encoder’s intended application.
 
-`voip`
+**`voip`**
 
 Process signal for improved speech intelligibility.
-
-`audio`
+**`audio`**
 
 Favor faithfulness to the original input.
-
-`lowdelay`
+**`lowdelay`**
 
 Configure the minimum possible coding delay by disabling certain modes of operation.
 
-## 6\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#privacy-considerations)
+## [6. Privacy Considerations](https://www.w3.org/TR/webcodecs-opus-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-webcodecs).
 
-## 7\. Security Considerations[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#security-considerations)
+## [7. Security Considerations](https://www.w3.org/TR/webcodecs-opus-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-opus-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-opus-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-opus-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -215,9 +203,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index)
 
-### Terms defined by this specification[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index-defined-here)
+### [Terms defined by this specification](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index-defined-here)
 
 - [application](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-application), in § 5.1
 - ["audio"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-audio), in § 5.4
@@ -250,7 +238,7 @@ Note, this is an informative note.
 - ["voip"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-voip), in § 5.4
 - [voip](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-voip), in § 5.4
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-opus-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -265,73 +253,72 @@ Note, this is an informative note.
   - unsigned long
   - unsigned long long
 
-## References[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-opus-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-opus-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 14 May 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
-
-\[WEBIDL\]
+**\[WEBIDL\]**
 
 Edgar Chen; Timothy Gu. [Web IDL Standard](https://webidl.spec.whatwg.org/). Living Standard. URL: [https://webidl.spec.whatwg.org/](https://webidl.spec.whatwg.org/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-opus-codec-registration/#informative)
 
-\[OPUS\]
+**\[OPUS\]**
 
 [RFC 6716: Definition of the Opus Audio Codec](https://datatracker.ietf.org/doc/html/rfc6716). September 2012. URL: [https://datatracker.ietf.org/doc/html/rfc6716](https://datatracker.ietf.org/doc/html/rfc6716)
-
-\[OPUS-IN-OGG\]
+**\[OPUS-IN-OGG\]**
 
 [RFC 7845: Ogg Encapsulation for the Opus Audio Codec](https://datatracker.ietf.org/doc/html/rfc7845). April 2016. URL: [https://datatracker.ietf.org/doc/html/rfc7845](https://datatracker.ietf.org/doc/html/rfc7845)
-
-\[RFC6716\]
+**\[RFC6716\]**
 
 JM. Valin; K. Vos; T. Terriberry. [Definition of the Opus Audio Codec](https://www.rfc-editor.org/rfc/rfc6716). September 2012. Proposed Standard. URL: [https://www.rfc-editor.org/rfc/rfc6716](https://www.rfc-editor.org/rfc/rfc6716)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 
-## IDL Index[](https://www.w3.org/TR/webcodecs-opus-codec-registration/#idl-index)
+## [IDL Index](https://www.w3.org/TR/webcodecs-opus-codec-registration/#idl-index)
 
 ```webidl
-partial dictionary [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) {
-  [OpusEncoderConfig](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dictdef-opusencoderconfig) [opus](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-audioencoderconfig-opus);
+partial dictionary AudioEncoderConfig {
+  OpusEncoderConfig opus;
 };
 
-dictionary [`OpusEncoderConfig`](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dictdef-opusencoderconfig) {
-  [OpusBitstreamFormat](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat) [format](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-format) = "opus";
-  [OpusSignal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal) [signal](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-signal) = "auto";
-  [OpusApplication](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication) [application](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-application) = "audio";
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long long](https://webidl.spec.whatwg.org/#idl-unsigned-long-long) [frameDuration](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-frameduration) = 20000;
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [complexity](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-complexity);
-  \[[EnforceRange](https://webidl.spec.whatwg.org/#EnforceRange)\] [unsigned long](https://webidl.spec.whatwg.org/#idl-unsigned-long) [packetlossperc](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-packetlossperc) = 0;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [useinbandfec](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-useinbandfec) = false;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean) [usedtx](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusencoderconfig-usedtx) = false;
+
+dictionary OpusEncoderConfig {
+  OpusBitstreamFormat format = "opus";
+  OpusSignal signal = "auto";
+  OpusApplication application = "audio";
+  [EnforceRange] unsigned long long frameDuration = 20000;
+  [EnforceRange] unsigned long complexity;
+  [EnforceRange] unsigned long packetlossperc = 0;
+  boolean useinbandfec = false;
+  boolean usedtx = false;
 };
 
-enum [`OpusBitstreamFormat`](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusbitstreamformat) {
-  ["opus"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-opus),
-  ["ogg"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusbitstreamformat-ogg),
+
+enum OpusBitstreamFormat {
+  "opus",
+  "ogg",
 };
 
-enum [`OpusSignal`](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opussignal) {
-  ["auto"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-auto),
-  ["music"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-music),
-  ["voice"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opussignal-voice),
+
+enum OpusSignal {
+  "auto",
+  "music",
+  "voice",
 };
 
-enum [`OpusApplication`](https://www.w3.org/TR/webcodecs-opus-codec-registration/#enumdef-opusapplication) {
-  ["voip"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-voip),
-  ["audio"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-audio),
-  ["lowdelay"](https://www.w3.org/TR/webcodecs-opus-codec-registration/#dom-opusapplication-lowdelay),
+
+enum OpusApplication {
+  "voip",
+  "audio",
+  "lowdelay",
 };
 ```
 

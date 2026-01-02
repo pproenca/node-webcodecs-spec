@@ -28,15 +28,15 @@ The [W3C Patent Policy](https://www.w3.org/policies/patent-policy/) does not car
 
 This document is governed by the [03 November 2023 W3C Process Document](https://www.w3.org/policies/process/20231103/).
 
-## 1\. Fully qualified codec strings[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#fully-qualified-codec-strings)
+## [1. Fully qualified codec strings](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#fully-qualified-codec-strings)
 
 The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) is `"vorbis"`.
 
-## 2\. EncodedAudioChunk data[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#encodedaudiochunk-data)
+## [2. EncodedAudioChunk data](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#encodedaudiochunk-data)
 
 [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-internal-data-slot) is expected to be an "audio packet", as described in the section 4.3 of the [\[VORBIS\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-vorbis) specification.
 
-## 3\. AudioDecoderConfig description[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#audiodecoderconfig-description)
+## [3. AudioDecoderConfig description](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#audiodecoderconfig-description)
 
 The [description](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-description) is required. It is assumed to be in Xiph extradata format, described in [\[OGG-FRAMING\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-ogg-framing). This format consists in the `page_segments` field, followed by the `segment_table` field, followed by the three Vorbis header packets, respectively the identification header, the comments header, and the setup header, in this order, as described in section 4.2 of [\[VORBIS\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-vorbis).
 
@@ -44,23 +44,23 @@ The [sampleRate](https://www.w3.org/TR/webcodecs/#dom-audiodecoderconfig-sampler
 
 NOTE: The comments header content is not used by [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-webcodecs).
 
-## 4\. EncodedAudioChunk type[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#encodedaudiochunk-type)
+## [4. EncodedAudioChunk type](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#encodedaudiochunk-type)
 
 The [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunk-type-slot) for an [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) containing Vorbis is always "[key](https://www.w3.org/TR/webcodecs/#dom-encodedaudiochunktype-key)".
 
 NOTE: Once the initialization has succeeded, any Vorbis packet can be decoded at any time without error, but this might not result in the expected audio output.
 
-## 5\. Privacy Considerations[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#privacy-considerations)
+## [5. Privacy Considerations](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#privacy-considerations)
 
 Please refer to the section [Privacy Considerations](https://www.w3.org/TR/webcodecs/#privacy-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-webcodecs).
 
-## 6\. Security Considerations[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#security-considerations)
+## [6. Security Considerations](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#security-considerations)
 
 Please refer to the section [Security Considerations](https://www.w3.org/TR/webcodecs/#security-considerations) in [\[WEBCODECS\]](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#biblio-webcodecs).
 
-## Conformance[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#w3c-conformance)
+## [Conformance](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#w3c-conformance)
 
-### Document conventions[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#w3c-conventions)
+### [Document conventions](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#w3c-conventions)
 
 Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology. The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in the normative parts of this document are to be interpreted as described in RFC 2119. However, for readability, these words do not appear in all uppercase letters in this specification.
 
@@ -76,9 +76,9 @@ Informative notes begin with the word “Note” and are set apart from the norm
 
 Note, this is an informative note.
 
-## Index[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#index)
+## [Index](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#index)
 
-### Terms defined by reference[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#index-defined-elsewhere)
+### [Terms defined by reference](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#index-defined-elsewhere)
 
 - \[WEBCODECS\] defines the following terms:
   - "key"
@@ -89,29 +89,26 @@ Note, this is an informative note.
   - numberOfChannels
   - sampleRate
 
-## References[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#references)
+## [References](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#references)
 
-### Normative References[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#normative)
+### [Normative References](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#normative)
 
-\[RFC2119\]
+**\[RFC2119\]**
 
 S. Bradner. [Key words for use in RFCs to Indicate Requirement Levels](https://datatracker.ietf.org/doc/html/rfc2119). March 1997. Best Current Practice. URL: [https://datatracker.ietf.org/doc/html/rfc2119](https://datatracker.ietf.org/doc/html/rfc2119)
-
-\[WEBCODECS\]
+**\[WEBCODECS\]**
 
 Paul Adenot; Eugene Zemtsov. [WebCodecs](https://www.w3.org/TR/webcodecs/). 17 April 2025. WD. URL: [https://www.w3.org/TR/webcodecs/](https://www.w3.org/TR/webcodecs/)
 
-### Informative References[](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#informative)
+### [Informative References](https://www.w3.org/TR/webcodecs-vorbis-codec-registration/#informative)
 
-\[OGG-FRAMING\]
+**\[OGG-FRAMING\]**
 
 [Ogg logical bitstream framing](https://xiph.org/vorbis/doc/framing.html). URL: [https://xiph.org/vorbis/doc/framing.html](https://xiph.org/vorbis/doc/framing.html)
-
-\[VORBIS\]
+**\[VORBIS\]**
 
 [Vorbis I specification](https://xiph.org/vorbis/doc/Vorbis_I_spec.html). July 4, 2020. URL: [https://xiph.org/vorbis/doc/Vorbis_I_spec.html](https://xiph.org/vorbis/doc/Vorbis_I_spec.html)
-
-\[WEBCODECS-CODEC-REGISTRY\]
+**\[WEBCODECS-CODEC-REGISTRY\]**
 
 Paul Adenot; Bernard Aboba. [WebCodecs Codec Registry](https://www.w3.org/TR/webcodecs-codec-registry/). 9 September 2024. DRY. URL: [https://www.w3.org/TR/webcodecs-codec-registry/](https://www.w3.org/TR/webcodecs-codec-registry/)
 

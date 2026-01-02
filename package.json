@@ -33,7 +33,6 @@
     "format": "npm run format:ts && npm run format:cpp",
     "format:ts": "prettier --write docs lib scripts test --ignore-unknown",
     "format:cpp": "find src test/cpp -path test/cpp/build -prune -o \\( -name '*.cpp' -o -name '*.h' \\) -print | xargs clang-format -i",
-    "scaffold": "tsx scripts/scaffold-project.ts",
     "specs": "tsx scripts/generate-specs.ts"
   },
   "gypfile": true,

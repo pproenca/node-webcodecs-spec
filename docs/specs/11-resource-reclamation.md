@@ -4,7 +4,7 @@ title: '11. Resource Reclamation'
 
 > Section 11 from [W3C WebCodecs Specification](https://www.w3.org/TR/webcodecs/)
 
-## 11\. Resource Reclamation[](https://www.w3.org/TR/webcodecs/#resource-reclamation)
+## [11. Resource Reclamation](https://www.w3.org/TR/webcodecs/#resource-reclamation)
 
 When resources are constrained, a User Agent _MAY_ proactively reclaim codecs. This is particularly true in the case where hardware codecs are limited, and shared accross web pages or platform apps.
 
