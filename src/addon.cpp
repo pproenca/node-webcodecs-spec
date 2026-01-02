@@ -28,11 +28,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   webcodecs::EncodedVideoChunk::Init(env, exports);
   webcodecs::VideoColorSpace::Init(env, exports);
 
-  // Audio codec classes
-  webcodecs::AudioDecoder::Init(env, exports);
-  webcodecs::AudioEncoder::Init(env, exports);
+  // Audio codec classes (AudioData must be initialized before AudioEncoder)
   webcodecs::AudioData::Init(env, exports);
   webcodecs::EncodedAudioChunk::Init(env, exports);
+  webcodecs::AudioDecoder::Init(env, exports);
+  webcodecs::AudioEncoder::Init(env, exports);
 
   // Image codec classes
   webcodecs::ImageDecoder::Init(env, exports);

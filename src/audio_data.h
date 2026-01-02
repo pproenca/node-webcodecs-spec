@@ -32,8 +32,10 @@ class AudioData : public Napi::ObjectWrap<AudioData> {
   // Check if closed
   bool IsClosed() const { return closed_; }
 
- private:
+  // Public for InstanceOf checks in encoder
   static Napi::FunctionReference constructor;
+
+ private:
 
   // --- Typed Storage (NO void*) ---
   raii::AVFramePtr frame_;  // Owns decoded audio samples
