@@ -62,7 +62,10 @@ export class AudioDecoder {
     this.native.configure(config);
   }
   decode(chunk: EncodedAudioChunk): void {
-    this.native.decode(chunk);
+    // Unwrap TypeScript EncodedAudioChunk to pass native object to C++
+    // The native code expects either a native EncodedAudioChunk or plain object
+    const nativeChunk = (chunk as { native?: unknown }).native ?? chunk;
+    this.native.decode(nativeChunk);
   }
   flush(): Promise<void> {
     return this.native.flush();

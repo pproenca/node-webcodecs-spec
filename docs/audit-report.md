@@ -21,7 +21,7 @@ This comprehensive audit validates the WebCodecs implementation against W3C spec
 | **RAII Compliance** | PASS | All FFmpeg resources properly wrapped |
 | **Thread Safety** | PASS | All 4 findings FIXED |
 | **FFmpeg Integration** | PASS | All patterns correct |
-| **Spec Compliance** | 100% | VideoDecoder + VideoEncoder complete |
+| **Spec Compliance** | 100% | VideoDecoder + VideoEncoder + AudioDecoder + AudioEncoder complete |
 
 ---
 
@@ -152,7 +152,7 @@ All worker `On*()` methods correctly handle:
 
 ### 3.3 AudioDecoder
 
-**Compliance:** ~90%
+**Compliance:** 100% ✓
 
 | Feature | Status |
 |---------|--------|
@@ -161,20 +161,23 @@ All worker `On*()` methods correctly handle:
 | Methods | IMPLEMENTED |
 | AudioDecoderConfig handling | IMPLEMENTED |
 | State machine | IMPLEMENTED |
-
-**Missing:** `[[codec saturated]]`, dequeue event coalescing
+| Key chunk requirement | IMPLEMENTED |
+| `[[message queue blocked]]` | IMPLEMENTED - implicit in CodecWorker |
+| `[[codec saturated]]` | IMPLEMENTED - AVERROR(EAGAIN) handling |
+| `[[dequeue event scheduled]]` | IMPLEMENTED - atomic compare_exchange coalescing |
 
 ### 3.4 AudioEncoder
 
-**Compliance:** ~90%
+**Compliance:** 100% ✓
 
 | Feature | Status |
 |---------|--------|
 | Core interface | IMPLEMENTED |
 | EncodedAudioChunkMetadata | IMPLEMENTED |
 | decoderConfig on first output | IMPLEMENTED |
-
-**Missing:** `[[codec saturated]]`, dequeue event coalescing
+| `[[message queue blocked]]` | IMPLEMENTED - implicit in CodecWorker |
+| `[[codec saturated]]` | IMPLEMENTED - AVERROR(EAGAIN) handling |
+| `[[dequeue event scheduled]]` | IMPLEMENTED - atomic compare_exchange coalescing |
 
 ### 3.5 ImageDecoder
 

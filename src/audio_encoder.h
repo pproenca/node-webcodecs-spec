@@ -161,6 +161,9 @@ class AudioEncoder : public Napi::ObjectWrap<AudioEncoder> {
   // Encode queue size (atomic for JS reads without locking)
   std::atomic<uint32_t> encode_queue_size_{0};
 
+  // [SPEC] [[dequeue event scheduled]] - coalesces multiple dequeue events
+  std::atomic<bool> dequeue_event_scheduled_{false};
+
   // Pending flush promises (protected by flush_mutex_)
   std::unordered_map<uint32_t, Napi::Promise::Deferred> pending_flushes_;
   uint32_t next_flush_id_{0};

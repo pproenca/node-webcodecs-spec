@@ -8,6 +8,9 @@ export default defineConfig({
     environment: 'node',
     include: ['test/**/*.test.ts', 'scripts/**/*.test.ts'],
     setupFiles: ['test/setup.ts'],
+    // Native addons require sequential file execution to avoid race conditions
+    // with static constructor references (EncodedAudioChunk::constructor, etc.)
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

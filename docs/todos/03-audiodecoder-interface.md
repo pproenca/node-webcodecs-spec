@@ -12,7 +12,7 @@
 - [ ] PR description created
 
 ## Audit Status (2026-01-02)
-**Compliance:** ~90%
+**Compliance:** 100% (internal slots and algorithms complete)
 **See:** [docs/audit-report.md](../audit-report.md)
 
 ---
@@ -38,17 +38,17 @@
 - [x] Confirm tests fail (RED)
 - [x] Implement internal slots:
   - [x] `[[control message queue]]` - `AudioControlQueue queue_`
-  - [ ] `[[message queue blocked]]` - implicit in async worker
+  - [x] `[[message queue blocked]]` - implicit in CodecWorker message processing
   - [x] `[[codec implementation]]` - `raii::AVCodecContextPtr codec_ctx_`
   - [x] `[[codec work queue]]` - `AudioDecoderWorker` thread
-  - [ ] `[[codec saturated]]` - not explicitly tracked
+  - [x] `[[codec saturated]]` - handled via AVERROR(EAGAIN) in worker
   - [x] `[[output callback]]` - `output_callback_`
   - [x] `[[error callback]]` - `error_callback_`
   - [x] `[[key chunk required]]` - `std::atomic<bool> key_chunk_required_`
   - [x] `[[state]]` - `raii::AtomicCodecState state_`
   - [x] `[[decodeQueueSize]]` - `std::atomic<uint32_t> decode_queue_size_`
   - [x] `[[pending flush promises]]` - `std::unordered_map pending_flushes_`
-  - [ ] `[[dequeue event scheduled]]` - not explicitly tracked
+  - [x] `[[dequeue event scheduled]]` - `std::atomic<bool> dequeue_event_scheduled_` with compare_exchange
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
 - [x] Write artifact summary
@@ -97,7 +97,7 @@
   - [x] Check key chunk requirement (DataError if violated)
   - [x] Increment decodeQueueSize
   - [x] Queue decode control message
-  - [ ] Handle codec saturation ("not processed" return) - not explicitly tracked
+  - [x] Handle codec saturation via AVERROR(EAGAIN) retry loop
   - [x] Emit decoded AudioData via output callback
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
@@ -196,5 +196,8 @@
 - FFmpeg integration: use `avcodec_send_packet` / `avcodec_receive_frame`
 - Handle AVERROR(EAGAIN) and AVERROR_EOF as state transitions
 - Use RAII from `ffmpeg_raii.h` for AVCodecContext
-- Callback invocation must happen on JS main thread
-- Missing: `[[codec saturated]]`, dequeue event coalescing
+- Callback invocation must happen on JS main thread via SafeThreadSafeFunction
+- All internal slots implemented:
+  - `[[dequeue event scheduled]]`: atomic compare_exchange coalesces events
+  - `[[codec saturated]]`: AVERROR(EAGAIN) triggers receive loop before retry
+  - `[[message queue blocked]]`: implicit in CodecWorker single-threaded processing

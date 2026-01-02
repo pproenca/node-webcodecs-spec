@@ -63,6 +63,9 @@ class AudioDecoder : public Napi::ObjectWrap<AudioDecoder> {
   // --- Key Chunk Tracking ---
   std::atomic<bool> key_chunk_required_{true};
 
+  // --- [SPEC] [[dequeue event scheduled]] - coalesces multiple dequeue events ---
+  std::atomic<bool> dequeue_event_scheduled_{false};
+
   // --- Pending Flush Promises ---
   std::unordered_map<uint32_t, Napi::Promise::Deferred> pending_flushes_;
   uint32_t next_flush_id_{0};

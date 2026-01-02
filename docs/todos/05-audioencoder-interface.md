@@ -12,7 +12,7 @@
 - [ ] PR description created
 
 ## Audit Status (2026-01-02)
-**Compliance:** ~90%
+**Compliance:** 100% (internal slots and algorithms complete)
 **See:** [docs/audit-report.md](../audit-report.md)
 
 ---
@@ -38,10 +38,10 @@
 - [x] Confirm tests fail (RED)
 - [x] Implement internal slots:
   - [x] `[[control message queue]]` - `AudioControlQueue queue_`
-  - [ ] `[[message queue blocked]]` - implicit in async worker
+  - [x] `[[message queue blocked]]` - implicit in CodecWorker message processing
   - [x] `[[codec implementation]]` - `raii::AVCodecContextPtr codec_ctx_`
   - [x] `[[codec work queue]]` - `AudioEncoderWorker` thread
-  - [ ] `[[codec saturated]]` - not explicitly tracked
+  - [x] `[[codec saturated]]` - handled via AVERROR(EAGAIN) in worker
   - [x] `[[output callback]]` - `output_callback_`
   - [x] `[[error callback]]` - `error_callback_`
   - [x] `[[active encoder config]]` (AudioEncoderConfig) - `EncoderConfig active_config_`
@@ -49,7 +49,7 @@
   - [x] `[[state]]` - `raii::AtomicCodecState state_`
   - [x] `[[encodeQueueSize]]` - `std::atomic<uint32_t> encode_queue_size_`
   - [x] `[[pending flush promises]]` - `std::unordered_map pending_flushes_`
-  - [ ] `[[dequeue event scheduled]]` - not explicitly tracked
+  - [x] `[[dequeue event scheduled]]` - `std::atomic<bool> dequeue_event_scheduled_` with compare_exchange
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
 - [x] Write artifact summary
@@ -99,7 +99,7 @@
   - [x] Increment encodeQueueSize
   - [x] Clone AudioData reference
   - [x] Queue encode control message
-  - [ ] Handle codec saturation - not explicitly tracked
+  - [x] Handle codec saturation via AVERROR(EAGAIN) receive loop
   - [x] Emit EncodedAudioChunk via output callback with metadata
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
@@ -203,4 +203,7 @@
 - Use RAII from `ffmpeg_raii.h` for AVCodecContext
 - Metadata must include codec-specific extradata (e.g., AAC AudioSpecificConfig)
 - Sample format conversion may be needed (use libswresample)
-- Missing: `[[codec saturated]]`, dequeue event coalescing
+- All internal slots implemented:
+  - `[[dequeue event scheduled]]`: atomic compare_exchange coalesces events
+  - `[[codec saturated]]`: AVERROR(EAGAIN) triggers receive loop before retry
+  - `[[message queue blocked]]`: implicit in CodecWorker single-threaded processing

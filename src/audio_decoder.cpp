@@ -266,6 +266,9 @@ void AudioDecoder::OnDequeue(Napi::Env env, Napi::Function jsCallback,
   if (!context->ondequeue_callback_.IsEmpty()) {
     context->ondequeue_callback_.Call({});
   }
+
+  // [SPEC] Reset [[dequeue event scheduled]] after firing
+  context->dequeue_event_scheduled_.store(false, std::memory_order_release);
 }
 
 // --- Attributes ---
@@ -564,6 +567,18 @@ Napi::Value AudioDecoder::Close(const Napi::CallbackInfo& info) {
   // [SPEC] Immediately aborts all pending work and releases system resources.
   // Close is final - after close(), the decoder cannot be used again.
 
+  // [SPEC] Reject all pending flush promises with AbortError before releasing resources
+  // This must happen here (not in Release) because we have a valid Env from JS context.
+  {
+    std::lock_guard<std::mutex> lock(flush_mutex_);
+    for (auto& [id, deferred] : pending_flushes_) {
+      Napi::Error error = Napi::Error::New(env, "AbortError: Decoder was closed");
+      error.Set("name", Napi::String::New(env, "AbortError"));
+      deferred.Reject(error.Value());
+    }
+    pending_flushes_.clear();
+  }
+
   // Release all resources and transition to closed state
   Release();
 
@@ -662,9 +677,21 @@ AudioDecoderWorker::AudioDecoderWorker(AudioControlQueue& queue, AudioDecoder* d
   SetDequeueCallback([this](uint32_t new_queue_size) {
     if (!decoder_ || decoder_->state_.IsClosed()) return;
 
+    // [SPEC] [[dequeue event scheduled]] - coalesce multiple dequeue events
+    // Use compare_exchange to atomically check-and-set; if already scheduled, skip
+    bool expected = false;
+    if (!decoder_->dequeue_event_scheduled_.compare_exchange_strong(
+            expected, true,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire)) {
+      return;  // Already scheduled, coalesce this event
+    }
+
     auto* data = new AudioDecoder::DequeueData{new_queue_size};
     if (!decoder_->dequeue_tsfn_.Call(data)) {
       delete data;
+      // Reset flag on TSFN failure
+      decoder_->dequeue_event_scheduled_.store(false, std::memory_order_release);
     }
   });
 }
@@ -747,12 +774,25 @@ bool AudioDecoderWorker::OnConfigure(const ConfigureMessage& msg) {
 }
 
 void AudioDecoderWorker::OnDecode(const DecodeMessage& msg) {
-  if (!codec_ctx_ || ShouldExit()) return;
+  // [SPEC] Always decrement queue size when decode work is processed, even on error
+  // Use a lambda to ensure dequeue is signaled on all exit paths
+  auto signal_dequeue_on_exit = [this]() {
+    if (decoder_) {
+      uint32_t new_size = decoder_->decode_queue_size_.fetch_sub(1, std::memory_order_relaxed) - 1;
+      SignalDequeue(new_size);
+    }
+  };
+
+  if (!codec_ctx_ || ShouldExit()) {
+    signal_dequeue_on_exit();
+    return;
+  }
 
   // Send packet to decoder
   int ret = avcodec_send_packet(codec_ctx_.get(), msg.packet.get());
   if (ret < 0 && ret != AVERROR(EAGAIN)) {
     OutputError(ret, "Failed to send packet to decoder");
+    signal_dequeue_on_exit();
     return;
   }
 
@@ -760,6 +800,7 @@ void AudioDecoderWorker::OnDecode(const DecodeMessage& msg) {
   raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
     OutputError(AVERROR(ENOMEM), "Failed to allocate frame");
+    signal_dequeue_on_exit();
     return;
   }
 
@@ -774,6 +815,7 @@ void AudioDecoderWorker::OnDecode(const DecodeMessage& msg) {
     }
     if (ret < 0) {
       OutputError(ret, "Error receiving frame");
+      signal_dequeue_on_exit();
       return;
     }
 
@@ -787,11 +829,8 @@ void AudioDecoderWorker::OnDecode(const DecodeMessage& msg) {
     av_frame_unref(frame.get());
   }
 
-  // Decrement queue size and signal dequeue
-  if (decoder_) {
-    uint32_t new_size = decoder_->decode_queue_size_.fetch_sub(1, std::memory_order_relaxed) - 1;
-    SignalDequeue(new_size);
-  }
+  // Normal exit path
+  signal_dequeue_on_exit();
 }
 
 void AudioDecoderWorker::OnFlush(const FlushMessage& msg) {

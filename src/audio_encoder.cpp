@@ -286,6 +286,9 @@ void AudioEncoder::OnDequeue(Napi::Env env, Napi::Function jsCallback,
   if (!context->ondequeue_callback_.IsEmpty()) {
     context->ondequeue_callback_.Call({});
   }
+
+  // [SPEC] Reset [[dequeue event scheduled]] after firing
+  context->dequeue_event_scheduled_.store(false, std::memory_order_release);
 }
 
 // =============================================================================
@@ -574,6 +577,19 @@ Napi::Value AudioEncoder::Close(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Immediately aborts all pending work and releases system resources.
+
+  // [SPEC] Reject all pending flush promises with AbortError before releasing resources
+  // This must happen here (not in Release) because we have a valid Env from JS context.
+  {
+    std::lock_guard<std::mutex> lock(flush_mutex_);
+    for (auto& [id, deferred] : pending_flushes_) {
+      Napi::Error error = Napi::Error::New(env, "AbortError: Encoder was closed");
+      error.Set("name", Napi::String::New(env, "AbortError"));
+      deferred.Reject(error.Value());
+    }
+    pending_flushes_.clear();
+  }
+
   Release();
 
   return env.Undefined();
@@ -766,11 +782,24 @@ bool AudioEncoderWorker::OnConfigure(const ConfigureMessage& msg) {
 }
 
 void AudioEncoderWorker::OnEncode(const EncodeMessage& msg) {
-  if (!codec_ctx_ || ShouldExit()) return;
+  // [SPEC] Always decrement queue size when encode work is processed, even on error
+  // Use a lambda to ensure dequeue is signaled on all exit paths
+  auto signal_dequeue_on_exit = [this]() {
+    if (encoder_) {
+      uint32_t new_size = encoder_->encode_queue_size_.fetch_sub(1, std::memory_order_relaxed) - 1;
+      SignalDequeue(new_size);
+    }
+  };
+
+  if (!codec_ctx_ || ShouldExit()) {
+    signal_dequeue_on_exit();
+    return;
+  }
 
   AVFrame* frame = msg.frame.get();
   if (!frame) {
     OutputError(AVERROR(EINVAL), "Invalid frame");
+    signal_dequeue_on_exit();
     return;
   }
 
@@ -784,6 +813,7 @@ void AudioEncoderWorker::OnEncode(const EncodeMessage& msg) {
   int ret = avcodec_send_frame(codec_ctx_.get(), frame);
   if (ret < 0 && ret != AVERROR(EAGAIN)) {
     OutputError(ret, "Failed to send frame to encoder");
+    signal_dequeue_on_exit();
     return;
   }
 
@@ -791,6 +821,7 @@ void AudioEncoderWorker::OnEncode(const EncodeMessage& msg) {
   raii::AVPacketPtr packet = raii::MakeAvPacket();
   if (!packet) {
     OutputError(AVERROR(ENOMEM), "Failed to allocate packet");
+    signal_dequeue_on_exit();
     return;
   }
 
@@ -805,6 +836,7 @@ void AudioEncoderWorker::OnEncode(const EncodeMessage& msg) {
     }
     if (ret < 0) {
       OutputError(ret, "Error receiving packet");
+      signal_dequeue_on_exit();
       return;
     }
 
@@ -830,11 +862,8 @@ void AudioEncoderWorker::OnEncode(const EncodeMessage& msg) {
     av_packet_unref(packet.get());
   }
 
-  // Decrement queue size and signal dequeue
-  if (encoder_) {
-    uint32_t new_size = encoder_->encode_queue_size_.fetch_sub(1, std::memory_order_relaxed) - 1;
-    SignalDequeue(new_size);
-  }
+  // Normal exit path
+  signal_dequeue_on_exit();
 }
 
 void AudioEncoderWorker::OnFlush(const FlushMessage& msg) {
@@ -936,9 +965,21 @@ void AudioEncoderWorker::FlushComplete(uint32_t promise_id, bool success, const 
 void AudioEncoderWorker::SignalDequeue(uint32_t new_size) {
   if (!encoder_ || encoder_->state_.IsClosed()) return;
 
+  // [SPEC] [[dequeue event scheduled]] - coalesce multiple dequeue events
+  // Use compare_exchange to atomically check-and-set; if already scheduled, skip
+  bool expected = false;
+  if (!encoder_->dequeue_event_scheduled_.compare_exchange_strong(
+          expected, true,
+          std::memory_order_acq_rel,
+          std::memory_order_acquire)) {
+    return;  // Already scheduled, coalesce this event
+  }
+
   auto* data = new AudioEncoder::DequeueData{new_size};
   if (!encoder_->dequeue_tsfn_.Call(data)) {
     delete data;
+    // Reset flag on TSFN failure
+    encoder_->dequeue_event_scheduled_.store(false, std::memory_order_release);
   }
 }
 
