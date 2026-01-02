@@ -8,30 +8,14 @@ title: '9. Raw Media Interfaces (Part 4 of 4)'
 
 ---
 
-There are `[codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth)` \* `[codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight)` \* 4 samples (and therefore bytes) in the single plane, arranged starting at the top left of the image, in `[codedHeight](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedheight)` rows of `[codedWidth](https://www.w3.org/TR/webcodecs/#dom-videoframe-codedwidth)` samples.
-
-### 9.9. Video Color Space Interface[](https://www.w3.org/TR/webcodecs/#video-color-space-interface)
-
-```webidl
-\[[Exposed](https://webidl.spec.whatwg.org/#Exposed)\=(Window,DedicatedWorker)\]
-interface `VideoColorSpace` {
-  [constructor](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-videocolorspace)(optional [VideoColorSpaceInit](https://www.w3.org/TR/webcodecs/#dictdef-videocolorspaceinit) `init` = {});
-
-  readonly attribute [VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries)? [primaries](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries);
-  readonly attribute [VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics)? [transfer](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer);
-  readonly attribute [VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients)? [matrix](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix);
-  readonly attribute [boolean](https://webidl.spec.whatwg.org/#idl-boolean)? [fullRange](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-fullrange);
-
-  \[[Default](https://webidl.spec.whatwg.org/#Default)\] [VideoColorSpaceInit](https://www.w3.org/TR/webcodecs/#dictdef-videocolorspaceinit) `toJSON`();
-};
-
 dictionary `VideoColorSpaceInit` {
-  [VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries)? `primaries` = null;
-  [VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics)? `transfer` = null;
-  [VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients)? `matrix` = null;
-  [boolean](https://webidl.spec.whatwg.org/#idl-boolean)? `fullRange` = null;
+[VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries)? `primaries` = null;
+[VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics)? `transfer` = null;
+[VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients)? `matrix` = null;
+[boolean](https://webidl.spec.whatwg.org/#idl-boolean)? `fullRange` = null;
 };
-```
+
+````
 
 #### 9.9.1. Internal Slots[](https://www.w3.org/TR/webcodecs/#videocolorspace-internal-slots)
 
@@ -55,31 +39,36 @@ Indicates whether full-range color values are used.
 
 `VideoColorSpace(init)`
 
-1.  Let c be a new `[VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace)` object, initialized as follows:
-    1.  Assign `init.primaries` to `[[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot)`.
-    2.  Assign `init.transfer` to `[[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot)`.
-    3.  Assign `init.matrix` to `[[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot)`.
-    4.  Assign `init.fullRange` to `[[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot)`.
+1.  Let c be a new [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) object, initialized as follows:
+
+    1.  Assign `init.primaries` to [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot).
+
+    2.  Assign `init.transfer` to [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot).
+
+    3.  Assign `init.matrix` to [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot).
+
+    4.  Assign `init.fullRange` to [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot).
 
 2.  Return c.
+
 
 #### 9.9.3. Attributes[](https://www.w3.org/TR/webcodecs/#videocolorspace-attributes)
 
 `primaries`, of type [VideoColorPrimaries](https://www.w3.org/TR/webcodecs/#enumdef-videocolorprimaries), readonly, nullable
 
-The `[primaries](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries)` getter steps are to return the value of `[[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot)`.
+The [primaries](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries) getter steps are to return the value of [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot).
 
 `transfer`, of type [VideoTransferCharacteristics](https://www.w3.org/TR/webcodecs/#enumdef-videotransfercharacteristics), readonly, nullable
 
-The `[transfer](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer)` getter steps are to return the value of `[[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot)`.
+The [transfer](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer) getter steps are to return the value of [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot).
 
 `matrix`, of type [VideoMatrixCoefficients](https://www.w3.org/TR/webcodecs/#enumdef-videomatrixcoefficients), readonly, nullable
 
-The `[matrix](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix)` getter steps are to return the value of `[[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot)`.
+The [matrix](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix) getter steps are to return the value of [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot).
 
 `fullRange`, of type [boolean](https://webidl.spec.whatwg.org/#idl-boolean), readonly, nullable
 
-The `[fullRange](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-fullrange)` getter steps are to return the value of `[[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot)`.
+The [fullRange](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-fullrange) getter steps are to return the value of [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot).
 
 ### 9.10. Video Color Primaries[](https://www.w3.org/TR/webcodecs/#videocolorprimaries)
 
@@ -91,7 +80,7 @@ enum `VideoColorPrimaries` {
   ["bt2020"](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-bt2020),
   ["smpte432"](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-smpte432),
 };
-```
+````
 
 `bt709`
 

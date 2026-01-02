@@ -44,11 +44,11 @@ This registry maintains a mapping between codec strings and registration specifi
 
 3.  Each registration’s specification must include a sequence of sections describing:
     1.  Recognized codec strings
-    2.  `[EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)` or `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` internal data
-    3.  `[AudioDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audiodecoderconfig)` or `[VideoDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderconfig)` description bytes
-    4.  Expectations for `[EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk)` or `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)`
+    2.  [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) or [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) internal data
+    3.  [AudioDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audiodecoderconfig) or [VideoDecoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videodecoderconfig) description bytes
+    4.  Expectations for [EncodedAudioChunk](https://www.w3.org/TR/webcodecs/#encodedaudiochunk) or [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)
 
-4.  Where applicable, a registration specification may include a section describing extensions to `[VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig)` or `[AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig)` dictionaries.
+4.  Where applicable, a registration specification may include a section describing extensions to [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig) or [AudioEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig) dictionaries.
 5.  Candidate entries must be announced by filing an issue in the [WebCodecs GitHub issue tracker](https://github.com/w3c/webcodecs/issues/) so they can be discussed and evaluated for compliance before being added to the registry. The Media Working Group may seek expertise from outside the Working Group as part of its evaluation, e.g., from the codec specification editors or relevant standards group. If the codec specification is not publicly available, it must be made available to the Working Group for evaluation. If the Working Group reaches consensus to accept the candidate, a pull request should be drafted (either by editors or by the party requesting the candidate registration) to register the candidate. The registry editors will review and merge the pull request.
 6.  Existing entries cannot be deleted or deprecated. They may be changed after being published through the same process as candidate entries. Possible changes include expansion of the codec string to better qualify the codec, adjustments to the codec name string, and modification of the link to the codec’s specification.
 

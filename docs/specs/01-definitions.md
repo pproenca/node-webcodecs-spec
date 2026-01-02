@@ -8,7 +8,7 @@ title: '1. Definitions'
 
 Codec
 
-Refers generically to an instance of `[AudioDecoder](https://www.w3.org/TR/webcodecs/#audiodecoder)`, `[AudioEncoder](https://www.w3.org/TR/webcodecs/#audioencoder)`, `[VideoDecoder](https://www.w3.org/TR/webcodecs/#videodecoder)`, or `[VideoEncoder](https://www.w3.org/TR/webcodecs/#videoencoder)`.
+Refers generically to an instance of [AudioDecoder](https://www.w3.org/TR/webcodecs/#audiodecoder), [AudioEncoder](https://www.w3.org/TR/webcodecs/#audioencoder), [VideoDecoder](https://www.w3.org/TR/webcodecs/#videodecoder), or [VideoEncoder](https://www.w3.org/TR/webcodecs/#videoencoder).
 
 Key Chunk
 
@@ -16,15 +16,15 @@ An encoded chunk that does not depend on any other frames for decoding. Also com
 
 Internal Pending Output
 
-Codec outputs such as `[VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)`s that currently reside in the internal pipeline of the underlying codec implementation. The underlying codec implementation _MAY_ emit new outputs only when new inputs are provided. The underlying codec implementation _MUST_ emit all outputs in response to a flush.
+Codec outputs such as [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)s that currently reside in the internal pipeline of the underlying codec implementation. The underlying codec implementation _MAY_ emit new outputs only when new inputs are provided. The underlying codec implementation _MUST_ emit all outputs in response to a flush.
 
 Codec System Resources
 
-Resources including CPU memory, GPU memory, and exclusive handles to specific decoding/encoding hardware that _MAY_ be allocated by the User Agent as part of codec configuration or generation of `[AudioData](https://www.w3.org/TR/webcodecs/#audiodata)` and `[VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe)` objects. Such resources _MAY_ be quickly exhausted and _SHOULD_ be released immediately when no longer in use.
+Resources including CPU memory, GPU memory, and exclusive handles to specific decoding/encoding hardware that _MAY_ be allocated by the User Agent as part of codec configuration or generation of [AudioData](https://www.w3.org/TR/webcodecs/#audiodata) and [VideoFrame](https://www.w3.org/TR/webcodecs/#videoframe) objects. Such resources _MAY_ be quickly exhausted and _SHOULD_ be released immediately when no longer in use.
 
 Temporal Layer
 
-A grouping of `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`s whose timestamp cadence produces a particular framerate. See `[scalabilityMode](https://www.w3.org/TR/webcodecs/#dom-videoencoderconfig-scalabilitymode)`.
+A grouping of [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)s whose timestamp cadence produces a particular framerate. See [scalabilityMode](https://www.w3.org/TR/webcodecs/#dom-videoencoderconfig-scalabilitymode).
 
 Progressive Image
 
@@ -40,34 +40,34 @@ An image track that is marked by the given image file as being the default track
 
 RGB Format
 
-A `[VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat)` containing red, green, and blue color channels in any order or layout (interleaved or planar), and irrespective of whether an alpha channel is present.
+A [VideoPixelFormat](https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat) containing red, green, and blue color channels in any order or layout (interleaved or planar), and irrespective of whether an alpha channel is present.
 
 sRGB Color Space
 
-A `[VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace)` object, initialized as follows:
+A [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) object, initialized as follows:
 
-1.  `[[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot)` is set to `[bt709](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-bt709)`,
-2.  `[[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot)` is set to `[iec61966-2-1](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-iec61966-2-1)`,
-3.  `[[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot)` is set to `[rgb](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-rgb)`,
-4.  `[[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot)` is set to `true`
+1.  [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot) is set to [bt709](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-bt709),
+2.  [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot) is set to [iec61966-2-1](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-iec61966-2-1),
+3.  [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot) is set to [rgb](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-rgb),
+4.  [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot) is set to `true`
 
 Display P3 Color Space
 
-A `[VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace)` object, initialized as follows:
+A [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) object, initialized as follows:
 
-1.  `[[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot)` is set to `[smpte432](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-smpte432)`,
-2.  `[[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot)` is set to `[iec61966-2-1](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-iec61966-2-1)`,
-3.  `[[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot)` is set to `[rgb](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-rgb)`,
-4.  `[[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot)` is set to `true`
+1.  [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot) is set to [smpte432](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-smpte432),
+2.  [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot) is set to [iec61966-2-1](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-iec61966-2-1),
+3.  [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot) is set to [rgb](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-rgb),
+4.  [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot) is set to `true`
 
 REC709 Color Space
 
-A `[VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace)` object, initialized as follows:
+A [VideoColorSpace](https://www.w3.org/TR/webcodecs/#videocolorspace) object, initialized as follows:
 
-1.  `[[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot)` is set to `[bt709](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-bt709)`,
-2.  `[[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot)` is set to `[bt709](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-bt709)`,
-3.  `[[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot)` is set to `[bt709](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-bt709)`,
-4.  `[[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot)` is set to `false`
+1.  [[[primaries]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-primaries-slot) is set to [bt709](https://www.w3.org/TR/webcodecs/#dom-videocolorprimaries-bt709),
+2.  [[[transfer]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-transfer-slot) is set to [bt709](https://www.w3.org/TR/webcodecs/#dom-videotransfercharacteristics-bt709),
+3.  [[[matrix]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-matrix-slot) is set to [bt709](https://www.w3.org/TR/webcodecs/#dom-videomatrixcoefficients-bt709),
+4.  [[[full range]]](https://www.w3.org/TR/webcodecs/#dom-videocolorspace-full-range-slot) is set to `false`
 
 Codec Saturation
 

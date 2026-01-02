@@ -6,7 +6,7 @@ title: 'AVC (H.264)'
 
 ## Abstract
 
-This registration is entered into the [\[webcodecs-codec-registry\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-webcodecs-codec-registry). It describes, for AVC (H.264), the (1) fully qualified [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string), (2) the codec-specific `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` bytes, (3) the `[VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` bytes, (4) the values of `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)`, (5) the codec-specific extensions to `[VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig)`, and (6) the codec-specific extensions to `[VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions)`.
+This registration is entered into the [\[webcodecs-codec-registry\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-webcodecs-codec-registry). It describes, for AVC (H.264), the (1) fully qualified [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string), (2) the codec-specific [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) bytes, (3) the [VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) bytes, (4) the values of [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot), (5) the codec-specific extensions to [VideoEncoderConfig](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig), and (6) the codec-specific extensions to [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions).
 
 The registration is not intended to include any information on whether a codec format is encumbered by intellectual property claims. Implementers and authors are advised to seek appropriate legal counsel in this matter if they intend to implement or use a specific codec format. Implementers of WebCodecs are not required to support the AVC / H.264 codec.
 
@@ -34,33 +34,33 @@ The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins 
 
 ## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-data)
 
-`[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` is expected to be an access unit as defined in [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) section 7.4.1.2.
+[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be an access unit as defined in [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) section 7.4.1.2.
 
 NOTE: An access unit contains exactly one primary coded picture.
 
-If the bitstream is in `[avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc)` format, `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` is assumed to be in canonical format, as defined in [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15) section 5.3.2.
+If the bitstream is in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format, [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is assumed to be in canonical format, as defined in [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15) section 5.3.2.
 
-If the bitstream is in `[annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb)` format, `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` is assumed to be in in Annex B format, as defined in [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) Annex B.
+If the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb) format, [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is assumed to be in in Annex B format, as defined in [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264) Annex B.
 
-NOTE: Since `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` is inherently byte-aligned, implementations are not required to recover byte-alignment.
+NOTE: Since [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is inherently byte-aligned, implementations are not required to recover byte-alignment.
 
 ## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videodecoderconfig-description)
 
-If the `[description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` is present, it is assumed to be an `AVCDecoderConfigurationRecord`, as defined by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15), section 5.3.3.1, and the bitstream is assumed to be in `[avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc)` format.
+If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is present, it is assumed to be an `AVCDecoderConfigurationRecord`, as defined by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15), section 5.3.3.1, and the bitstream is assumed to be in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format.
 
 NOTE: This format is commonly used in .MP4 files, where the player generally has random access to the media data.
 
-If the `[description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` is not present, the bitstream is assumed to be in `[annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb)` format.
+If the [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is not present, the bitstream is assumed to be in [annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb) format.
 
 NOTE: "annexb" format is described in greater detail by [\[ITU-T-REC-H.264\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-itu-t-rec-h264), Annex B. This format is commonly used in live-streaming applications, where including the SPS and PPS data periodically allows users to easily start from the middle of the stream.
 
 ## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#encodedvideochunk-type)
 
-If an `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`’s `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)` is `[key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key)`, and the bitstream is in `[avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc)` format, then the `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` is expected to contain a primary coded picture that is an instantaneous decoding refresh (IDR) picture.
+If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a primary coded picture that is an instantaneous decoding refresh (IDR) picture.
 
-NOTE: If the bitstream is in `[avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc)` format, parameter sets necessary for decoding are included in `[VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)`.
+NOTE: If the bitstream is in [avc](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-avc) format, parameter sets necessary for decoding are included in [VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description).
 
-If an `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`’s `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)` is `[key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key)`, and the bitstream is in `[annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb)` format, then the `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` is expected to contain both a primary coded picture that is an instantaneous decoding refresh (IDR) picture, and all parameter sets necessary to decode all video data NAL units in the `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`.
+If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), and the bitstream is in [annexb](https://www.w3.org/TR/webcodecs-avc-codec-registration/#dom-avcbitstreamformat-annexb) format, then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain both a primary coded picture that is an instantaneous decoding refresh (IDR) picture, and all parameter sets necessary to decode all video data NAL units in the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk).
 
 ## 5\. VideoEncoderConfig extensions[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#videoencoderconfig-extensions)
 
@@ -84,7 +84,7 @@ dictionary `AvcEncoderConfig` {
 
 `format`, of type [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat), defaulting to `"avc"`
 
-Configures the format of output `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`s. See `[AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat)`.
+Configures the format of output [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)s. See [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat).
 
 ### 5.2. AvcBitstreamFormat[](https://www.w3.org/TR/webcodecs-avc-codec-registration/#avc-bitstream-format)
 
@@ -95,7 +95,7 @@ enum `AvcBitstreamFormat` {
 };
 ```
 
-The `[AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat)` determines the location of AVC parameter sets, and mechanisms for packaging the bitstream.
+The [AvcBitstreamFormat](https://www.w3.org/TR/webcodecs-avc-codec-registration/#enumdef-avcbitstreamformat) determines the location of AVC parameter sets, and mechanisms for packaging the bitstream.
 
 `annexb`
 
@@ -105,7 +105,7 @@ NOTE: This format is described in greater detail by [\[ITU-T-REC-H.264\]](https:
 
 `avc`
 
-SPS and PPS data are not included in the bitstream and are instead emitted via the `[[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-videoencoder-output-callback-slot)` as the `[VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` of the `[EncodedVideoChunkMetadata.decoderConfig](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunkmetadata-decoderconfig)`.
+SPS and PPS data are not included in the bitstream and are instead emitted via the [[[output callback]]](https://www.w3.org/TR/webcodecs/#dom-videoencoder-output-callback-slot) as the [VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) of the [EncodedVideoChunkMetadata.decoderConfig](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunkmetadata-decoderconfig).
 
 NOTE: This format is described in greater detail by [\[iso14496-15\]](https://www.w3.org/TR/webcodecs-avc-codec-registration/#biblio-iso14496-15), section 5.3. This format is commonly used in .MP4 files, where the player generally has random access to the media data.
 

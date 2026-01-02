@@ -6,7 +6,7 @@ title: 'VP9'
 
 ## Abstract
 
-This registration is entered into the [\[webcodecs-codec-registry\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-webcodecs-codec-registry). It describes, for VP9, the (1) fully qualified [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string), (2) the codec-specific `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` bytes, (3) the `[VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` bytes, (4) the values of `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)`, and (5) the codec-specific extensions to `[VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions)`.
+This registration is entered into the [\[webcodecs-codec-registry\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-webcodecs-codec-registry). It describes, for VP9, the (1) fully qualified [codec strings](https://www.w3.org/TR/webcodecs/#config-codec-string), (2) the codec-specific [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) bytes, (3) the [VideoDecoderConfig.description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) bytes, (4) the values of [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot), and (5) the codec-specific extensions to [VideoEncoderEncodeOptions](https://www.w3.org/TR/webcodecs/#dictdef-videoencoderencodeoptions).
 
 The registration is not intended to include any information on whether a codec format is encumbered by intellectual property claims. Implementers and authors are advised to seek appropriate legal counsel in this matter if they intend to implement or use a specific codec format. Implementers of WebCodecs are not required to support the VP9 codec.
 
@@ -34,15 +34,15 @@ The [codec string](https://www.w3.org/TR/webcodecs/#config-codec-string) begins 
 
 ## 2\. EncodedVideoChunk data[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-data)
 
-`[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` `[[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot)` is expected to be a frame as described in Section 6 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
+[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) [[[internal data]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-internal-data-slot) is expected to be a frame as described in Section 6 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
 
 ## 3\. VideoDecoderConfig description[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videodecoderconfig-description)
 
-The `[description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description)` is not used for this codec.
+The [description](https://www.w3.org/TR/webcodecs/#dom-videodecoderconfig-description) is not used for this codec.
 
 ## 4\. EncodedVideoChunk type[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#encodedvideochunk-type)
 
-If an `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)`’s `[[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot)` is `[key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key)`, then the `[EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)` is expected to contain a frame with a `frame_type` of `KEY_FRAME` as defined in Section 7.2 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
+If an [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk)’s [[[type]]](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunk-type-slot) is [key](https://www.w3.org/TR/webcodecs/#dom-encodedvideochunktype-key), then the [EncodedVideoChunk](https://www.w3.org/TR/webcodecs/#encodedvideochunk) is expected to contain a frame with a `frame_type` of `KEY_FRAME` as defined in Section 7.2 of [\[VP9\]](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#biblio-vp9).
 
 ## 5\. VideoEncoderEncodeOptions extensions[](https://www.w3.org/TR/webcodecs-vp9-codec-registration/#videoencoderencodeoptions-extensions)
 

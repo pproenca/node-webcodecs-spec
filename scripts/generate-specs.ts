@@ -215,6 +215,29 @@ function createTurndownService(specUrl: string): TurndownService {
     },
   });
 
+  // Handle <code> tags containing links - render as link without backticks
+  turndown.addRule('codeWithLink', {
+    filter: (node) => {
+      if (node.nodeName !== 'CODE') return false;
+      // Check if code contains only a single anchor element
+      const children = Array.from(node.childNodes);
+      return (
+        children.length === 1 &&
+        children[0].nodeType === 1 &&
+        (children[0] as Element).nodeName === 'A'
+      );
+    },
+    replacement: (_content, node) => {
+      const anchor = node.querySelector('a') as HTMLAnchorElement;
+      if (!anchor) return _content;
+      const href = anchor.getAttribute('href') || '';
+      const text = anchor.textContent || '';
+      // Convert relative links to absolute
+      const absoluteHref = href.startsWith('#') ? specUrl + href : href;
+      return `[${text}](${absoluteHref})`;
+    },
+  });
+
   // Fix internal links - convert to absolute URLs
   turndown.addRule('specLinks', {
     filter: (node) => {
