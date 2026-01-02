@@ -12,7 +12,7 @@
 - [ ] PR description created
 
 ## Audit Status (2026-01-02)
-**Compliance:** 94% (31/34 items implemented)
+**Compliance:** 100% (34/34 items implemented)
 **See:** [docs/audit-report.md](../audit-report.md)
 
 ---
@@ -38,10 +38,10 @@
 - [x] Confirm tests fail (RED)
 - [x] Implement internal slots:
   - [x] `[[control message queue]]` - `VideoControlQueue queue_`
-  - [ ] `[[message queue blocked]]` - implicit in async worker
+  - [x] `[[message queue blocked]]` - `queue_.SetBlocked()` with RAII ScopeGuard
   - [x] `[[codec implementation]]` - `raii::AVCodecContextPtr codec_ctx_`
   - [x] `[[codec work queue]]` - `VideoDecoderWorker` thread
-  - [ ] `[[codec saturated]]` - not explicitly tracked
+  - [x] `[[codec saturated]]` - `std::atomic<bool> codec_saturated_` (EAGAIN tracking)
   - [x] `[[output callback]]` - `output_callback_`
   - [x] `[[error callback]]` - `error_callback_`
   - [x] `[[active decoder config]]` - `DecoderConfig active_config_`
@@ -49,7 +49,7 @@
   - [x] `[[state]]` - `raii::AtomicCodecState state_`
   - [x] `[[decodeQueueSize]]` - `std::atomic<uint32_t> decode_queue_size_`
   - [x] `[[pending flush promises]]` - `std::unordered_map pending_flushes_`
-  - [ ] `[[dequeue event scheduled]]` - not explicitly tracked
+  - [x] `[[dequeue event scheduled]]` - `std::atomic<bool> dequeue_event_scheduled_` (coalesces events)
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
 - [x] Write artifact summary
@@ -100,7 +100,7 @@
   - [x] Check key chunk requirement (DataError if violated)
   - [x] Increment decodeQueueSize
   - [x] Queue decode control message
-  - [ ] Handle codec saturation - not explicitly tracked
+  - [x] Handle codec saturation - `codec_saturated_` set on EAGAIN, cleared on output
   - [x] Emit decoded VideoFrame via output callback
   - [x] Apply color space from config
 - [x] Confirm tests pass (GREEN)
