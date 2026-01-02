@@ -17,15 +17,21 @@ namespace webcodecs {
  * - Codec operations are protected by mutex
  */
 class VideoDecoder : public Napi::ObjectWrap<VideoDecoder> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  VideoDecoder(const Napi::CallbackInfo& info);
+  explicit VideoDecoder(const Napi::CallbackInfo& info);
   ~VideoDecoder() override;
+
+  // Non-copyable, non-movable (Google C++ Style Guide)
+  VideoDecoder(const VideoDecoder&) = delete;
+  VideoDecoder& operator=(const VideoDecoder&) = delete;
+  VideoDecoder(VideoDecoder&&) = delete;
+  VideoDecoder& operator=(VideoDecoder&&) = delete;
 
   // RAII Release - cleans up all resources
   void Release();
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // --- FFmpeg Resources (RAII managed) ---

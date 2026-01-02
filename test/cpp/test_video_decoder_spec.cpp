@@ -12,10 +12,13 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
+#include <cstring>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
 
 // Define WEBCODECS_TESTING to get pure C++ headers
 #define WEBCODECS_TESTING 1
@@ -23,8 +26,16 @@
 #include "src/ffmpeg_raii.h"
 #include "src/shared/codec_registry.h"
 
-using namespace webcodecs;
-using namespace webcodecs::raii;
+using webcodecs::IsCodecSupported;
+using webcodecs::ParseCodecString;
+using webcodecs::raii::AtomicCodecState;
+using webcodecs::raii::AVCodecContextPtr;
+using webcodecs::raii::AVFramePtr;
+using webcodecs::raii::AVPacketPtr;
+using webcodecs::raii::CloneAvFrame;
+using webcodecs::raii::MakeAvCodecContext;
+using webcodecs::raii::MakeAvFrame;
+using webcodecs::raii::MakeAvPacket;
 
 // =============================================================================
 // VIDEO DECODER SIMULATOR
@@ -36,14 +47,7 @@ namespace test {
 /**
  * Error types matching W3C DOMException names
  */
-enum class ErrorType {
-  None,
-  InvalidStateError,
-  NotSupportedError,
-  DataError,
-  EncodingError,
-  TypeError
-};
+enum class ErrorType { None, InvalidStateError, NotSupportedError, DataError, EncodingError, TypeError };
 
 /**
  * Error result from decoder operations
@@ -64,22 +68,18 @@ struct Error {
 class VideoDecoderSimulator {
  public:
   VideoDecoderSimulator() = default;
-  ~VideoDecoderSimulator() { close(); }
+  ~VideoDecoderSimulator() { Close(); }
 
   // Non-copyable
   VideoDecoderSimulator(const VideoDecoderSimulator&) = delete;
   VideoDecoderSimulator& operator=(const VideoDecoderSimulator&) = delete;
 
-  // State queries
-  const char* state() const { return state_.to_string(); }
-  bool is_configured() const { return state_.is_configured(); }
-  bool is_closed() const { return state_.is_closed(); }
-  bool key_chunk_required() const {
-    return keyChunkRequired_.load(std::memory_order_acquire);
-  }
-  uint32_t decode_queue_size() const {
-    return decodeQueueSize_.load(std::memory_order_acquire);
-  }
+  // State queries (PascalCase per Google C++ Style Guide)
+  const char* state() const { return state_.ToString(); }
+  bool IsConfigured() const { return state_.IsConfigured(); }
+  bool IsClosed() const { return state_.IsClosed(); }
+  bool key_chunk_required() const { return keyChunkRequired_.load(std::memory_order_acquire); }
+  uint32_t decode_queue_size() const { return decodeQueueSize_.load(std::memory_order_acquire); }
 
   /**
    * [SPEC] configure() - Initialize decoder with codec config
@@ -92,7 +92,7 @@ class VideoDecoderSimulator {
    */
   Error configure(const std::string& codec, int width = 640, int height = 480) {
     // [SPEC] If state is "closed", throw InvalidStateError
-    if (state_.is_closed()) {
+    if (state_.IsClosed()) {
       return {ErrorType::InvalidStateError, "configure called on closed decoder"};
     }
 
@@ -128,8 +128,7 @@ class VideoDecoderSimulator {
     }
 
     // [SPEC] Set state to "configured"
-    state_.transition(AtomicCodecState::State::Unconfigured,
-                      AtomicCodecState::State::Configured);
+    state_.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
     keyChunkRequired_.store(true, std::memory_order_release);
 
     return {};
@@ -145,13 +144,11 @@ class VideoDecoderSimulator {
    * 4. Process decode
    * 5. Decrement decodeQueueSize
    */
-  Error decode(const uint8_t* data, size_t size, bool is_key_frame,
-               int64_t timestamp = 0,
+  Error decode(const uint8_t* data, size_t size, bool is_key_frame, int64_t timestamp = 0,
                std::vector<AVFramePtr>* output_frames = nullptr) {
     // [SPEC] Step 1: If state is not "configured", throw InvalidStateError
-    if (!state_.is_configured()) {
-      return {ErrorType::InvalidStateError,
-              std::string("decode called on ") + state_.to_string() + " decoder"};
+    if (!state_.IsConfigured()) {
+      return {ErrorType::InvalidStateError, std::string("decode called on ") + state_.ToString() + " decoder"};
     }
 
     // [SPEC] Step 2: If key chunk required AND not key frame, throw DataError
@@ -237,9 +234,8 @@ class VideoDecoderSimulator {
    */
   Error flush(std::vector<AVFramePtr>* output_frames = nullptr) {
     // [SPEC] Step 1: If state is not "configured", reject
-    if (!state_.is_configured()) {
-      return {ErrorType::InvalidStateError,
-              std::string("flush called on ") + state_.to_string() + " decoder"};
+    if (!state_.IsConfigured()) {
+      return {ErrorType::InvalidStateError, std::string("flush called on ") + state_.ToString() + " decoder"};
     }
 
     // [SPEC] Step 2: Set key chunk required to true
@@ -287,7 +283,7 @@ class VideoDecoderSimulator {
    */
   Error reset() {
     // [SPEC] If state is "closed", throw InvalidStateError
-    if (state_.is_closed()) {
+    if (state_.IsClosed()) {
       return {ErrorType::InvalidStateError, "reset called on closed decoder"};
     }
 
@@ -308,8 +304,7 @@ class VideoDecoderSimulator {
     codecCtx_.reset();
 
     // Transition to unconfigured
-    state_.transition(AtomicCodecState::State::Configured,
-                      AtomicCodecState::State::Unconfigured);
+    state_.transition(AtomicCodecState::State::Configured, AtomicCodecState::State::Unconfigured);
 
     return {};
   }
@@ -319,8 +314,8 @@ class VideoDecoderSimulator {
    *
    * Transition to "closed" state (idempotent)
    */
-  void close() {
-    state_.close();
+  void Close() {
+    state_.Close();
 
     std::lock_guard<std::mutex> lock(mutex_);
     decodeQueueSize_.store(0, std::memory_order_release);
@@ -338,7 +333,8 @@ class VideoDecoderSimulator {
 
 }  // namespace test
 
-using namespace test;
+using test::ErrorType;
+using test::VideoDecoderSimulator;
 
 // =============================================================================
 // CATEGORY 1: STATE MACHINE COMPLIANCE TESTS
@@ -351,20 +347,20 @@ class VideoDecoderStateMachineTest : public ::testing::Test {
 
 TEST_F(VideoDecoderStateMachineTest, InitialStateIsUnconfigured) {
   EXPECT_STREQ(decoder_.state(), "unconfigured");
-  EXPECT_FALSE(decoder_.is_configured());
-  EXPECT_FALSE(decoder_.is_closed());
+  EXPECT_FALSE(decoder_.IsConfigured());
+  EXPECT_FALSE(decoder_.IsClosed());
 }
 
 TEST_F(VideoDecoderStateMachineTest, ConfigureTransitionsToConfigured) {
   auto error = decoder_.configure("vp8");
   EXPECT_FALSE(error) << error.message;
   EXPECT_STREQ(decoder_.state(), "configured");
-  EXPECT_TRUE(decoder_.is_configured());
+  EXPECT_TRUE(decoder_.IsConfigured());
 }
 
 TEST_F(VideoDecoderStateMachineTest, ConfigureOnClosedThrowsInvalidStateError) {
-  decoder_.close();
-  EXPECT_TRUE(decoder_.is_closed());
+  decoder_.Close();
+  EXPECT_TRUE(decoder_.IsClosed());
 
   auto error = decoder_.configure("vp8");
   EXPECT_TRUE(error);
@@ -374,7 +370,7 @@ TEST_F(VideoDecoderStateMachineTest, ConfigureOnClosedThrowsInvalidStateError) {
 
 TEST_F(VideoDecoderStateMachineTest, ResetTransitionsToUnconfigured) {
   decoder_.configure("vp8");
-  EXPECT_TRUE(decoder_.is_configured());
+  EXPECT_TRUE(decoder_.IsConfigured());
 
   auto error = decoder_.reset();
   EXPECT_FALSE(error) << error.message;
@@ -382,7 +378,7 @@ TEST_F(VideoDecoderStateMachineTest, ResetTransitionsToUnconfigured) {
 }
 
 TEST_F(VideoDecoderStateMachineTest, ResetOnClosedThrowsInvalidStateError) {
-  decoder_.close();
+  decoder_.Close();
 
   auto error = decoder_.reset();
   EXPECT_TRUE(error);
@@ -391,24 +387,24 @@ TEST_F(VideoDecoderStateMachineTest, ResetOnClosedThrowsInvalidStateError) {
 
 TEST_F(VideoDecoderStateMachineTest, CloseTransitionsToClosed) {
   decoder_.configure("vp8");
-  decoder_.close();
+  decoder_.Close();
 
   EXPECT_STREQ(decoder_.state(), "closed");
-  EXPECT_TRUE(decoder_.is_closed());
+  EXPECT_TRUE(decoder_.IsClosed());
 }
 
 TEST_F(VideoDecoderStateMachineTest, CloseIsIdempotent) {
   decoder_.configure("vp8");
 
   // Multiple close calls should be safe
-  decoder_.close();
-  EXPECT_TRUE(decoder_.is_closed());
+  decoder_.Close();
+  EXPECT_TRUE(decoder_.IsClosed());
 
-  decoder_.close();
-  EXPECT_TRUE(decoder_.is_closed());
+  decoder_.Close();
+  EXPECT_TRUE(decoder_.IsClosed());
 
-  decoder_.close();
-  EXPECT_TRUE(decoder_.is_closed());
+  decoder_.Close();
+  EXPECT_TRUE(decoder_.IsClosed());
 }
 
 TEST_F(VideoDecoderStateMachineTest, StateToStringMatchesSpec) {
@@ -417,7 +413,7 @@ TEST_F(VideoDecoderStateMachineTest, StateToStringMatchesSpec) {
   decoder_.configure("vp8");
   EXPECT_STREQ(decoder_.state(), "configured");
 
-  decoder_.close();
+  decoder_.Close();
   EXPECT_STREQ(decoder_.state(), "closed");
 }
 
@@ -442,7 +438,7 @@ TEST_F(VideoDecoderDecodePreconditionTest, DecodeBeforeConfigureThrowsInvalidSta
 
 TEST_F(VideoDecoderDecodePreconditionTest, DecodeAfterCloseThrowsInvalidStateError) {
   decoder_.configure("vp8");
-  decoder_.close();
+  decoder_.Close();
 
   auto error = decoder_.decode(dummy_data_, sizeof(dummy_data_), true);
 
@@ -523,7 +519,7 @@ TEST_F(VideoDecoderConfigureTest, ConfigureWithValidCodecSucceeds) {
   // VP8 is commonly available
   auto error = decoder_.configure("vp8");
   EXPECT_FALSE(error) << error.message;
-  EXPECT_TRUE(decoder_.is_configured());
+  EXPECT_TRUE(decoder_.IsConfigured());
 }
 
 TEST_F(VideoDecoderConfigureTest, ConfigureWithUnsupportedCodecThrowsNotSupportedError) {
@@ -544,7 +540,7 @@ TEST_F(VideoDecoderConfigureTest, ReconfigureAfterResetSucceeds) {
 
   auto error = decoder_.configure("vp8");
   EXPECT_FALSE(error) << error.message;
-  EXPECT_TRUE(decoder_.is_configured());
+  EXPECT_TRUE(decoder_.IsConfigured());
 }
 
 TEST_F(VideoDecoderConfigureTest, ReconfigureWhileConfiguredSucceeds) {
@@ -553,7 +549,7 @@ TEST_F(VideoDecoderConfigureTest, ReconfigureWhileConfiguredSucceeds) {
   // Reconfigure should work (replaces existing config)
   auto error = decoder_.configure("vp8", 1280, 720);
   EXPECT_FALSE(error) << error.message;
-  EXPECT_TRUE(decoder_.is_configured());
+  EXPECT_TRUE(decoder_.IsConfigured());
 }
 
 // =============================================================================
@@ -573,7 +569,7 @@ TEST_F(VideoDecoderFlushTest, FlushBeforeConfigureRejectsWithInvalidStateError) 
 
 TEST_F(VideoDecoderFlushTest, FlushAfterCloseRejectsWithInvalidStateError) {
   decoder_.configure("vp8");
-  decoder_.close();
+  decoder_.Close();
 
   auto error = decoder_.flush();
   EXPECT_TRUE(error);
@@ -615,9 +611,7 @@ class VideoDecoderQueueSizeTest : public ::testing::Test {
   VideoDecoderSimulator decoder_;
 };
 
-TEST_F(VideoDecoderQueueSizeTest, InitialDecodeQueueSizeIsZero) {
-  EXPECT_EQ(decoder_.decode_queue_size(), 0u);
-}
+TEST_F(VideoDecoderQueueSizeTest, InitialDecodeQueueSizeIsZero) { EXPECT_EQ(decoder_.decode_queue_size(), 0u); }
 
 TEST_F(VideoDecoderQueueSizeTest, ResetClearsDecodeQueueSize) {
   decoder_.configure("vp8");
@@ -628,7 +622,7 @@ TEST_F(VideoDecoderQueueSizeTest, ResetClearsDecodeQueueSize) {
 
 TEST_F(VideoDecoderQueueSizeTest, CloseClearsDecodeQueueSize) {
   decoder_.configure("vp8");
-  decoder_.close();
+  decoder_.Close();
   EXPECT_EQ(decoder_.decode_queue_size(), 0u);
 }
 
@@ -684,7 +678,7 @@ TEST_F(VideoDecoderThreadSafetyTest, ConcurrentCloseCallsAreIdempotent) {
   // Launch 10 threads that all try to close
   for (int i = 0; i < 10; i++) {
     threads.emplace_back([this, &close_count]() {
-      decoder_.close();
+      decoder_.Close();
       close_count++;
     });
   }
@@ -694,7 +688,7 @@ TEST_F(VideoDecoderThreadSafetyTest, ConcurrentCloseCallsAreIdempotent) {
   }
 
   EXPECT_EQ(close_count.load(), 10);
-  EXPECT_TRUE(decoder_.is_closed());
+  EXPECT_TRUE(decoder_.IsClosed());
 }
 
 TEST_F(VideoDecoderThreadSafetyTest, CloseWhileDecodeInProgressIsSafe) {
@@ -716,12 +710,12 @@ TEST_F(VideoDecoderThreadSafetyTest, CloseWhileDecodeInProgressIsSafe) {
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Close from main thread
-  decoder_.close();
+  decoder_.Close();
   decoding = false;
 
   decode_thread.join();
 
-  EXPECT_TRUE(decoder_.is_closed());
+  EXPECT_TRUE(decoder_.IsClosed());
   EXPECT_GT(decode_attempts.load(), 0);
 }
 
@@ -748,7 +742,7 @@ TEST_F(VideoDecoderThreadSafetyTest, ResetWhileDecodeInProgressIsSafe) {
   decode_thread.join();
 
   // After reset, should be unconfigured
-  EXPECT_FALSE(decoder_.is_configured());
+  EXPECT_FALSE(decoder_.IsConfigured());
 }
 
 TEST_F(VideoDecoderThreadSafetyTest, ConcurrentConfigureIsThreadSafe) {
@@ -785,9 +779,9 @@ class VideoDecoderResourceTest : public ::testing::Test {
 TEST_F(VideoDecoderResourceTest, CodecContextFreedOnClose) {
   auto decoder = std::make_unique<VideoDecoderSimulator>();
   decoder->configure("vp8");
-  EXPECT_TRUE(decoder->is_configured());
+  EXPECT_TRUE(decoder->IsConfigured());
 
-  decoder->close();
+  decoder->Close();
   // Destructor should not double-free
   decoder.reset();
 }
@@ -813,7 +807,7 @@ TEST_F(VideoDecoderResourceTest, NoLeakOnDecodeError) {
   }
 
   // Cleanup should work
-  decoder.close();
+  decoder.Close();
 }
 
 TEST_F(VideoDecoderResourceTest, NoLeakOnConfigureError) {
@@ -847,7 +841,7 @@ TEST_F(VideoDecoderResourceTest, PacketQueueClearedOnClose) {
   uint8_t dummy[] = {0x00};
   decoder.decode(dummy, sizeof(dummy), true);
 
-  decoder.close();
+  decoder.Close();
 
   EXPECT_EQ(decoder.decode_queue_size(), 0u);
 }
@@ -905,11 +899,11 @@ TEST_F(VideoDecoderStressTest, ManyConfigureResetCycles) {
   for (int i = 0; i < 100; i++) {
     auto error = decoder.configure("vp8");
     ASSERT_FALSE(error) << "Cycle " << i << ": " << error.message;
-    EXPECT_TRUE(decoder.is_configured());
+    EXPECT_TRUE(decoder.IsConfigured());
 
     error = decoder.reset();
     ASSERT_FALSE(error) << "Cycle " << i << ": " << error.message;
-    EXPECT_FALSE(decoder.is_configured());
+    EXPECT_FALSE(decoder.IsConfigured());
   }
 }
 
@@ -924,14 +918,14 @@ TEST_F(VideoDecoderStressTest, ManyDecodeAttempts) {
     // Errors are expected with invalid data, but should not crash
   }
 
-  decoder.close();
-  EXPECT_TRUE(decoder.is_closed());
+  decoder.Close();
+  EXPECT_TRUE(decoder.IsClosed());
 }
 
 TEST_F(VideoDecoderStressTest, RapidCloseReopen) {
   for (int i = 0; i < 50; i++) {
     VideoDecoderSimulator decoder;
     decoder.configure("vp8");
-    decoder.close();
+    decoder.Close();
   }
 }

@@ -8,19 +8,14 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <condition_variable>
-#include <memory>
+#include <vector>
 
 // Define napi_status for testing (N-API not available in unit tests)
-enum napi_status {
-  napi_ok = 0,
-  napi_invalid_arg = 1,
-  napi_closing = 4,
-  napi_queue_full = 8,
-  napi_generic_failure = 9
-};
+enum napi_status { napi_ok = 0, napi_invalid_arg = 1, napi_closing = 4, napi_queue_full = 8, napi_generic_failure = 9 };
 
 namespace webcodecs::testing {
 
@@ -30,16 +25,10 @@ namespace webcodecs::testing {
  * Unlike real TSFN, this doesn't invoke JavaScript callbacks.
  * Instead, it captures calls for verification in tests.
  */
-template<typename DataType>
+template <typename DataType>
 class MockThreadSafeFunction {
  public:
-  enum class Status {
-    kOk = 0,
-    kClosing,
-    kInvalidArg,
-    kQueueFull,
-    kUnknown
-  };
+  enum class Status { kOk = 0, kClosing, kInvalidArg, kQueueFull, kUnknown };
 
   MockThreadSafeFunction() = default;
 
@@ -166,20 +155,16 @@ struct MockContext {
   std::atomic<int> callback_count{0};
   std::atomic<bool> finalized{false};
 
-  void OnCallback() {
-    callback_count.fetch_add(1, std::memory_order_relaxed);
-  }
+  void OnCallback() { callback_count.fetch_add(1, std::memory_order_relaxed); }
 
-  void OnFinalize() {
-    finalized.store(true, std::memory_order_release);
-  }
+  void OnFinalize() { finalized.store(true, std::memory_order_release); }
 };
 
 /**
  * Shared state for MockTypedThreadSafeFunction.
  * Allows the mock to be movable by sharing state via shared_ptr.
  */
-template<typename Context, typename DataType>
+template <typename Context, typename DataType>
 struct MockTSFNState {
   std::mutex mutex;
   Context* context{nullptr};
@@ -196,7 +181,7 @@ struct MockTSFNState {
  * Simulates the TSFN wrapper interface for testing.
  * Matches the interface expected by SafeThreadSafeFunction.
  */
-template<typename Context, typename DataType>
+template <typename Context, typename DataType>
 class MockTypedThreadSafeFunction {
  public:
   using CallbackType = std::function<void(Context*, DataType*)>;
@@ -205,10 +190,7 @@ class MockTypedThreadSafeFunction {
   MockTypedThreadSafeFunction() : state_(std::make_shared<MockTSFNState<Context, DataType>>()) {}
 
   // Factory method matching Napi::TypedThreadSafeFunction::New
-  static MockTypedThreadSafeFunction New(
-      Context* context,
-      CallbackType callback,
-      size_t max_queue_size = 0) {
+  static MockTypedThreadSafeFunction New(Context* context, CallbackType callback, size_t max_queue_size = 0) {
     MockTypedThreadSafeFunction tsfn;
     tsfn.state_->context = context;
     tsfn.state_->callback = callback;
@@ -218,9 +200,7 @@ class MockTypedThreadSafeFunction {
   }
 
   // Check if TSFN is valid
-  explicit operator bool() const {
-    return state_ && state_->initialized && !state_->released;
-  }
+  explicit operator bool() const { return state_ && state_->initialized && !state_->released; }
 
   // NonBlockingCall
   napi_status NonBlockingCall(DataType* data = nullptr) {
@@ -245,9 +225,7 @@ class MockTypedThreadSafeFunction {
   }
 
   // BlockingCall
-  napi_status BlockingCall(DataType* data = nullptr) {
-    return NonBlockingCall(data);
-  }
+  napi_status BlockingCall(DataType* data = nullptr) { return NonBlockingCall(data); }
 
   // Release
   void Release() {

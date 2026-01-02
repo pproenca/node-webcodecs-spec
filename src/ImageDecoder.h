@@ -9,15 +9,15 @@ namespace webcodecs {
  * @see spec/context/ImageDecoder.md
  */
 class ImageDecoder : public Napi::ObjectWrap<ImageDecoder> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  ImageDecoder(const Napi::CallbackInfo& info);
+  explicit ImageDecoder(const Napi::CallbackInfo& info);
   ~ImageDecoder() override;
 
   // RAII Release
   void Release();
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // Internal Native Handle
@@ -29,7 +29,6 @@ private:
   Napi::Value GetComplete(const Napi::CallbackInfo& info);
   Napi::Value GetCompleted(const Napi::CallbackInfo& info);
   Napi::Value GetTracks(const Napi::CallbackInfo& info);
-
 
   // Methods
   Napi::Value Decode(const Napi::CallbackInfo& info);

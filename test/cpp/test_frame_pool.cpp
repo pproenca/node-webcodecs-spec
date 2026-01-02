@@ -5,11 +5,12 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // C++17-compatible latch implementation
 class SimpleLatch {
@@ -33,8 +34,9 @@ class SimpleLatch {
 
 #include "../../src/shared/frame_pool.h"
 
-using namespace webcodecs;
-using namespace std::chrono_literals;
+using webcodecs::FramePoolHandle;
+using webcodecs::GlobalFramePool;
+using std::chrono_literals::operator""ms;
 
 class FramePoolTest : public ::testing::Test {
  protected:
@@ -45,9 +47,7 @@ class FramePoolTest : public ::testing::Test {
     GlobalFramePool::instance().set_max_pool_size(32);
   }
 
-  void TearDown() override {
-    GlobalFramePool::instance().clear();
-  }
+  void TearDown() override { GlobalFramePool::instance().clear(); }
 };
 
 // =============================================================================
@@ -61,8 +61,7 @@ TEST_F(FramePoolTest, AcquireReturnsValidFrame) {
 }
 
 TEST_F(FramePoolTest, AcquireWithBufferReturnsAllocatedFrame) {
-  auto frame = GlobalFramePool::instance().acquire_with_buffer(
-      1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::instance().acquire_with_buffer(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
   EXPECT_EQ(frame->width, 1920);
   EXPECT_EQ(frame->height, 1080);
@@ -327,8 +326,7 @@ TEST_F(FramePoolTest, ConcurrentDifferentDimensions) {
     threads.emplace_back([t, &dimensions, &start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kIterations; ++i) {
-        auto frame = GlobalFramePool::instance().acquire(
-            dimensions[t][0], dimensions[t][1], AV_PIX_FMT_YUV420P);
+        auto frame = GlobalFramePool::instance().acquire(dimensions[t][0], dimensions[t][1], AV_PIX_FMT_YUV420P);
         EXPECT_NE(frame, nullptr);
       }
     });
@@ -419,8 +417,7 @@ TEST_F(FramePoolTest, LargeDimensions) {
 
 TEST_F(FramePoolTest, PooledFrameUnrefOnReturn) {
   // Verify frame is unref'd when returned to pool
-  auto frame = GlobalFramePool::instance().acquire_with_buffer(
-      1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::instance().acquire_with_buffer(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
 
   // Fill with data

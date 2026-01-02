@@ -10,7 +10,24 @@
 
 #include "../../src/shared/timebase.h"
 
-using namespace webcodecs::timebase;
+using webcodecs::timebase::audio_duration_us;
+using webcodecs::timebase::clamp_pts;
+using webcodecs::timebase::duration_from_microseconds;
+using webcodecs::timebase::duration_to_microseconds;
+using webcodecs::timebase::frame_duration;
+using webcodecs::timebase::frame_duration_us;
+using webcodecs::timebase::from_microseconds;
+using webcodecs::timebase::is_valid_pts;
+using webcodecs::timebase::MPEG_TS_WRAP_THRESHOLD;
+using webcodecs::timebase::pts_diff_us;
+using webcodecs::timebase::pts_less_than;
+using webcodecs::timebase::samples_from_duration_us;
+using webcodecs::timebase::TIMEBASE_1KHZ;
+using webcodecs::timebase::TIMEBASE_48KHZ;
+using webcodecs::timebase::TIMEBASE_90KHZ;
+using webcodecs::timebase::to_microseconds;
+using webcodecs::timebase::to_microseconds_or;
+using webcodecs::timebase::WEBCODECS_TIMEBASE;
 
 // =============================================================================
 // BASIC CONVERSION TESTS
@@ -206,7 +223,7 @@ TEST(TimebaseTest, PtsDiffUs_Normal) {
 TEST(TimebaseTest, PtsDiffUs_Wraparound) {
   // end just after wrap, start just before wrap
   int64_t just_before_wrap = (1LL << 33) - 90000;  // 1 second before wrap
-  int64_t just_after_wrap = 90000;  // 1 second after wrap
+  int64_t just_after_wrap = 90000;                 // 1 second after wrap
 
   int64_t diff = pts_diff_us(just_after_wrap, just_before_wrap, TIMEBASE_90KHZ);
 
@@ -286,9 +303,7 @@ TEST(TimebaseTest, ClampPts_Normal) {
   EXPECT_EQ(clamp_pts(1000000000), 1000000000);
 }
 
-TEST(TimebaseTest, ClampPts_NOPTS) {
-  EXPECT_EQ(clamp_pts(AV_NOPTS_VALUE), AV_NOPTS_VALUE);
-}
+TEST(TimebaseTest, ClampPts_NOPTS) { EXPECT_EQ(clamp_pts(AV_NOPTS_VALUE), AV_NOPTS_VALUE); }
 
 TEST(TimebaseTest, ClampPts_Negative) {
   EXPECT_EQ(clamp_pts(-1), 0);

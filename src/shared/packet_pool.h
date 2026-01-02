@@ -141,8 +141,7 @@ class GlobalPacketPool {
 
     uint64_t peak = stats_.peak_in_flight.load(std::memory_order_relaxed);
     while (in_flight > peak) {
-      if (stats_.peak_in_flight.compare_exchange_weak(peak, in_flight,
-                                                       std::memory_order_relaxed)) {
+      if (stats_.peak_in_flight.compare_exchange_weak(peak, in_flight, std::memory_order_relaxed)) {
         break;
       }
     }
@@ -193,13 +192,9 @@ class GlobalPacketPool {
   // STATISTICS
   // ---------------------------------------------------------------------------
 
-  [[nodiscard]] const PacketPoolStats& stats() const {
-    return stats_;
-  }
+  [[nodiscard]] const PacketPoolStats& stats() const { return stats_; }
 
-  void reset_stats() {
-    stats_.reset();
-  }
+  void reset_stats() { stats_.reset(); }
 
   [[nodiscard]] size_t pooled_count() const {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -232,9 +227,7 @@ class GlobalPacketPool {
  private:
   GlobalPacketPool() = default;
 
-  ~GlobalPacketPool() {
-    clear();
-  }
+  ~GlobalPacketPool() { clear(); }
 
   GlobalPacketPool(const GlobalPacketPool&) = delete;
   GlobalPacketPool& operator=(const GlobalPacketPool&) = delete;
@@ -273,21 +266,15 @@ class PacketPoolHandle {
  public:
   PacketPoolHandle() : pool_(&GlobalPacketPool::instance()) {}
 
-  [[nodiscard]] GlobalPacketPool::PooledPacket acquire() {
-    return pool_->acquire();
-  }
+  [[nodiscard]] GlobalPacketPool::PooledPacket acquire() { return pool_->acquire(); }
 
-  [[nodiscard]] GlobalPacketPool::PooledPacket acquire_ref(const AVPacket* src) {
-    return pool_->acquire_ref(src);
-  }
+  [[nodiscard]] GlobalPacketPool::PooledPacket acquire_ref(const AVPacket* src) { return pool_->acquire_ref(src); }
 
   [[nodiscard]] GlobalPacketPool::PooledPacket acquire_with_buffer(int size) {
     return pool_->acquire_with_buffer(size);
   }
 
-  [[nodiscard]] const PacketPoolStats& stats() const {
-    return pool_->stats();
-  }
+  [[nodiscard]] const PacketPoolStats& stats() const { return pool_->stats(); }
 
  private:
   GlobalPacketPool* pool_;

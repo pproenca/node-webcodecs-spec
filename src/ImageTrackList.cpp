@@ -5,14 +5,13 @@ namespace webcodecs {
 Napi::FunctionReference ImageTrackList::constructor;
 
 Napi::Object ImageTrackList::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "ImageTrackList", {
-    InstanceAccessor<&ImageTrackList::GetReady>("ready"),
-    InstanceAccessor<&ImageTrackList::GetLength>("length"),
-    InstanceAccessor<&ImageTrackList::GetSelectedIndex>("selectedIndex"),
-    InstanceAccessor<&ImageTrackList::GetSelectedTrack>("selectedTrack"),
-
-
-  });
+  Napi::Function func = DefineClass(env, "ImageTrackList",
+                                    {
+                                        InstanceAccessor<&ImageTrackList::GetReady>("ready"),
+                                        InstanceAccessor<&ImageTrackList::GetLength>("length"),
+                                        InstanceAccessor<&ImageTrackList::GetSelectedIndex>("selectedIndex"),
+                                        InstanceAccessor<&ImageTrackList::GetSelectedTrack>("selectedTrack"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -20,8 +19,7 @@ Napi::Object ImageTrackList::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-ImageTrackList::ImageTrackList(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<ImageTrackList>(info) {
+ImageTrackList::ImageTrackList(const Napi::CallbackInfo& info) : Napi::ObjectWrap<ImageTrackList>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -32,9 +30,7 @@ ImageTrackList::ImageTrackList(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-ImageTrackList::~ImageTrackList() {
-  Release();
-}
+ImageTrackList::~ImageTrackList() { Release(); }
 
 void ImageTrackList::Release() {
   // TODO(impl): Free handle_ and native resources
@@ -62,7 +58,6 @@ Napi::Value ImageTrackList::GetSelectedTrack(const Napi::CallbackInfo& info) {
   // TODO(impl): Return selectedTrack
   return info.Env().Null();
 }
-
 
 // --- Methods ---
 

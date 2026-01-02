@@ -5,11 +5,12 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // C++17-compatible latch implementation
 class SimpleLatch {
@@ -37,8 +38,9 @@ extern "C" {
 #include <libavutil/avutil.h>
 }
 
-using namespace webcodecs;
-using namespace std::chrono_literals;
+using webcodecs::GlobalPacketPool;
+using webcodecs::PacketPoolHandle;
+using std::chrono_literals::operator""ms;
 
 class PacketPoolTest : public ::testing::Test {
  protected:
@@ -48,9 +50,7 @@ class PacketPoolTest : public ::testing::Test {
     GlobalPacketPool::instance().set_max_pool_size(64);
   }
 
-  void TearDown() override {
-    GlobalPacketPool::instance().clear();
-  }
+  void TearDown() override { GlobalPacketPool::instance().clear(); }
 };
 
 // =============================================================================

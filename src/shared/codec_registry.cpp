@@ -1,11 +1,14 @@
 // src/shared/codec_registry.cpp
 #include "codec_registry.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 
 namespace webcodecs {
@@ -32,15 +35,14 @@ int SafeParseInt(const std::string& str, int base) {
   errno = 0;
 
   char* end = nullptr;
-  const long val = std::strtol(str.c_str(), &end, base);
+  const int64_t val = std::strtol(str.c_str(), &end, base);
 
   // Check for conversion errors:
   // 1. No characters converted (end == str.c_str())
   // 2. Trailing garbage (end doesn't point to null terminator)
   // 3. Overflow/underflow (errno == ERANGE)
   // 4. Value outside int range
-  if (end == str.c_str() || *end != '\0' || errno == ERANGE ||
-      val < INT_MIN || val > INT_MAX) {
+  if (end == str.c_str() || *end != '\0' || errno == ERANGE || val < INT_MIN || val > INT_MAX) {
     return -1;
   }
 
@@ -48,9 +50,7 @@ int SafeParseInt(const std::string& str, int base) {
 }
 
 // Convert hex string to integer (no exceptions)
-int HexToInt(const std::string& hex) {
-  return SafeParseInt(hex, 16);
-}
+int HexToInt(const std::string& hex) { return SafeParseInt(hex, 16); }
 
 // Parse AVC codec string: avc1.PPCCLL
 // PP = profile_idc, CC = constraint_set flags, LL = level_idc
@@ -136,15 +136,9 @@ std::optional<CodecInfo> ParseAAC(const std::string& params) {
 // Parse PCM codec string: pcm-<format>
 std::optional<CodecInfo> ParsePCM(const std::string& format) {
   static const std::unordered_map<std::string, AVCodecID> pcm_formats = {
-    {"s16le", AV_CODEC_ID_PCM_S16LE},
-    {"s16be", AV_CODEC_ID_PCM_S16BE},
-    {"s24le", AV_CODEC_ID_PCM_S24LE},
-    {"s24be", AV_CODEC_ID_PCM_S24BE},
-    {"s32le", AV_CODEC_ID_PCM_S32LE},
-    {"s32be", AV_CODEC_ID_PCM_S32BE},
-    {"f32le", AV_CODEC_ID_PCM_F32LE},
-    {"f32be", AV_CODEC_ID_PCM_F32BE},
-    {"u8", AV_CODEC_ID_PCM_U8},
+      {"s16le", AV_CODEC_ID_PCM_S16LE}, {"s16be", AV_CODEC_ID_PCM_S16BE}, {"s24le", AV_CODEC_ID_PCM_S24LE},
+      {"s24be", AV_CODEC_ID_PCM_S24BE}, {"s32le", AV_CODEC_ID_PCM_S32LE}, {"s32be", AV_CODEC_ID_PCM_S32BE},
+      {"f32le", AV_CODEC_ID_PCM_F32LE}, {"f32be", AV_CODEC_ID_PCM_F32BE}, {"u8", AV_CODEC_ID_PCM_U8},
   };
 
   auto it = pcm_formats.find(format);
@@ -163,17 +157,12 @@ std::optional<CodecInfo> ParseCodecString(const std::string& codec_string) {
 
   // Find the prefix (before first dot or entire string)
   size_t dot_pos = codec_string.find('.');
-  std::string prefix = (dot_pos != std::string::npos)
-    ? codec_string.substr(0, dot_pos)
-    : codec_string;
-  std::string params = (dot_pos != std::string::npos)
-    ? codec_string.substr(dot_pos + 1)
-    : "";
+  std::string prefix = (dot_pos != std::string::npos) ? codec_string.substr(0, dot_pos) : codec_string;
+  std::string params = (dot_pos != std::string::npos) ? codec_string.substr(dot_pos + 1) : "";
 
   // Convert prefix to lowercase for comparison
   std::string lower_prefix = prefix;
-  std::transform(lower_prefix.begin(), lower_prefix.end(),
-                 lower_prefix.begin(), ::tolower);
+  std::transform(lower_prefix.begin(), lower_prefix.end(), lower_prefix.begin(), ::tolower);
 
   // Video codecs
   if (lower_prefix == "avc1" || lower_prefix == "avc3") {
@@ -225,19 +214,32 @@ std::optional<CodecInfo> ParseCodecString(const std::string& codec_string) {
 
 std::string GetCodecPrefix(AVCodecID codec_id) {
   switch (codec_id) {
-    case AV_CODEC_ID_H264: return CODEC_AVC;
-    case AV_CODEC_ID_HEVC: return CODEC_HEVC;
-    case AV_CODEC_ID_VP8: return CODEC_VP8;
-    case AV_CODEC_ID_VP9: return CODEC_VP9;
-    case AV_CODEC_ID_AV1: return CODEC_AV1;
-    case AV_CODEC_ID_AAC: return CODEC_AAC;
-    case AV_CODEC_ID_OPUS: return CODEC_OPUS;
-    case AV_CODEC_ID_FLAC: return CODEC_FLAC;
-    case AV_CODEC_ID_MP3: return CODEC_MP3;
-    case AV_CODEC_ID_VORBIS: return CODEC_VORBIS;
-    case AV_CODEC_ID_PCM_MULAW: return CODEC_ULAW;
-    case AV_CODEC_ID_PCM_ALAW: return CODEC_ALAW;
-    default: return "";
+    case AV_CODEC_ID_H264:
+      return kCodecAvc;
+    case AV_CODEC_ID_HEVC:
+      return kCodecHevc;
+    case AV_CODEC_ID_VP8:
+      return kCodecVp8;
+    case AV_CODEC_ID_VP9:
+      return kCodecVp9;
+    case AV_CODEC_ID_AV1:
+      return kCodecAv1;
+    case AV_CODEC_ID_AAC:
+      return kCodecAac;
+    case AV_CODEC_ID_OPUS:
+      return kCodecOpus;
+    case AV_CODEC_ID_FLAC:
+      return kCodecFlac;
+    case AV_CODEC_ID_MP3:
+      return kCodecMp3;
+    case AV_CODEC_ID_VORBIS:
+      return kCodecVorbis;
+    case AV_CODEC_ID_PCM_MULAW:
+      return kCodecUlaw;
+    case AV_CODEC_ID_PCM_ALAW:
+      return kCodecAlaw;
+    default:
+      return "";
   }
 }
 

@@ -42,9 +42,9 @@ constexpr AVRational WEBCODECS_TIMEBASE = {1, 1000000};
 /**
  * Common FFmpeg timebases.
  */
-constexpr AVRational TIMEBASE_90KHZ = {1, 90000};    // MPEG-TS, H.264
-constexpr AVRational TIMEBASE_1KHZ = {1, 1000};      // MP4, WebM
-constexpr AVRational TIMEBASE_48KHZ = {1, 48000};    // Common audio
+constexpr AVRational TIMEBASE_90KHZ = {1, 90000};  // MPEG-TS, H.264
+constexpr AVRational TIMEBASE_1KHZ = {1, 1000};    // MP4, WebM
+constexpr AVRational TIMEBASE_48KHZ = {1, 48000};  // Common audio
 
 /**
  * MPEG-TS PTS wrap threshold (2^32, half of 33-bit range).
@@ -63,8 +63,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param src_timebase Source timebase (from codec/stream)
  * @return Timestamp in microseconds, or std::nullopt if pts is AV_NOPTS_VALUE
  */
-[[nodiscard]] inline std::optional<int64_t> to_microseconds(
-    int64_t pts, AVRational src_timebase) {
+[[nodiscard]] inline std::optional<int64_t> to_microseconds(int64_t pts, AVRational src_timebase) {
   if (pts == AV_NOPTS_VALUE) {
     return std::nullopt;
   }
@@ -79,8 +78,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param default_value Value to return if pts is AV_NOPTS_VALUE
  * @return Timestamp in microseconds
  */
-[[nodiscard]] inline int64_t to_microseconds_or(
-    int64_t pts, AVRational src_timebase, int64_t default_value) {
+[[nodiscard]] inline int64_t to_microseconds_or(int64_t pts, AVRational src_timebase, int64_t default_value) {
   if (pts == AV_NOPTS_VALUE) {
     return default_value;
   }
@@ -94,8 +92,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param dst_timebase Destination timebase
  * @return FFmpeg timestamp in destination timebase
  */
-[[nodiscard]] inline int64_t from_microseconds(
-    int64_t us, AVRational dst_timebase) {
+[[nodiscard]] inline int64_t from_microseconds(int64_t us, AVRational dst_timebase) {
   return av_rescale_q(us, WEBCODECS_TIMEBASE, dst_timebase);
 }
 
@@ -106,8 +103,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param src_timebase Source timebase
  * @return Duration in microseconds, or 0 if duration <= 0
  */
-[[nodiscard]] inline int64_t duration_to_microseconds(
-    int64_t duration, AVRational src_timebase) {
+[[nodiscard]] inline int64_t duration_to_microseconds(int64_t duration, AVRational src_timebase) {
   if (duration <= 0) {
     return 0;
   }
@@ -121,8 +117,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param dst_timebase Destination timebase
  * @return Duration in destination timebase
  */
-[[nodiscard]] inline int64_t duration_from_microseconds(
-    int64_t us, AVRational dst_timebase) {
+[[nodiscard]] inline int64_t duration_from_microseconds(int64_t us, AVRational dst_timebase) {
   if (us <= 0) {
     return 0;
   }
@@ -259,9 +254,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
 /**
  * Check if a timestamp is valid (not AV_NOPTS_VALUE and non-negative).
  */
-[[nodiscard]] inline bool is_valid_pts(int64_t pts) {
-  return pts != AV_NOPTS_VALUE && pts >= 0;
-}
+[[nodiscard]] inline bool is_valid_pts(int64_t pts) { return pts != AV_NOPTS_VALUE && pts >= 0; }
 
 /**
  * Clamp timestamp to valid range.

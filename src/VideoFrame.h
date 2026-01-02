@@ -21,9 +21,9 @@ namespace webcodecs {
  * - The underlying AVFrame buffers are refcounted and thread-safe
  */
 class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  VideoFrame(const Napi::CallbackInfo& info);
+  explicit VideoFrame(const Napi::CallbackInfo& info);
   ~VideoFrame() override;
 
   // RAII Release - unrefs the AVFrame buffers
@@ -36,7 +36,7 @@ public:
   // Get the underlying AVFrame (for internal use by decoder/encoder)
   AVFrame* GetAVFrame() const { return frame_.get(); }
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // --- FFmpeg Resource (RAII managed) ---
@@ -60,7 +60,6 @@ private:
   Napi::Value GetDuration(const Napi::CallbackInfo& info);
   Napi::Value GetTimestamp(const Napi::CallbackInfo& info);
   Napi::Value GetColorSpace(const Napi::CallbackInfo& info);
-
 
   // Methods
   Napi::Value Metadata(const Napi::CallbackInfo& info);

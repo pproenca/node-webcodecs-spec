@@ -49,6 +49,7 @@ set(TEST_SOURCES
     test_security_issues.cpp
     test_video_decoder_spec.cpp
     test_codec_registry.cpp
+    test_naming_conventions.cpp
     # Source files needed for testing
     ${CMAKE_SOURCE_DIR}/../../src/shared/codec_registry.cpp
 )

@@ -9,15 +9,15 @@ namespace webcodecs {
  * @see spec/context/ImageTrackList.md
  */
 class ImageTrackList : public Napi::ObjectWrap<ImageTrackList> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  ImageTrackList(const Napi::CallbackInfo& info);
+  explicit ImageTrackList(const Napi::CallbackInfo& info);
   ~ImageTrackList() override;
 
   // RAII Release
   void Release();
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // Internal Native Handle
@@ -30,9 +30,7 @@ private:
   Napi::Value GetSelectedIndex(const Napi::CallbackInfo& info);
   Napi::Value GetSelectedTrack(const Napi::CallbackInfo& info);
 
-
   // Methods
-
 };
 
 }  // namespace webcodecs

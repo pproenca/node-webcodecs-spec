@@ -5,14 +5,14 @@ namespace webcodecs {
 Napi::FunctionReference EncodedAudioChunk::constructor;
 
 Napi::Object EncodedAudioChunk::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "EncodedAudioChunk", {
-    InstanceAccessor<&EncodedAudioChunk::GetType>("type"),
-    InstanceAccessor<&EncodedAudioChunk::GetTimestamp>("timestamp"),
-    InstanceAccessor<&EncodedAudioChunk::GetDuration>("duration"),
-    InstanceAccessor<&EncodedAudioChunk::GetByteLength>("byteLength"),
-    InstanceMethod<&EncodedAudioChunk::CopyTo>("copyTo"),
-
-  });
+  Napi::Function func = DefineClass(env, "EncodedAudioChunk",
+                                    {
+                                        InstanceAccessor<&EncodedAudioChunk::GetType>("type"),
+                                        InstanceAccessor<&EncodedAudioChunk::GetTimestamp>("timestamp"),
+                                        InstanceAccessor<&EncodedAudioChunk::GetDuration>("duration"),
+                                        InstanceAccessor<&EncodedAudioChunk::GetByteLength>("byteLength"),
+                                        InstanceMethod<&EncodedAudioChunk::CopyTo>("copyTo"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -20,8 +20,7 @@ Napi::Object EncodedAudioChunk::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-EncodedAudioChunk::EncodedAudioChunk(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<EncodedAudioChunk>(info) {
+EncodedAudioChunk::EncodedAudioChunk(const Napi::CallbackInfo& info) : Napi::ObjectWrap<EncodedAudioChunk>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -32,9 +31,7 @@ EncodedAudioChunk::EncodedAudioChunk(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-EncodedAudioChunk::~EncodedAudioChunk() {
-  Release();
-}
+EncodedAudioChunk::~EncodedAudioChunk() { Release(); }
 
 void EncodedAudioChunk::Release() {
   // Release packet (RAII handles av_packet_unref)
@@ -62,7 +59,6 @@ Napi::Value EncodedAudioChunk::GetByteLength(const Napi::CallbackInfo& info) {
   // TODO(impl): Return byteLength
   return info.Env().Null();
 }
-
 
 // --- Methods ---
 

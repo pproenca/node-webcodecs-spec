@@ -6,11 +6,12 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // C++17-compatible latch implementation
 class SimpleLatch {
@@ -34,8 +35,24 @@ class SimpleLatch {
 
 #include "../../src/ffmpeg_raii.h"
 
-using namespace webcodecs::raii;
-using namespace std::chrono_literals;
+using webcodecs::raii::AtomicCodecState;
+using webcodecs::raii::AVCodecContextPtr;
+using webcodecs::raii::AVFilterGraphPtr;
+using webcodecs::raii::AVFramePtr;
+using webcodecs::raii::AVMallocBuffer;
+using webcodecs::raii::AVPacketPtr;
+using webcodecs::raii::CloneAvFrame;
+using webcodecs::raii::CloneAvPacket;
+using webcodecs::raii::MakeAvCodecContext;
+using webcodecs::raii::MakeAvFrame;
+using webcodecs::raii::MakeAvPacket;
+using webcodecs::raii::MakeFilterGraph;
+using webcodecs::raii::MakeSwrContext;
+using webcodecs::raii::MakeSwrContextInitialized;
+using webcodecs::raii::SafeAsyncContext;
+using webcodecs::raii::SwrContextPtr;
+using webcodecs::raii::SwsContextPtr;
+using std::chrono_literals::operator""ms;
 
 // =============================================================================
 // AVFRAME TESTS
@@ -166,10 +183,8 @@ TEST(AVCodecContextRAIITest, ContextIsFreedOnScopeExit) {
 // =============================================================================
 
 TEST(SwsContextRAIITest, CreateAndUseSwsContext) {
-  SwsContext* raw = sws_getContext(
-      1920, 1080, AV_PIX_FMT_YUV420P,
-      1280, 720, AV_PIX_FMT_RGB24,
-      SWS_BILINEAR, nullptr, nullptr, nullptr);
+  SwsContext* raw = sws_getContext(1920, 1080, AV_PIX_FMT_YUV420P, 1280, 720, AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr,
+                                   nullptr, nullptr);
 
   SwsContextPtr ctx(raw);
   ASSERT_NE(ctx, nullptr);
@@ -177,10 +192,8 @@ TEST(SwsContextRAIITest, CreateAndUseSwsContext) {
 
 TEST(SwsContextRAIITest, ContextIsFreedOnScopeExit) {
   {
-    SwsContext* raw = sws_getContext(
-        640, 480, AV_PIX_FMT_YUV420P,
-        320, 240, AV_PIX_FMT_RGB24,
-        SWS_BILINEAR, nullptr, nullptr, nullptr);
+    SwsContext* raw = sws_getContext(640, 480, AV_PIX_FMT_YUV420P, 320, 240, AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr,
+                                     nullptr, nullptr);
     SwsContextPtr ctx(raw);
     ASSERT_NE(ctx, nullptr);
   }
@@ -200,9 +213,7 @@ TEST(SwrContextRAIITest, MakeSwrContextInitialized) {
   AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
   AVChannelLayout mono = AV_CHANNEL_LAYOUT_MONO;
 
-  SwrContextPtr ctx = MakeSwrContextInitialized(
-      &stereo, AV_SAMPLE_FMT_S16, 48000,
-      &mono, AV_SAMPLE_FMT_FLT, 44100);
+  SwrContextPtr ctx = MakeSwrContextInitialized(&stereo, AV_SAMPLE_FMT_S16, 48000, &mono, AV_SAMPLE_FMT_FLT, 44100);
 
   ASSERT_NE(ctx, nullptr);
 }
@@ -211,9 +222,7 @@ TEST(SwrContextRAIITest, ContextIsFreedOnScopeExit) {
   AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
 
   {
-    SwrContextPtr ctx = MakeSwrContextInitialized(
-        &stereo, AV_SAMPLE_FMT_S16, 48000,
-        &stereo, AV_SAMPLE_FMT_S16, 44100);
+    SwrContextPtr ctx = MakeSwrContextInitialized(&stereo, AV_SAMPLE_FMT_S16, 48000, &stereo, AV_SAMPLE_FMT_S16, 44100);
     ASSERT_NE(ctx, nullptr);
   }
   // AddressSanitizer will catch leaks
@@ -304,49 +313,44 @@ TEST(AVMallocBufferTest, BufferIsFreedOnScopeExit) {
 TEST(AtomicCodecStateTest, InitialStateIsUnconfigured) {
   AtomicCodecState state;
   EXPECT_EQ(state.get(), AtomicCodecState::State::Unconfigured);
-  EXPECT_FALSE(state.is_configured());
-  EXPECT_FALSE(state.is_closed());
+  EXPECT_FALSE(state.IsConfigured());
+  EXPECT_FALSE(state.IsClosed());
 }
 
 TEST(AtomicCodecStateTest, TransitionUnconfiguredToConfigured) {
   AtomicCodecState state;
-  bool success = state.transition(
-      AtomicCodecState::State::Unconfigured,
-      AtomicCodecState::State::Configured);
+  bool success = state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
   EXPECT_TRUE(success);
-  EXPECT_TRUE(state.is_configured());
+  EXPECT_TRUE(state.IsConfigured());
 }
 
 TEST(AtomicCodecStateTest, TransitionFailsOnWrongState) {
   AtomicCodecState state;
   // Try to transition from Configured when actually Unconfigured
-  bool success = state.transition(
-      AtomicCodecState::State::Configured,
-      AtomicCodecState::State::Closed);
+  bool success = state.transition(AtomicCodecState::State::Configured, AtomicCodecState::State::Closed);
   EXPECT_FALSE(success);
   EXPECT_EQ(state.get(), AtomicCodecState::State::Unconfigured);
 }
 
 TEST(AtomicCodecStateTest, CloseAlwaysSucceeds) {
   AtomicCodecState state;
-  state.close();
-  EXPECT_TRUE(state.is_closed());
+  state.Close();
+  EXPECT_TRUE(state.IsClosed());
 
   // Close again - should stay closed
-  state.close();
-  EXPECT_TRUE(state.is_closed());
+  state.Close();
+  EXPECT_TRUE(state.IsClosed());
 }
 
 TEST(AtomicCodecStateTest, ToString) {
   AtomicCodecState state;
-  EXPECT_STREQ(state.to_string(), "unconfigured");
+  EXPECT_STREQ(state.ToString(), "unconfigured");
 
-  state.transition(AtomicCodecState::State::Unconfigured,
-                   AtomicCodecState::State::Configured);
-  EXPECT_STREQ(state.to_string(), "configured");
+  state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
+  EXPECT_STREQ(state.ToString(), "configured");
 
-  state.close();
-  EXPECT_STREQ(state.to_string(), "closed");
+  state.Close();
+  EXPECT_STREQ(state.ToString(), "closed");
 }
 
 TEST(AtomicCodecStateTest, ConcurrentTransitions) {
@@ -360,8 +364,7 @@ TEST(AtomicCodecStateTest, ConcurrentTransitions) {
   for (int t = 0; t < kThreads; ++t) {
     threads.emplace_back([&state, &success_count, &start_latch]() {
       start_latch.arrive_and_wait();
-      if (state.transition(AtomicCodecState::State::Unconfigured,
-                           AtomicCodecState::State::Configured)) {
+      if (state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured)) {
         success_count.fetch_add(1, std::memory_order_relaxed);
       }
     });
@@ -373,13 +376,12 @@ TEST(AtomicCodecStateTest, ConcurrentTransitions) {
 
   // Exactly one thread should succeed
   EXPECT_EQ(success_count.load(), 1);
-  EXPECT_TRUE(state.is_configured());
+  EXPECT_TRUE(state.IsConfigured());
 }
 
 TEST(AtomicCodecStateTest, ConcurrentClose) {
   AtomicCodecState state;
-  state.transition(AtomicCodecState::State::Unconfigured,
-                   AtomicCodecState::State::Configured);
+  state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
 
   constexpr int kThreads = 4;
   std::vector<std::thread> threads;
@@ -388,7 +390,7 @@ TEST(AtomicCodecStateTest, ConcurrentClose) {
   for (int t = 0; t < kThreads; ++t) {
     threads.emplace_back([&state, &start_latch]() {
       start_latch.arrive_and_wait();
-      state.close();
+      state.Close();
     });
   }
 
@@ -396,7 +398,7 @@ TEST(AtomicCodecStateTest, ConcurrentClose) {
     t.join();
   }
 
-  EXPECT_TRUE(state.is_closed());
+  EXPECT_TRUE(state.IsClosed());
 }
 
 // =============================================================================

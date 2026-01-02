@@ -13,7 +13,9 @@
 
 #include "../../src/shared/codec_registry.h"
 
-using namespace webcodecs;
+using webcodecs::GetCodecPrefix;
+using webcodecs::IsCodecSupported;
+using webcodecs::ParseCodecString;
 
 // =============================================================================
 // VALID CODEC STRINGS - HAPPY PATH
@@ -301,13 +303,9 @@ TEST(CodecRegistryTest, IsCodecSupported_ValidCodec) {
   EXPECT_TRUE(IsCodecSupported("avc1.42E01E"));
 }
 
-TEST(CodecRegistryTest, IsCodecSupported_UnknownCodec) {
-  EXPECT_FALSE(IsCodecSupported("unknown.codec"));
-}
+TEST(CodecRegistryTest, IsCodecSupported_UnknownCodec) { EXPECT_FALSE(IsCodecSupported("unknown.codec")); }
 
-TEST(CodecRegistryTest, IsCodecSupported_Empty) {
-  EXPECT_FALSE(IsCodecSupported(""));
-}
+TEST(CodecRegistryTest, IsCodecSupported_Empty) { EXPECT_FALSE(IsCodecSupported("")); }
 
 TEST(CodecRegistryTest, IsCodecSupported_InvalidInput_NoThrow) {
   // This should not throw even with garbage input
@@ -318,17 +316,11 @@ TEST(CodecRegistryTest, IsCodecSupported_InvalidInput_NoThrow) {
 // GetCodecPrefix TESTS
 // =============================================================================
 
-TEST(CodecRegistryTest, GetCodecPrefix_H264) {
-  EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_H264), "avc1");
-}
+TEST(CodecRegistryTest, GetCodecPrefix_H264) { EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_H264), "avc1"); }
 
-TEST(CodecRegistryTest, GetCodecPrefix_VP9) {
-  EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_VP9), "vp09");
-}
+TEST(CodecRegistryTest, GetCodecPrefix_VP9) { EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_VP9), "vp09"); }
 
-TEST(CodecRegistryTest, GetCodecPrefix_Unknown) {
-  EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_NONE), "");
-}
+TEST(CodecRegistryTest, GetCodecPrefix_Unknown) { EXPECT_EQ(GetCodecPrefix(AV_CODEC_ID_NONE), ""); }
 
 // =============================================================================
 // STRESS TESTS - Many invalid inputs should not crash
@@ -337,22 +329,22 @@ TEST(CodecRegistryTest, GetCodecPrefix_Unknown) {
 TEST(CodecRegistryTest, StressTest_ManyInvalidStrings) {
   // Should not crash or throw on any of these
   const char* invalid_strings[] = {
-    "",
-    ".",
-    "..",
-    "...",
-    "avc1.",
-    "avc1..",
-    "avc1...",
-    "vp09.a.b.c",
-    "av01.x.y.z",
-    "mp4a.40.",
-    "pcm-",
-    "pcm-unknown",
-    "\x00\x01\x02",  // Binary garbage
-    "avc1.FFFFFFFFFFFFFFFFFFFFFFFFFF",
-    "vp09.99999999999999999999999999.0.0",
-    nullptr  // End marker
+      "",
+      ".",
+      "..",
+      "...",
+      "avc1.",
+      "avc1..",
+      "avc1...",
+      "vp09.a.b.c",
+      "av01.x.y.z",
+      "mp4a.40.",
+      "pcm-",
+      "pcm-unknown",
+      "\x00\x01\x02",  // Binary garbage
+      "avc1.FFFFFFFFFFFFFFFFFFFFFFFFFF",
+      "vp09.99999999999999999999999999.0.0",
+      nullptr  // End marker
   };
 
   for (int i = 0; invalid_strings[i] != nullptr; i++) {

@@ -5,19 +5,19 @@ namespace webcodecs {
 Napi::FunctionReference AudioData::constructor;
 
 Napi::Object AudioData::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "AudioData", {
-    InstanceAccessor<&AudioData::GetFormat>("format"),
-    InstanceAccessor<&AudioData::GetSampleRate>("sampleRate"),
-    InstanceAccessor<&AudioData::GetNumberOfFrames>("numberOfFrames"),
-    InstanceAccessor<&AudioData::GetNumberOfChannels>("numberOfChannels"),
-    InstanceAccessor<&AudioData::GetDuration>("duration"),
-    InstanceAccessor<&AudioData::GetTimestamp>("timestamp"),
-    InstanceMethod<&AudioData::AllocationSize>("allocationSize"),
-    InstanceMethod<&AudioData::CopyTo>("copyTo"),
-    InstanceMethod<&AudioData::Clone>("clone"),
-    InstanceMethod<&AudioData::Close>("close"),
-
-  });
+  Napi::Function func = DefineClass(env, "AudioData",
+                                    {
+                                        InstanceAccessor<&AudioData::GetFormat>("format"),
+                                        InstanceAccessor<&AudioData::GetSampleRate>("sampleRate"),
+                                        InstanceAccessor<&AudioData::GetNumberOfFrames>("numberOfFrames"),
+                                        InstanceAccessor<&AudioData::GetNumberOfChannels>("numberOfChannels"),
+                                        InstanceAccessor<&AudioData::GetDuration>("duration"),
+                                        InstanceAccessor<&AudioData::GetTimestamp>("timestamp"),
+                                        InstanceMethod<&AudioData::AllocationSize>("allocationSize"),
+                                        InstanceMethod<&AudioData::CopyTo>("copyTo"),
+                                        InstanceMethod<&AudioData::Clone>("clone"),
+                                        InstanceMethod<&AudioData::Close>("close"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -25,8 +25,7 @@ Napi::Object AudioData::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-AudioData::AudioData(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<AudioData>(info) {
+AudioData::AudioData(const Napi::CallbackInfo& info) : Napi::ObjectWrap<AudioData>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -37,9 +36,7 @@ AudioData::AudioData(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-AudioData::~AudioData() {
-  Release();
-}
+AudioData::~AudioData() { Release(); }
 
 void AudioData::Release() {
   // Release frame (RAII handles av_frame_unref)
@@ -78,7 +75,6 @@ Napi::Value AudioData::GetTimestamp(const Napi::CallbackInfo& info) {
   // TODO(impl): Return timestamp
   return info.Env().Null();
 }
-
 
 // --- Methods ---
 

@@ -9,11 +9,13 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <memory>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // C++17-compatible latch implementation
 class SimpleLatch {
@@ -37,8 +39,8 @@ class SimpleLatch {
 
 #include "mocks/mock_tsfn.h"
 
-using namespace webcodecs::testing;
-using namespace std::chrono_literals;
+using webcodecs::testing::MockTypedThreadSafeFunction;
+using std::chrono_literals::operator""ms;
 
 // =============================================================================
 // TEST HARNESS
@@ -48,16 +50,14 @@ using namespace std::chrono_literals;
  * Mock-based SafeThreadSafeFunction for testing.
  * Mirrors the real implementation but uses MockTypedThreadSafeFunction.
  */
-template<typename Context, typename DataType>
+template <typename Context, typename DataType>
 class TestSafeThreadSafeFunction {
  public:
   using MockTSFN = MockTypedThreadSafeFunction<Context, DataType>;
 
   TestSafeThreadSafeFunction() = default;
 
-  ~TestSafeThreadSafeFunction() {
-    release();
-  }
+  ~TestSafeThreadSafeFunction() { release(); }
 
   TestSafeThreadSafeFunction(const TestSafeThreadSafeFunction&) = delete;
   TestSafeThreadSafeFunction& operator=(const TestSafeThreadSafeFunction&) = delete;
@@ -106,9 +106,7 @@ class TestSafeThreadSafeFunction {
   }
 
   // Test helpers
-  [[nodiscard]] size_t call_count() const {
-    return tsfn_.call_count();
-  }
+  [[nodiscard]] size_t call_count() const { return tsfn_.call_count(); }
 
  private:
   mutable std::mutex mutex_;
@@ -140,10 +138,7 @@ class SafeTSFNTest : public ::testing::Test {
   void InitTSFN() {
     auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(
         context_.get(),
-        [](TestContext* ctx, TestData*) {
-          ctx->callback_count.fetch_add(1, std::memory_order_relaxed);
-        }
-    );
+        [](TestContext* ctx, TestData*) { ctx->callback_count.fetch_add(1, std::memory_order_relaxed); });
     tsfn_->init(std::move(mock));
   }
 
@@ -186,8 +181,7 @@ TEST_F(SafeTSFNTest, DoubleReleaseIsSafe) {
 TEST_F(SafeTSFNTest, DestructorReleasesAutomatically) {
   {
     TestSafeThreadSafeFunction<TestContext, TestData> local_tsfn;
-    auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(
-        context_.get(), [](TestContext*, TestData*) {});
+    auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
     local_tsfn.init(std::move(mock));
     EXPECT_TRUE(local_tsfn.is_active());
   }
@@ -339,8 +333,7 @@ TEST_F(SafeTSFNTest, NullDataCall) {
 TEST_F(SafeTSFNTest, CallAfterDestruction) {
   // Ensure no use-after-free when calling on destroyed TSFN
   auto local_tsfn = std::make_unique<TestSafeThreadSafeFunction<TestContext, TestData>>();
-  auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(
-      context_.get(), [](TestContext*, TestData*) {});
+  auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
   local_tsfn->init(std::move(mock));
   local_tsfn->release();
   local_tsfn.reset();  // Destroy
@@ -355,8 +348,7 @@ TEST_F(SafeTSFNTest, ReinitAfterRelease) {
   EXPECT_TRUE(tsfn_->is_released());
 
   // Reinitialize with new mock
-  auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(
-      context_.get(), [](TestContext*, TestData*) {});
+  auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
   tsfn_->init(std::move(mock));
 
   EXPECT_TRUE(tsfn_->is_active());

@@ -1,0 +1,20 @@
+# clang-format configuration for node-webcodecs-spec
+# Based on Google C++ Style Guide
+
+BasedOnStyle: Google
+ColumnLimit: 120
+
+# Keep consistent with project conventions
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+
+# Access modifiers indented by 1 space (Google style)
+AccessModifierOffset: -1
+
+# Don't indent namespace contents
+NamespaceIndentation: None
+
+# Keep includes grouped
+IncludeBlocks: Preserve
+SortIncludes: false

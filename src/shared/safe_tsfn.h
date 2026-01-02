@@ -27,9 +27,11 @@
  */
 
 #include <napi.h>
-#include <mutex>
+
 #include <atomic>
 #include <functional>
+#include <mutex>
+#include <utility>
 
 namespace webcodecs {
 
@@ -44,16 +46,14 @@ namespace webcodecs {
  * @tparam Context The context type passed to the TSFN callback
  * @tparam DataType The data type passed through the TSFN
  */
-template<typename Context, typename DataType>
+template <typename Context, typename DataType>
 class SafeThreadSafeFunction {
  public:
   using TSFN = Napi::TypedThreadSafeFunction<Context, DataType>;
 
   SafeThreadSafeFunction() = default;
 
-  ~SafeThreadSafeFunction() {
-    release();
-  }
+  ~SafeThreadSafeFunction() { release(); }
 
   // Non-copyable, non-movable (wraps non-copyable TSFN)
   SafeThreadSafeFunction(const SafeThreadSafeFunction&) = delete;
@@ -82,8 +82,7 @@ class SafeThreadSafeFunction {
    * @param mode Blocking or non-blocking call (default: non-blocking)
    * @return true if call succeeded, false if TSFN was released or not initialized
    */
-  [[nodiscard]] bool call(DataType* data,
-                          napi_threadsafe_function_call_mode mode = napi_tsfn_nonblocking) {
+  [[nodiscard]] bool call(DataType* data, napi_threadsafe_function_call_mode mode = napi_tsfn_nonblocking) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!initialized_ || released_) {
@@ -175,17 +174,12 @@ class SafeThreadSafeFunction {
  * Acquires a reference on construction, releases on destruction.
  * Useful for ensuring TSFN stays alive during async operations.
  */
-template<typename Context, typename DataType>
+template <typename Context, typename DataType>
 class ScopedTSFNRef {
  public:
-  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType>& tsfn)
-      : tsfn_(tsfn) {
-    tsfn_.acquire();
-  }
+  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType>& tsfn) : tsfn_(tsfn) { tsfn_.acquire(); }
 
-  ~ScopedTSFNRef() {
-    tsfn_.unref();
-  }
+  ~ScopedTSFNRef() { tsfn_.unref(); }
 
   // Non-copyable, non-movable
   ScopedTSFNRef(const ScopedTSFNRef&) = delete;
@@ -205,24 +199,16 @@ class ScopedTSFNRef {
  * @param callJs The C++ callback function
  * @return Initialized SafeThreadSafeFunction, or throws on error
  */
-template<typename Context, typename DataType, typename CallbackType>
-SafeThreadSafeFunction<Context, DataType> make_safe_tsfn(
-    Napi::Env env,
-    const char* name,
-    Napi::Function callback,
-    Context* context,
-    CallbackType callJs) {
-
+template <typename Context, typename DataType, typename CallbackType>
+SafeThreadSafeFunction<Context, DataType> make_safe_tsfn(Napi::Env env, const char* name, Napi::Function callback,
+                                                         Context* context, CallbackType callJs) {
   SafeThreadSafeFunction<Context, DataType> safe_tsfn;
 
   auto tsfn = Napi::TypedThreadSafeFunction<Context, DataType>::New(
-      env,
-      callback,
-      name,
-      0,  // Unlimited queue
-      1,  // Initial thread count
-      context,
-      [](Napi::Env, void*, Context*) {},  // Destructor callback
+      env, callback, name,
+      0,                                           // Unlimited queue
+      1,                                           // Initial thread count
+      context, [](Napi::Env, void*, Context*) {},  // Destructor callback
       callJs);
 
   safe_tsfn.init(std::move(tsfn));

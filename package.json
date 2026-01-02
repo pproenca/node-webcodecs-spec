@@ -16,20 +16,30 @@
   },
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
-    "scaffold": "tsx scripts/scaffold-project.ts",
-    "issues": "tsx scripts/generate-issues.ts",
+
+    "build": "npm run build:native && npm run build:ts",
     "build:native": "node-gyp rebuild",
-    "build": "npm run build:native && tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
+    "build:ts": "tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
     "clean": "node-gyp clean && rm -rf dist",
     "rebuild": "npm run clean && npm run build",
-    "test": "vitest",
+
+    "test": "npm run test:native && npm run test:ts",
+    "test:ts": "vitest run",
     "test:native": "cd test/cpp && cmake -B build && cmake --build build && ./build/webcodecs_tests",
     "test:native:tsan": "cd test/cpp && cmake -B build -DENABLE_TSAN=ON && cmake --build build && ./build/webcodecs_tests",
     "test:native:asan": "cd test/cpp && cmake -B build -DENABLE_ASAN=ON && cmake --build build && ./build/webcodecs_tests",
     "test:native:ubsan": "cd test/cpp && cmake -B build -DENABLE_UBSAN=ON && cmake --build build && ./build/webcodecs_tests",
-    "test:all": "npm run test:native && npm run test",
-    "format": "prettier --write \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\"",
-    "format:check": "prettier --check \"lib/**/*.ts\" \"scripts/**/*.ts\" \"test/**/*.ts\""
+
+    "lint": "npm run lint:ts && npm run lint:cpp",
+    "lint:ts": "prettier --check lib scripts test --ignore-unknown",
+    "lint:cpp": "cpplint --recursive --exclude=test/cpp/build src test/cpp",
+
+    "format": "npm run format:ts && npm run format:cpp",
+    "format:ts": "prettier --write lib scripts test --ignore-unknown",
+    "format:cpp": "find src test/cpp -path test/cpp/build -prune -o \\( -name '*.cpp' -o -name '*.h' \\) -print | xargs clang-format -i",
+
+    "scaffold": "tsx scripts/scaffold-project.ts",
+    "issues": "tsx scripts/generate-issues.ts"
   },
   "gypfile": true,
   "binary": {

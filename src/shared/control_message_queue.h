@@ -20,15 +20,16 @@
  * @see https://www.w3.org/TR/webcodecs/#control-message-queue
  */
 
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-#include <variant>
-#include <functional>
 #include <atomic>
-#include <optional>
-#include <vector>
 #include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <queue>
+#include <utility>
+#include <variant>
+#include <vector>
 
 #include "../ffmpeg_raii.h"
 
@@ -40,7 +41,7 @@ namespace webcodecs {
  * @tparam PacketType Type for encoded data (e.g., raii::AVPacketPtr)
  * @tparam FrameType Type for decoded data (e.g., raii::AVFramePtr)
  */
-template<typename PacketType, typename FrameType>
+template <typename PacketType, typename FrameType>
 class ControlMessageQueue {
  public:
   // =========================================================================
@@ -80,8 +81,7 @@ class ControlMessageQueue {
    */
   struct CloseMessage {};
 
-  using Message = std::variant<ConfigureMessage, DecodeMessage, FlushMessage,
-                                ResetMessage, CloseMessage>;
+  using Message = std::variant<ConfigureMessage, DecodeMessage, FlushMessage, ResetMessage, CloseMessage>;
 
   // =========================================================================
   // CONSTRUCTORS / DESTRUCTOR
@@ -89,9 +89,7 @@ class ControlMessageQueue {
 
   ControlMessageQueue() = default;
 
-  ~ControlMessageQueue() {
-    shutdown();
-  }
+  ~ControlMessageQueue() { shutdown(); }
 
   // Non-copyable, non-movable (owns synchronization primitives)
   ControlMessageQueue(const ControlMessageQueue&) = delete;
@@ -252,16 +250,12 @@ class ControlMessageQueue {
   /**
    * Check if queue is blocked (for configure).
    */
-  [[nodiscard]] bool is_blocked() const {
-    return blocked_.load(std::memory_order_acquire);
-  }
+  [[nodiscard]] bool is_blocked() const { return blocked_.load(std::memory_order_acquire); }
 
   /**
    * Set blocked state (during configure).
    */
-  void set_blocked(bool blocked) {
-    blocked_.store(blocked, std::memory_order_release);
-  }
+  void set_blocked(bool blocked) { blocked_.store(blocked, std::memory_order_release); }
 
  private:
   mutable std::mutex mutex_;
@@ -305,13 +299,13 @@ using AudioControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePt
  *     [](CloseMessage& msg) { ... }
  *   }, message);
  */
-template<class... Ts>
+template <class... Ts>
 struct MessageVisitor : Ts... {
   using Ts::operator()...;
 };
 
 // Deduction guide for C++17
-template<class... Ts>
+template <class... Ts>
 MessageVisitor(Ts...) -> MessageVisitor<Ts...>;
 
 }  // namespace webcodecs

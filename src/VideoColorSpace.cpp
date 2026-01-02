@@ -5,14 +5,14 @@ namespace webcodecs {
 Napi::FunctionReference VideoColorSpace::constructor;
 
 Napi::Object VideoColorSpace::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "VideoColorSpace", {
-    InstanceAccessor<&VideoColorSpace::GetPrimaries>("primaries"),
-    InstanceAccessor<&VideoColorSpace::GetTransfer>("transfer"),
-    InstanceAccessor<&VideoColorSpace::GetMatrix>("matrix"),
-    InstanceAccessor<&VideoColorSpace::GetFullRange>("fullRange"),
-    InstanceMethod<&VideoColorSpace::ToJSON>("toJSON"),
-
-  });
+  Napi::Function func = DefineClass(env, "VideoColorSpace",
+                                    {
+                                        InstanceAccessor<&VideoColorSpace::GetPrimaries>("primaries"),
+                                        InstanceAccessor<&VideoColorSpace::GetTransfer>("transfer"),
+                                        InstanceAccessor<&VideoColorSpace::GetMatrix>("matrix"),
+                                        InstanceAccessor<&VideoColorSpace::GetFullRange>("fullRange"),
+                                        InstanceMethod<&VideoColorSpace::ToJSON>("toJSON"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -20,8 +20,7 @@ Napi::Object VideoColorSpace::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-VideoColorSpace::VideoColorSpace(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<VideoColorSpace>(info) {
+VideoColorSpace::VideoColorSpace(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoColorSpace>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -32,9 +31,7 @@ VideoColorSpace::VideoColorSpace(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-VideoColorSpace::~VideoColorSpace() {
-  Release();
-}
+VideoColorSpace::~VideoColorSpace() { Release(); }
 
 void VideoColorSpace::Release() {
   // TODO(impl): Free handle_ and native resources
@@ -62,7 +59,6 @@ Napi::Value VideoColorSpace::GetFullRange(const Napi::CallbackInfo& info) {
   // TODO(impl): Return fullRange
   return info.Env().Null();
 }
-
 
 // --- Methods ---
 

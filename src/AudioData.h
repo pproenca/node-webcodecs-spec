@@ -15,17 +15,16 @@ namespace webcodecs {
  * via RAII. Close() releases the underlying memory.
  */
 class AudioData : public Napi::ObjectWrap<AudioData> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  AudioData(const Napi::CallbackInfo& info);
+  explicit AudioData(const Napi::CallbackInfo& info);
   ~AudioData() override;
 
   // RAII Release - cleans up all resources
   void Release();
 
   // Factory: Create from AVFrame (clones, caller retains ownership of source)
-  static Napi::Object CreateFromFrame(Napi::Env env, const AVFrame* frame,
-                                       int64_t timestamp_us);
+  static Napi::Object CreateFromFrame(Napi::Env env, const AVFrame* frame, int64_t timestamp_us);
 
   // Access underlying frame (for encoders)
   const AVFrame* frame() const { return frame_.get(); }
@@ -33,14 +32,14 @@ public:
   // Check if closed
   bool is_closed() const { return closed_; }
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // --- Typed Storage (NO void*) ---
-  raii::AVFramePtr frame_;             // Owns decoded audio samples
-  std::string format_;                  // WebCodecs AudioSampleFormat
-  int64_t timestamp_;                   // WebCodecs timestamp (microseconds)
-  bool closed_{false};                  // Whether Close() has been called
+  raii::AVFramePtr frame_;  // Owns decoded audio samples
+  std::string format_;      // WebCodecs AudioSampleFormat
+  int64_t timestamp_;       // WebCodecs timestamp (microseconds)
+  bool closed_{false};      // Whether Close() has been called
 
   // Attributes
   Napi::Value GetFormat(const Napi::CallbackInfo& info);

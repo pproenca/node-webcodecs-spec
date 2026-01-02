@@ -12,8 +12,18 @@
 #include "../../src/shared/buffer_utils.h"
 #include "../../src/ffmpeg_raii.h"
 
-using namespace webcodecs::buffer_utils;
-using namespace webcodecs::raii;
+using webcodecs::buffer_utils::CalculateAudioBufferSize;
+using webcodecs::buffer_utils::CalculateFrameBufferSize;
+using webcodecs::buffer_utils::CopyFrameToBuffer;
+using webcodecs::buffer_utils::CopyPacketToBuffer;
+using webcodecs::buffer_utils::CreateFrameFromBuffer;
+using webcodecs::buffer_utils::CreatePacketFromBuffer;
+using webcodecs::buffer_utils::GetPlaneCount;
+using webcodecs::buffer_utils::GetPlaneSize;
+using webcodecs::raii::AVFramePtr;
+using webcodecs::raii::AVPacketPtr;
+using webcodecs::raii::MakeAvFrame;
+using webcodecs::raii::MakeAvPacket;
 
 // =============================================================================
 // FRAME BUFFER SIZE CALCULATIONS - HAPPY PATH
@@ -90,7 +100,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_ValidFrame) {
   ASSERT_GE(av_frame_get_buffer(frame.get(), 32), 0);
 
   // Fill with test pattern
-  memset(frame->data[0], 0x10, frame->linesize[0] * frame->height);  // Y
+  memset(frame->data[0], 0x10, frame->linesize[0] * frame->height);      // Y
   memset(frame->data[1], 0x80, frame->linesize[1] * frame->height / 2);  // U
   memset(frame->data[2], 0x80, frame->linesize[2] * frame->height / 2);  // V
 
@@ -468,9 +478,8 @@ TEST(BufferUtilsTest, RoundtripFrameData_YUV420P) {
   ASSERT_GT(copied, 0);
 
   // Create new frame from buffer
-  AVFramePtr restored = CreateFrameFromBuffer(
-      buffer.data(), buffer.size(),
-      original->width, original->height, original->format);
+  AVFramePtr restored =
+      CreateFrameFromBuffer(buffer.data(), buffer.size(), original->width, original->height, original->format);
   ASSERT_NE(restored, nullptr);
 
   // Verify dimensions match

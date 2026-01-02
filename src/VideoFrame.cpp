@@ -1,4 +1,7 @@
 #include "VideoFrame.h"
+
+#include <string>
+
 #include "shared/buffer_utils.h"
 #include "error_builder.h"
 
@@ -21,26 +24,26 @@ static AVPixelFormat StringToPixelFormat(const std::string& format) {
 Napi::FunctionReference VideoFrame::constructor;
 
 Napi::Object VideoFrame::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "VideoFrame", {
-    InstanceAccessor<&VideoFrame::GetFormat>("format"),
-    InstanceAccessor<&VideoFrame::GetCodedWidth>("codedWidth"),
-    InstanceAccessor<&VideoFrame::GetCodedHeight>("codedHeight"),
-    InstanceAccessor<&VideoFrame::GetCodedRect>("codedRect"),
-    InstanceAccessor<&VideoFrame::GetVisibleRect>("visibleRect"),
-    InstanceAccessor<&VideoFrame::GetRotation>("rotation"),
-    InstanceAccessor<&VideoFrame::GetFlip>("flip"),
-    InstanceAccessor<&VideoFrame::GetDisplayWidth>("displayWidth"),
-    InstanceAccessor<&VideoFrame::GetDisplayHeight>("displayHeight"),
-    InstanceAccessor<&VideoFrame::GetDuration>("duration"),
-    InstanceAccessor<&VideoFrame::GetTimestamp>("timestamp"),
-    InstanceAccessor<&VideoFrame::GetColorSpace>("colorSpace"),
-    InstanceMethod<&VideoFrame::Metadata>("metadata"),
-    InstanceMethod<&VideoFrame::AllocationSize>("allocationSize"),
-    InstanceMethod<&VideoFrame::CopyTo>("copyTo"),
-    InstanceMethod<&VideoFrame::Clone>("clone"),
-    InstanceMethod<&VideoFrame::Close>("close"),
-
-  });
+  Napi::Function func = DefineClass(env, "VideoFrame",
+                                    {
+                                        InstanceAccessor<&VideoFrame::GetFormat>("format"),
+                                        InstanceAccessor<&VideoFrame::GetCodedWidth>("codedWidth"),
+                                        InstanceAccessor<&VideoFrame::GetCodedHeight>("codedHeight"),
+                                        InstanceAccessor<&VideoFrame::GetCodedRect>("codedRect"),
+                                        InstanceAccessor<&VideoFrame::GetVisibleRect>("visibleRect"),
+                                        InstanceAccessor<&VideoFrame::GetRotation>("rotation"),
+                                        InstanceAccessor<&VideoFrame::GetFlip>("flip"),
+                                        InstanceAccessor<&VideoFrame::GetDisplayWidth>("displayWidth"),
+                                        InstanceAccessor<&VideoFrame::GetDisplayHeight>("displayHeight"),
+                                        InstanceAccessor<&VideoFrame::GetDuration>("duration"),
+                                        InstanceAccessor<&VideoFrame::GetTimestamp>("timestamp"),
+                                        InstanceAccessor<&VideoFrame::GetColorSpace>("colorSpace"),
+                                        InstanceMethod<&VideoFrame::Metadata>("metadata"),
+                                        InstanceMethod<&VideoFrame::AllocationSize>("allocationSize"),
+                                        InstanceMethod<&VideoFrame::CopyTo>("copyTo"),
+                                        InstanceMethod<&VideoFrame::Clone>("clone"),
+                                        InstanceMethod<&VideoFrame::Close>("close"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -48,8 +51,7 @@ Napi::Object VideoFrame::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<VideoFrame>(info) {
+VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoFrame>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] VideoFrame constructor can be called with:
@@ -106,8 +108,7 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
     }
 
     // Create AVFrame from buffer data
-    frame_ = buffer_utils::CreateFrameFromBuffer(data, size, width, height,
-                                                  static_cast<int>(pix_fmt));
+    frame_ = buffer_utils::CreateFrameFromBuffer(data, size, width, height, static_cast<int>(pix_fmt));
     if (!frame_) {
       errors::ThrowTypeError(env, "Failed to create frame from data");
       return;
@@ -132,9 +133,7 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
   }
 }
 
-VideoFrame::~VideoFrame() {
-  Release();
-}
+VideoFrame::~VideoFrame() { Release(); }
 
 void VideoFrame::Release() {
   // Mark as closed (atomic, thread-safe)
@@ -147,8 +146,7 @@ void VideoFrame::Release() {
 
 Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFrame) {
   if (!srcFrame) {
-    Napi::Error::New(env, "Cannot create VideoFrame from null AVFrame")
-        .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Cannot create VideoFrame from null AVFrame").ThrowAsJavaScriptException();
     return Napi::Object();
   }
 
@@ -159,8 +157,7 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
   // Clone the AVFrame (refcounted - shares underlying buffers)
   frame->frame_ = raii::CloneAvFrame(srcFrame);
   if (!frame->frame_) {
-    Napi::Error::New(env, "Failed to clone AVFrame")
-        .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Failed to clone AVFrame").ThrowAsJavaScriptException();
     return Napi::Object();
   }
 
@@ -172,16 +169,26 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
 // Helper: Convert AVPixelFormat to WebCodecs VideoPixelFormat string
 static const char* PixelFormatToString(AVPixelFormat fmt) {
   switch (fmt) {
-    case AV_PIX_FMT_YUV420P: return "I420";
-    case AV_PIX_FMT_YUV422P: return "I422";
-    case AV_PIX_FMT_YUV444P: return "I444";
-    case AV_PIX_FMT_NV12: return "NV12";
-    case AV_PIX_FMT_NV21: return "NV21";
-    case AV_PIX_FMT_RGBA: return "RGBA";
-    case AV_PIX_FMT_BGRA: return "BGRA";
-    case AV_PIX_FMT_RGB24: return "RGBX";
-    case AV_PIX_FMT_BGR24: return "BGRX";
-    default: return nullptr;  // Unsupported format
+    case AV_PIX_FMT_YUV420P:
+      return "I420";
+    case AV_PIX_FMT_YUV422P:
+      return "I422";
+    case AV_PIX_FMT_YUV444P:
+      return "I444";
+    case AV_PIX_FMT_NV12:
+      return "NV12";
+    case AV_PIX_FMT_NV21:
+      return "NV21";
+    case AV_PIX_FMT_RGBA:
+      return "RGBA";
+    case AV_PIX_FMT_BGRA:
+      return "BGRA";
+    case AV_PIX_FMT_RGB24:
+      return "RGBX";
+    case AV_PIX_FMT_BGR24:
+      return "BGRX";
+    default:
+      return nullptr;  // Unsupported format
   }
 }
 
@@ -191,8 +198,7 @@ Napi::Value VideoFrame::GetFormat(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  const char* format = PixelFormatToString(
-      static_cast<AVPixelFormat>(frame_->format));
+  const char* format = PixelFormatToString(static_cast<AVPixelFormat>(frame_->format));
   if (format) {
     return Napi::String::New(env, format);
   }
@@ -271,8 +277,7 @@ Napi::Value VideoFrame::GetDisplayWidth(const Napi::CallbackInfo& info) {
   // Display width accounts for sample aspect ratio
   int display_width = frame_->width;
   if (frame_->sample_aspect_ratio.num > 0 && frame_->sample_aspect_ratio.den > 0) {
-    display_width = frame_->width * frame_->sample_aspect_ratio.num /
-                    frame_->sample_aspect_ratio.den;
+    display_width = frame_->width * frame_->sample_aspect_ratio.num / frame_->sample_aspect_ratio.den;
   }
   return Napi::Number::New(env, display_width);
 }
@@ -322,11 +327,20 @@ Napi::Value VideoFrame::GetColorSpace(const Napi::CallbackInfo& info) {
   // Map FFmpeg color primaries to WebCodecs
   const char* primaries = nullptr;
   switch (frame_->color_primaries) {
-    case AVCOL_PRI_BT709: primaries = "bt709"; break;
-    case AVCOL_PRI_BT470BG: primaries = "bt470bg"; break;
-    case AVCOL_PRI_SMPTE170M: primaries = "smpte170m"; break;
-    case AVCOL_PRI_BT2020: primaries = "bt2020"; break;
-    default: break;
+    case AVCOL_PRI_BT709:
+      primaries = "bt709";
+      break;
+    case AVCOL_PRI_BT470BG:
+      primaries = "bt470bg";
+      break;
+    case AVCOL_PRI_SMPTE170M:
+      primaries = "smpte170m";
+      break;
+    case AVCOL_PRI_BT2020:
+      primaries = "bt2020";
+      break;
+    default:
+      break;
   }
   if (primaries) {
     colorSpace.Set("primaries", Napi::String::New(env, primaries));
@@ -337,12 +351,23 @@ Napi::Value VideoFrame::GetColorSpace(const Napi::CallbackInfo& info) {
   // Map FFmpeg transfer characteristics
   const char* transfer = nullptr;
   switch (frame_->color_trc) {
-    case AVCOL_TRC_BT709: transfer = "bt709"; break;
-    case AVCOL_TRC_SMPTE170M: transfer = "smpte170m"; break;
-    case AVCOL_TRC_IEC61966_2_1: transfer = "iec61966-2-1"; break;
-    case AVCOL_TRC_SMPTE2084: transfer = "pq"; break;
-    case AVCOL_TRC_ARIB_STD_B67: transfer = "hlg"; break;
-    default: break;
+    case AVCOL_TRC_BT709:
+      transfer = "bt709";
+      break;
+    case AVCOL_TRC_SMPTE170M:
+      transfer = "smpte170m";
+      break;
+    case AVCOL_TRC_IEC61966_2_1:
+      transfer = "iec61966-2-1";
+      break;
+    case AVCOL_TRC_SMPTE2084:
+      transfer = "pq";
+      break;
+    case AVCOL_TRC_ARIB_STD_B67:
+      transfer = "hlg";
+      break;
+    default:
+      break;
   }
   if (transfer) {
     colorSpace.Set("transfer", Napi::String::New(env, transfer));
@@ -353,12 +378,21 @@ Napi::Value VideoFrame::GetColorSpace(const Napi::CallbackInfo& info) {
   // Map FFmpeg colorspace to matrix
   const char* matrix = nullptr;
   switch (frame_->colorspace) {
-    case AVCOL_SPC_RGB: matrix = "rgb"; break;
-    case AVCOL_SPC_BT709: matrix = "bt709"; break;
+    case AVCOL_SPC_RGB:
+      matrix = "rgb";
+      break;
+    case AVCOL_SPC_BT709:
+      matrix = "bt709";
+      break;
     case AVCOL_SPC_BT470BG:
-    case AVCOL_SPC_SMPTE170M: matrix = "smpte170m"; break;
-    case AVCOL_SPC_BT2020_NCL: matrix = "bt2020-ncl"; break;
-    default: break;
+    case AVCOL_SPC_SMPTE170M:
+      matrix = "smpte170m";
+      break;
+    case AVCOL_SPC_BT2020_NCL:
+      matrix = "bt2020-ncl";
+      break;
+    default:
+      break;
   }
   if (matrix) {
     colorSpace.Set("matrix", Napi::String::New(env, matrix));
@@ -367,12 +401,10 @@ Napi::Value VideoFrame::GetColorSpace(const Napi::CallbackInfo& info) {
   }
 
   // Full range flag
-  colorSpace.Set("fullRange", Napi::Boolean::New(env,
-      frame_->color_range == AVCOL_RANGE_JPEG));
+  colorSpace.Set("fullRange", Napi::Boolean::New(env, frame_->color_range == AVCOL_RANGE_JPEG));
 
   return colorSpace;
 }
-
 
 // --- Methods ---
 
@@ -401,8 +433,7 @@ Napi::Value VideoFrame::AllocationSize(const Napi::CallbackInfo& info) {
 
   // Optional options parameter with rect
   // For now, we return the size for the entire frame
-  int size = buffer_utils::CalculateFrameBufferSize(
-      frame_->format, frame_->width, frame_->height, 1);
+  int size = buffer_utils::CalculateFrameBufferSize(frame_->format, frame_->width, frame_->height, 1);
 
   if (size < 0) {
     errors::ThrowEncodingError(env, "Failed to calculate buffer size");
@@ -454,8 +485,7 @@ Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
   }
 
   // Calculate required size
-  int required = buffer_utils::CalculateFrameBufferSize(
-      frame_->format, frame_->width, frame_->height, 1);
+  int required = buffer_utils::CalculateFrameBufferSize(frame_->format, frame_->width, frame_->height, 1);
 
   if (required < 0) {
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -508,14 +538,12 @@ Napi::Value VideoFrame::Clone(const Napi::CallbackInfo& info) {
 
   // Check if this frame is closed
   if (closed_.load(std::memory_order_acquire)) {
-    Napi::Error::New(env, "InvalidStateError: VideoFrame is closed")
-        .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "InvalidStateError: VideoFrame is closed").ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
   if (!frame_) {
-    Napi::Error::New(env, "InvalidStateError: VideoFrame has no data")
-        .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "InvalidStateError: VideoFrame has no data").ThrowAsJavaScriptException();
     return env.Undefined();
   }
 

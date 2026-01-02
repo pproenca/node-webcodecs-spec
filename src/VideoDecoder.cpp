@@ -1,4 +1,7 @@
 #include "VideoDecoder.h"
+
+#include <string>
+
 #include "VideoFrame.h"
 #include "EncodedVideoChunk.h"
 #include "shared/codec_registry.h"
@@ -10,17 +13,19 @@ namespace webcodecs {
 Napi::FunctionReference VideoDecoder::constructor;
 
 Napi::Object VideoDecoder::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "VideoDecoder", {
-    InstanceAccessor<&VideoDecoder::GetState>("state"),
-    InstanceAccessor<&VideoDecoder::GetDecodeQueueSize>("decodeQueueSize"),
-    InstanceAccessor<&VideoDecoder::GetOndequeue, &VideoDecoder::SetOndequeue>("ondequeue"),
-    InstanceMethod<&VideoDecoder::Configure>("configure"),
-    InstanceMethod<&VideoDecoder::Decode>("decode"),
-    InstanceMethod<&VideoDecoder::Flush>("flush"),
-    InstanceMethod<&VideoDecoder::Reset>("reset"),
-    InstanceMethod<&VideoDecoder::Close>("close"),
-    StaticMethod<&VideoDecoder::IsConfigSupported>("isConfigSupported"),
-  });
+  Napi::Function func =
+      DefineClass(env, "VideoDecoder",
+                  {
+                      InstanceAccessor<&VideoDecoder::GetState>("state"),
+                      InstanceAccessor<&VideoDecoder::GetDecodeQueueSize>("decodeQueueSize"),
+                      InstanceAccessor<&VideoDecoder::GetOndequeue, &VideoDecoder::SetOndequeue>("ondequeue"),
+                      InstanceMethod<&VideoDecoder::Configure>("configure"),
+                      InstanceMethod<&VideoDecoder::Decode>("decode"),
+                      InstanceMethod<&VideoDecoder::Flush>("flush"),
+                      InstanceMethod<&VideoDecoder::Reset>("reset"),
+                      InstanceMethod<&VideoDecoder::Close>("close"),
+                      StaticMethod<&VideoDecoder::IsConfigSupported>("isConfigSupported"),
+                  });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -28,8 +33,7 @@ Napi::Object VideoDecoder::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-VideoDecoder::VideoDecoder(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<VideoDecoder>(info) {
+VideoDecoder::VideoDecoder(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoDecoder>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -60,13 +64,11 @@ VideoDecoder::VideoDecoder(const Napi::CallbackInfo& info)
   errorCallback_ = Napi::Persistent(init.Get("error").As<Napi::Function>());
 }
 
-VideoDecoder::~VideoDecoder() {
-  Release();
-}
+VideoDecoder::~VideoDecoder() { Release(); }
 
 void VideoDecoder::Release() {
   // Thread-safe close: transition to Closed state
-  state_.close();
+  state_.Close();
 
   // Lock to safely clear resources
   std::lock_guard<std::mutex> lock(mutex_);
@@ -95,12 +97,11 @@ void VideoDecoder::Release() {
 // --- Attributes ---
 
 Napi::Value VideoDecoder::GetState(const Napi::CallbackInfo& info) {
-  return Napi::String::New(info.Env(), state_.to_string());
+  return Napi::String::New(info.Env(), state_.ToString());
 }
 
 Napi::Value VideoDecoder::GetDecodeQueueSize(const Napi::CallbackInfo& info) {
-  return Napi::Number::New(info.Env(),
-      static_cast<double>(decodeQueueSize_.load(std::memory_order_acquire)));
+  return Napi::Number::New(info.Env(), static_cast<double>(decodeQueueSize_.load(std::memory_order_acquire)));
 }
 
 Napi::Value VideoDecoder::GetOndequeue(const Napi::CallbackInfo& info) {
@@ -117,7 +118,6 @@ void VideoDecoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Valu
     ondequeueCallback_ = Napi::Persistent(value.As<Napi::Function>());
   }
 }
-
 
 // --- Methods ---
 
@@ -140,28 +140,29 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
 
   std::string codec_string = config.Get("codec").As<Napi::String>().Utf8Value();
 
-  // [SPEC] 2. If state is "closed", throw InvalidStateError
-  if (state_.is_closed()) {
-    errors::ThrowInvalidStateError(env, "configure called on closed decoder");
-    return env.Undefined();
-  }
-
-  // Parse codec string to get FFmpeg codec ID
+  // Parse codec string to get FFmpeg codec ID (can be done without lock)
   auto codec_info = ParseCodecString(codec_string);
   if (!codec_info) {
     errors::ThrowNotSupportedError(env, "Unsupported codec: " + codec_string);
     return env.Undefined();
   }
 
-  // Find FFmpeg decoder
+  // Find FFmpeg decoder (can be done without lock)
   const AVCodec* decoder = avcodec_find_decoder(codec_info->codec_id);
   if (!decoder) {
     errors::ThrowNotSupportedError(env, "No decoder available for: " + codec_string);
     return env.Undefined();
   }
 
-  // Lock for codec operations
+  // Lock for codec operations - state check MUST be inside lock to prevent TOCTOU
   std::lock_guard<std::mutex> lock(mutex_);
+
+  // [SPEC] 2. If state is "closed", throw InvalidStateError
+  // Check inside lock to prevent race condition with close()
+  if (state_.IsClosed()) {
+    errors::ThrowInvalidStateError(env, "configure called on closed decoder");
+    return env.Undefined();
+  }
 
   // Allocate codec context (RAII)
   codecCtx_ = raii::MakeAvCodecContext(decoder);
@@ -185,8 +186,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
     size_t size = 0;
 
     if (buffer_utils::ExtractBufferData(desc, &data, &size) && data && size > 0) {
-      codecCtx_->extradata = static_cast<uint8_t*>(
-          av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
+      codecCtx_->extradata = static_cast<uint8_t*>(av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
       if (codecCtx_->extradata) {
         std::memcpy(codecCtx_->extradata, data, size);
         codecCtx_->extradata_size = static_cast<int>(size);
@@ -208,8 +208,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
 
   // [SPEC] 3. Set state to "configured"
   // [SPEC] 4. Set key chunk required to true
-  state_.transition(raii::AtomicCodecState::State::Unconfigured,
-                    raii::AtomicCodecState::State::Configured);
+  state_.transition(raii::AtomicCodecState::State::Unconfigured, raii::AtomicCodecState::State::Configured);
   keyChunkRequired_.store(true, std::memory_order_release);
 
   return env.Undefined();
@@ -219,9 +218,8 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   // [SPEC] 1. If state is not "configured", throw InvalidStateError
-  if (!state_.is_configured()) {
-    errors::ThrowInvalidStateError(env, "decode called on " +
-        std::string(state_.to_string()) + " decoder");
+  if (!state_.IsConfigured()) {
+    errors::ThrowInvalidStateError(env, "decode called on " + std::string(state_.ToString()) + " decoder");
     return env.Undefined();
   }
 
@@ -359,10 +357,10 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   // [SPEC] 1. If state is not "configured", reject with InvalidStateError
-  if (!state_.is_configured()) {
+  if (!state_.IsConfigured()) {
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-    Napi::Error error = Napi::Error::New(env,
-        "InvalidStateError: flush called on " + std::string(state_.to_string()) + " decoder");
+    Napi::Error error =
+        Napi::Error::New(env, "InvalidStateError: flush called on " + std::string(state_.ToString()) + " decoder");
     error.Set("name", Napi::String::New(env, "InvalidStateError"));
     deferred.Reject(error.Value());
     return deferred.Promise();
@@ -385,8 +383,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   // Drain the decoder by sending a null packet
   int ret = avcodec_send_packet(codecCtx_.get(), nullptr);
   if (ret < 0 && ret != AVERROR_EOF) {
-    Napi::Error error = Napi::Error::New(env,
-        "EncodingError: Failed to flush decoder");
+    Napi::Error error = Napi::Error::New(env, "EncodingError: Failed to flush decoder");
     error.Set("name", Napi::String::New(env, "EncodingError"));
     deferred.Reject(error.Value());
     return deferred.Promise();
@@ -395,8 +392,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   // Receive all remaining frames
   raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
-    Napi::Error error = Napi::Error::New(env,
-        "EncodingError: Failed to allocate frame");
+    Napi::Error error = Napi::Error::New(env, "EncodingError: Failed to allocate frame");
     error.Set("name", Napi::String::New(env, "EncodingError"));
     deferred.Reject(error.Value());
     return deferred.Promise();
@@ -411,8 +407,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
       break;  // Should not happen after null packet, but handle it
     }
     if (ret < 0) {
-      Napi::Error error = Napi::Error::New(env,
-          "EncodingError: Error receiving frame during flush");
+      Napi::Error error = Napi::Error::New(env, "EncodingError: Error receiving frame during flush");
       error.Set("name", Napi::String::New(env, "EncodingError"));
       deferred.Reject(error.Value());
       return deferred.Promise();
@@ -439,7 +434,7 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   // [SPEC] If state is "closed", throw InvalidStateError
-  if (state_.is_closed()) {
+  if (state_.IsClosed()) {
     errors::ThrowInvalidStateError(env, "reset called on closed decoder");
     return env.Undefined();
   }
@@ -466,8 +461,7 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
   codecCtx_.reset();
 
   // Transition state to unconfigured
-  state_.transition(raii::AtomicCodecState::State::Configured,
-                    raii::AtomicCodecState::State::Unconfigured);
+  state_.transition(raii::AtomicCodecState::State::Configured, raii::AtomicCodecState::State::Unconfigured);
 
   return env.Undefined();
 }

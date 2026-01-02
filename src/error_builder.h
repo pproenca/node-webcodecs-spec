@@ -63,10 +63,10 @@ inline std::string MakeErrorMessage(const char* context, int errnum) {
  * Classification of FFmpeg error codes for control flow.
  */
 enum class FFmpegErrorClass {
-  Success,    // ret >= 0: Operation succeeded
-  Again,      // AVERROR(EAGAIN): Need more input/output not ready
-  Eof,        // AVERROR_EOF: End of stream reached
-  Error       // All other negative values: Actual error
+  Success,  // ret >= 0: Operation succeeded
+  Again,    // AVERROR(EAGAIN): Need more input/output not ready
+  Eof,      // AVERROR_EOF: End of stream reached
+  Error     // All other negative values: Actual error
 };
 
 /**
@@ -140,8 +140,7 @@ inline void ThrowEncodingError(Napi::Env env, const std::string& message) {
 /**
  * Throw an EncodingError with FFmpeg error details.
  */
-inline void ThrowEncodingError(Napi::Env env, int ffmpeg_err,
-                                  const char* context) {
+inline void ThrowEncodingError(Napi::Env env, int ffmpeg_err, const char* context) {
   std::string message = MakeErrorMessage(context, ffmpeg_err);
   ThrowEncodingError(env, message);
 }
@@ -172,20 +171,19 @@ inline void ThrowTypeError(Napi::Env env, const std::string& message) {
  * Check FFmpeg return value and throw EncodingError on failure.
  * Usage: WEBCODECS_FFMPEG_CHECK(env, avcodec_send_packet(ctx, pkt), "send packet");
  */
-#define WEBCODECS_FFMPEG_CHECK(env, expr, context) \
-  do { \
-    int __ret = (expr); \
+#define WEBCODECS_FFMPEG_CHECK(env, expr, context)                      \
+  do {                                                                  \
+    int __ret = (expr);                                                 \
     if (__ret < 0 && !::webcodecs::errors::IsRecoverableError(__ret)) { \
-      ::webcodecs::errors::ThrowEncodingError(env, __ret, context); \
-      return env.Undefined(); \
-    } \
+      ::webcodecs::errors::ThrowEncodingError(env, __ret, context);     \
+      return env.Undefined();                                           \
+    }                                                                   \
   } while (0)
 
 /**
  * Check FFmpeg return value and return the error class for control flow.
  */
-#define WEBCODECS_FFMPEG_CLASSIFY(expr) \
-  ::webcodecs::errors::ClassifyFfmpegError(expr)
+#define WEBCODECS_FFMPEG_CLASSIFY(expr) ::webcodecs::errors::ClassifyFfmpegError(expr)
 
 // =============================================================================
 // STATE VALIDATION HELPERS
@@ -194,12 +192,10 @@ inline void ThrowTypeError(Napi::Env env, const std::string& message) {
 /**
  * Check if codec is in configured state, throw InvalidStateError if not.
  */
-template<typename StateType>
-inline bool RequireConfiguredState(Napi::Env env, const StateType& state,
-                                      const char* method_name) {
-  if (!state.is_configured()) {
-    std::string msg = std::string(method_name) +
-        " called on " + state.to_string() + " decoder";
+template <typename StateType>
+inline bool RequireConfiguredState(Napi::Env env, const StateType& state, const char* method_name) {
+  if (!state.IsConfigured()) {
+    std::string msg = std::string(method_name) + " called on " + state.ToString() + " decoder";
     ThrowInvalidStateError(env, msg);
     return false;
   }
@@ -209,10 +205,9 @@ inline bool RequireConfiguredState(Napi::Env env, const StateType& state,
 /**
  * Check if codec is not closed, throw InvalidStateError if closed.
  */
-template<typename StateType>
-inline bool RequireNotClosed(Napi::Env env, const StateType& state,
-                                const char* method_name) {
-  if (state.is_closed()) {
+template <typename StateType>
+inline bool RequireNotClosed(Napi::Env env, const StateType& state, const char* method_name) {
+  if (state.IsClosed()) {
     std::string msg = std::string(method_name) + " called on closed codec";
     ThrowInvalidStateError(env, msg);
     return false;

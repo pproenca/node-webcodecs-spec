@@ -47,12 +47,12 @@ namespace webcodecs {
  * All counters are atomic for lock-free reads.
  */
 struct PoolStats {
-  std::atomic<uint64_t> total_allocated{0};      // Total frames ever allocated
-  std::atomic<uint64_t> pool_hits{0};            // Frames returned from pool
-  std::atomic<uint64_t> pool_misses{0};          // New allocations (pool empty)
-  std::atomic<uint64_t> current_in_flight{0};    // Frames currently in use
-  std::atomic<uint64_t> current_pooled{0};       // Frames in pool waiting
-  std::atomic<uint64_t> peak_in_flight{0};       // High water mark
+  std::atomic<uint64_t> total_allocated{0};    // Total frames ever allocated
+  std::atomic<uint64_t> pool_hits{0};          // Frames returned from pool
+  std::atomic<uint64_t> pool_misses{0};        // New allocations (pool empty)
+  std::atomic<uint64_t> current_in_flight{0};  // Frames currently in use
+  std::atomic<uint64_t> current_pooled{0};     // Frames in pool waiting
+  std::atomic<uint64_t> peak_in_flight{0};     // High water mark
 
   void reset() {
     total_allocated.store(0, std::memory_order_relaxed);
@@ -93,9 +93,7 @@ struct FramePoolKey {
 struct FramePoolKeyHash {
   size_t operator()(const FramePoolKey& k) const {
     // Simple hash combining
-    return std::hash<int>()(k.width) ^
-           (std::hash<int>()(k.height) << 1) ^
-           (std::hash<int>()(k.format) << 2);
+    return std::hash<int>()(k.width) ^ (std::hash<int>()(k.height) << 1) ^ (std::hash<int>()(k.format) << 2);
   }
 };
 
@@ -216,8 +214,7 @@ class GlobalFramePool {
     // Update peak
     uint64_t peak = stats_.peak_in_flight.load(std::memory_order_relaxed);
     while (in_flight > peak) {
-      if (stats_.peak_in_flight.compare_exchange_weak(peak, in_flight,
-                                                       std::memory_order_relaxed)) {
+      if (stats_.peak_in_flight.compare_exchange_weak(peak, in_flight, std::memory_order_relaxed)) {
         break;
       }
     }
@@ -235,8 +232,7 @@ class GlobalFramePool {
    * @param align Buffer alignment (default: 32 for AVX)
    * @return PooledFrame with allocated buffers, or nullptr on failure
    */
-  [[nodiscard]] PooledFrame acquire_with_buffer(int width, int height, int format,
-                                                 int align = 32) {
+  [[nodiscard]] PooledFrame acquire_with_buffer(int width, int height, int format, int align = 32) {
     auto frame = acquire(width, height, format);
     if (!frame) {
       return nullptr;
@@ -261,16 +257,12 @@ class GlobalFramePool {
   /**
    * Get current statistics (lock-free read).
    */
-  [[nodiscard]] const PoolStats& stats() const {
-    return stats_;
-  }
+  [[nodiscard]] const PoolStats& stats() const { return stats_; }
 
   /**
    * Reset statistics counters.
    */
-  void reset_stats() {
-    stats_.reset();
-  }
+  void reset_stats() { stats_.reset(); }
 
   /**
    * Get number of dimension pools.
@@ -331,9 +323,7 @@ class GlobalFramePool {
  private:
   GlobalFramePool() = default;
 
-  ~GlobalFramePool() {
-    clear();
-  }
+  ~GlobalFramePool() { clear(); }
 
   // Non-copyable, non-movable
   GlobalFramePool(const GlobalFramePool&) = delete;
@@ -383,14 +373,11 @@ class FramePoolHandle {
     return pool_->acquire(width, height, format);
   }
 
-  [[nodiscard]] GlobalFramePool::PooledFrame acquire_with_buffer(int width, int height,
-                                                                   int format, int align = 32) {
+  [[nodiscard]] GlobalFramePool::PooledFrame acquire_with_buffer(int width, int height, int format, int align = 32) {
     return pool_->acquire_with_buffer(width, height, format, align);
   }
 
-  [[nodiscard]] const PoolStats& stats() const {
-    return pool_->stats();
-  }
+  [[nodiscard]] const PoolStats& stats() const { return pool_->stats(); }
 
  private:
   GlobalFramePool* pool_;

@@ -17,14 +17,16 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <stdexcept>
 #include <memory>
 #include <queue>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // C++17-compatible latch implementation
 class TestLatch {
@@ -49,9 +51,15 @@ class TestLatch {
 #include "../../src/ffmpeg_raii.h"
 #include "../../src/shared/Utils.h"
 
-using namespace webcodecs;
-using namespace webcodecs::raii;
-using namespace std::chrono_literals;
+using webcodecs::AsyncDecodeContext;
+using webcodecs::raii::AtomicCodecState;
+using webcodecs::raii::AVCodecContextPtr;
+using webcodecs::raii::AVFramePtr;
+using webcodecs::raii::AVPacketPtr;
+using webcodecs::raii::MakeAvCodecContext;
+using webcodecs::raii::MakeAvFrame;
+using webcodecs::raii::MakeAvPacket;
+using std::chrono_literals::operator""ms;
 
 // =============================================================================
 // ISSUE 1: RAW POINTER MEMORY LEAKS
@@ -168,13 +176,12 @@ TEST(SecurityIssuesTest, VideoEncoderPattern_RAIIvsRawPointer) {
     bool configure(const AVCodec* codec) {
       codecCtx = MakeAvCodecContext(codec);
       if (!codecCtx) return false;
-      state.transition(AtomicCodecState::State::Unconfigured,
-                       AtomicCodecState::State::Configured);
+      state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
       return true;
     }
 
     void close() {
-      state.close();
+      state.Close();
       codecCtx.reset();  // Explicitly close, or let destructor handle it
     }
   };
@@ -375,8 +382,7 @@ TEST(SecurityIssuesTest, StateTransitionIsAtomic) {
     threads.emplace_back([&state, &winners, &start_latch]() {
       start_latch.arrive_and_wait();
       // All threads try to transition at once
-      if (state.transition(AtomicCodecState::State::Unconfigured,
-                           AtomicCodecState::State::Configured)) {
+      if (state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured)) {
         winners.fetch_add(1, std::memory_order_relaxed);
       }
     });
@@ -388,7 +394,7 @@ TEST(SecurityIssuesTest, StateTransitionIsAtomic) {
 
   // Exactly ONE thread should win
   EXPECT_EQ(winners.load(), 1);
-  EXPECT_TRUE(state.is_configured());
+  EXPECT_TRUE(state.IsConfigured());
 }
 
 /**
@@ -398,26 +404,25 @@ TEST(SecurityIssuesTest, CloseAlwaysSucceedsFromAnyState) {
   // From Unconfigured
   {
     AtomicCodecState state;
-    state.close();
-    EXPECT_TRUE(state.is_closed());
+    state.Close();
+    EXPECT_TRUE(state.IsClosed());
   }
 
   // From Configured
   {
     AtomicCodecState state;
-    state.transition(AtomicCodecState::State::Unconfigured,
-                     AtomicCodecState::State::Configured);
-    state.close();
-    EXPECT_TRUE(state.is_closed());
+    state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
+    state.Close();
+    EXPECT_TRUE(state.IsClosed());
   }
 
   // From already Closed
   {
     AtomicCodecState state;
-    state.close();
-    state.close();  // Should not crash
-    state.close();  // Should not crash
-    EXPECT_TRUE(state.is_closed());
+    state.Close();
+    state.Close();  // Should not crash
+    state.Close();  // Should not crash
+    EXPECT_TRUE(state.IsClosed());
   }
 }
 
@@ -448,8 +453,7 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
     std::thread workerThread;
     AVCodecContextPtr codecCtx;
 
-    OrderTrackingContext(std::vector<std::string>& o, std::mutex& m)
-        : order(o), mutex(m) {}
+    OrderTrackingContext(std::vector<std::string>& o, std::mutex& m) : order(o), mutex(m) {}
 
     ~OrderTrackingContext() {
       {
@@ -526,10 +530,10 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
 //
 // BUG: VideoEncoder::Release() transitions to closed state AFTER clearing
 // resources, creating a window where another thread could:
-// 1. Check state_.is_configured() -> true
+// 1. Check state_.IsConfigured() -> true
 // 2. Try to use encoder resources that are being/have been cleared
 //
-// FIX: Call state_.close() FIRST (like VideoDecoder::Release() does)
+// FIX: Call state_.Close() FIRST (like VideoDecoder::Release() does)
 // =============================================================================
 
 /**
@@ -537,15 +541,15 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
  *
  * This test verifies the invariant:
  *   If state is not Closed, resources MUST be valid.
- *   Therefore: state_.close() must happen BEFORE any resource cleanup.
+ *   Therefore: state_.Close() must happen BEFORE any resource cleanup.
  *
  * The buggy code does:
  *   1. Lock and clear resources
  *   2. Release lock
- *   3. state_.close()  // BUG: window between 2 and 3
+ *   3. state_.Close()  // BUG: window between 2 and 3
  *
  * The correct code does:
- *   1. state_.close()  // FIRST - no one can start new operations
+ *   1. state_.Close()  // FIRST - no one can start new operations
  *   2. Lock and clear resources
  */
 TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
@@ -559,15 +563,14 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
 
     void configure(const AVCodec* codec) {
       codecCtx = MakeAvCodecContext(codec);
-      state.transition(AtomicCodecState::State::Unconfigured,
-                       AtomicCodecState::State::Configured);
+      state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
     }
 
     // CORRECT Release() pattern - matches VideoDecoder
     void release_correct() {
       // Step 1: Close state FIRST
       if (cleanup_order) cleanup_order->push_back("state_close");
-      state.close();
+      state.Close();
 
       // Step 2: THEN clear resources under lock
       if (cleanup_order) cleanup_order->push_back("lock_acquire");
@@ -600,9 +603,9 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
       if (cleanup_order) cleanup_order->push_back("reset_codec");
       codecCtx.reset();
 
-      // BUG: state_.close() happens AFTER resources are gone
+      // BUG: state_.Close() happens AFTER resources are gone
       if (cleanup_order) cleanup_order->push_back("state_close");
-      state.close();
+      state.Close();
     }
   };
 
@@ -641,7 +644,7 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
 
     // In buggy pattern, state_close is LAST (wrong!)
     ASSERT_GE(order.size(), 4);
-    EXPECT_EQ(order[0], "lock_acquire");  // Resources cleared first
+    EXPECT_EQ(order[0], "lock_acquire");     // Resources cleared first
     EXPECT_EQ(order.back(), "state_close");  // State closed last (BUG!)
   }
 }
@@ -663,14 +666,13 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseConcurrentSafety) {
 
     void configure(const AVCodec* codec) {
       codecCtx = MakeAvCodecContext(codec);
-      state.transition(AtomicCodecState::State::Unconfigured,
-                       AtomicCodecState::State::Configured);
+      state.transition(AtomicCodecState::State::Unconfigured, AtomicCodecState::State::Configured);
     }
 
     // Simulate an encode operation that checks state first
     bool try_use() {
       // Check state BEFORE accessing resources (correct pattern)
-      if (!state.is_configured()) {
+      if (!state.IsConfigured()) {
         rejected_uses.fetch_add(1, std::memory_order_relaxed);
         return false;
       }
@@ -687,7 +689,7 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseConcurrentSafety) {
 
     // CORRECT Release() - closes state first
     void release() {
-      state.close();  // FIRST: reject all new operations
+      state.Close();  // FIRST: reject all new operations
 
       std::lock_guard<std::mutex> lock(mutex);
       codecCtx.reset();

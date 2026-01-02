@@ -5,14 +5,14 @@ namespace webcodecs {
 Napi::FunctionReference EncodedVideoChunk::constructor;
 
 Napi::Object EncodedVideoChunk::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "EncodedVideoChunk", {
-    InstanceAccessor<&EncodedVideoChunk::GetType>("type"),
-    InstanceAccessor<&EncodedVideoChunk::GetTimestamp>("timestamp"),
-    InstanceAccessor<&EncodedVideoChunk::GetDuration>("duration"),
-    InstanceAccessor<&EncodedVideoChunk::GetByteLength>("byteLength"),
-    InstanceMethod<&EncodedVideoChunk::CopyTo>("copyTo"),
-
-  });
+  Napi::Function func = DefineClass(env, "EncodedVideoChunk",
+                                    {
+                                        InstanceAccessor<&EncodedVideoChunk::GetType>("type"),
+                                        InstanceAccessor<&EncodedVideoChunk::GetTimestamp>("timestamp"),
+                                        InstanceAccessor<&EncodedVideoChunk::GetDuration>("duration"),
+                                        InstanceAccessor<&EncodedVideoChunk::GetByteLength>("byteLength"),
+                                        InstanceMethod<&EncodedVideoChunk::CopyTo>("copyTo"),
+                                    });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -20,8 +20,7 @@ Napi::Object EncodedVideoChunk::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-EncodedVideoChunk::EncodedVideoChunk(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<EncodedVideoChunk>(info) {
+EncodedVideoChunk::EncodedVideoChunk(const Napi::CallbackInfo& info) : Napi::ObjectWrap<EncodedVideoChunk>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -32,9 +31,7 @@ EncodedVideoChunk::EncodedVideoChunk(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-EncodedVideoChunk::~EncodedVideoChunk() {
-  Release();
-}
+EncodedVideoChunk::~EncodedVideoChunk() { Release(); }
 
 void EncodedVideoChunk::Release() {
   // Release packet (RAII handles av_packet_unref)
@@ -62,7 +59,6 @@ Napi::Value EncodedVideoChunk::GetByteLength(const Napi::CallbackInfo& info) {
   // TODO(impl): Return byteLength
   return info.Env().Null();
 }
-
 
 // --- Methods ---
 

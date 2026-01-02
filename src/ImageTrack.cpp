@@ -5,14 +5,14 @@ namespace webcodecs {
 Napi::FunctionReference ImageTrack::constructor;
 
 Napi::Object ImageTrack::Init(Napi::Env env, Napi::Object exports) {
-  Napi::Function func = DefineClass(env, "ImageTrack", {
-    InstanceAccessor<&ImageTrack::GetAnimated>("animated"),
-    InstanceAccessor<&ImageTrack::GetFrameCount>("frameCount"),
-    InstanceAccessor<&ImageTrack::GetRepetitionCount>("repetitionCount"),
-    InstanceAccessor<&ImageTrack::GetSelected, &ImageTrack::SetSelected>("selected"),
-
-
-  });
+  Napi::Function func =
+      DefineClass(env, "ImageTrack",
+                  {
+                      InstanceAccessor<&ImageTrack::GetAnimated>("animated"),
+                      InstanceAccessor<&ImageTrack::GetFrameCount>("frameCount"),
+                      InstanceAccessor<&ImageTrack::GetRepetitionCount>("repetitionCount"),
+                      InstanceAccessor<&ImageTrack::GetSelected, &ImageTrack::SetSelected>("selected"),
+                  });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -20,8 +20,7 @@ Napi::Object ImageTrack::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-ImageTrack::ImageTrack(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<ImageTrack>(info) {
+ImageTrack::ImageTrack(const Napi::CallbackInfo& info) : Napi::ObjectWrap<ImageTrack>(info) {
   Napi::Env env = info.Env();
 
   // [SPEC] Constructor Algorithm
@@ -32,9 +31,7 @@ ImageTrack::ImageTrack(const Napi::CallbackInfo& info)
   // TODO(impl): Implement Constructor & Resource Allocation
 }
 
-ImageTrack::~ImageTrack() {
-  Release();
-}
+ImageTrack::~ImageTrack() { Release(); }
 
 void ImageTrack::Release() {
   // TODO(impl): Free handle_ and native resources
@@ -66,7 +63,6 @@ Napi::Value ImageTrack::GetSelected(const Napi::CallbackInfo& info) {
 void ImageTrack::SetSelected(const Napi::CallbackInfo& info, const Napi::Value& value) {
   // TODO(impl): Set selected
 }
-
 
 // --- Methods ---
 

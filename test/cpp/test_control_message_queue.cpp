@@ -5,16 +5,19 @@
  */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <vector>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <memory>
+#include <thread>
+#include <utility>
+#include <vector>
 
 #include "../../src/shared/control_message_queue.h"
 
-using namespace webcodecs;
-using namespace std::chrono_literals;
+using webcodecs::ControlMessageQueue;
+using webcodecs::MessageVisitor;
+using std::chrono_literals::operator""ms;
 
 // C++17-compatible latch implementation
 class SimpleLatch {
@@ -43,9 +46,7 @@ using TestQueue = ControlMessageQueue<TestPacket, TestFrame>;
 
 class ControlMessageQueueTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    queue_ = std::make_unique<TestQueue>();
-  }
+  void SetUp() override { queue_ = std::make_unique<TestQueue>(); }
 
   void TearDown() override {
     queue_->shutdown();
@@ -291,8 +292,7 @@ TEST_F(ControlMessageQueueTest, ConcurrentEnqueue) {
     producers.emplace_back([this, t, &start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kMessagesPerThread; ++i) {
-        queue_->enqueue(TestQueue::DecodeMessage{
-            std::make_unique<int>(t * kMessagesPerThread + i)});
+        queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(t * kMessagesPerThread + i)});
       }
     });
   }
@@ -439,12 +439,10 @@ TEST_F(ControlMessageQueueTest, MessageVisitorPattern) {
     ASSERT_TRUE(msg.has_value());
 
     std::visit(MessageVisitor{
-        [&](TestQueue::ConfigureMessage&) { configure_count++; },
-        [&](TestQueue::DecodeMessage&) { decode_count++; },
-        [&](TestQueue::FlushMessage&) { flush_count++; },
-        [&](TestQueue::ResetMessage&) { reset_count++; },
-        [&](TestQueue::CloseMessage&) { close_count++; }
-    }, *msg);
+                   [&](TestQueue::ConfigureMessage&) { configure_count++; },
+                   [&](TestQueue::DecodeMessage&) { decode_count++; }, [&](TestQueue::FlushMessage&) { flush_count++; },
+                   [&](TestQueue::ResetMessage&) { reset_count++; }, [&](TestQueue::CloseMessage&) { close_count++; }},
+               *msg);
   }
 
   EXPECT_EQ(configure_count, 1);

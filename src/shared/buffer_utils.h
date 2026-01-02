@@ -87,15 +87,8 @@ inline int CopyFrameToBuffer(const AVFrame* frame, uint8_t* dest, size_t dest_si
     return AVERROR(ENOSPC);
   }
 
-  return av_image_copy_to_buffer(
-      dest,
-      static_cast<int>(dest_size),
-      frame->data,
-      frame->linesize,
-      pix_fmt,
-      frame->width,
-      frame->height,
-      align);
+  return av_image_copy_to_buffer(dest, static_cast<int>(dest_size), frame->data, frame->linesize, pix_fmt, frame->width,
+                                 frame->height, align);
 }
 
 /**
@@ -111,13 +104,7 @@ inline int CopyFrameToBuffer(const AVFrame* frame, uint8_t* dest, size_t dest_si
  * @param format Pixel format (AVPixelFormat)
  * @return New AVFrame, or nullptr on error
  */
-inline raii::AVFramePtr CreateFrameFromBuffer(
-    const uint8_t* data,
-    size_t size,
-    int width,
-    int height,
-    int format) {
-
+inline raii::AVFramePtr CreateFrameFromBuffer(const uint8_t* data, size_t size, int width, int height, int format) {
   if (!data || size == 0 || width <= 0 || height <= 0) {
     return nullptr;
   }
@@ -156,14 +143,7 @@ inline raii::AVFramePtr CreateFrameFromBuffer(
   }
 
   // Copy data from source buffer to frame planes
-  ret = av_image_fill_arrays(
-      frame->data,
-      frame->linesize,
-      data,
-      pix_fmt,
-      width,
-      height,
-      1);
+  ret = av_image_fill_arrays(frame->data, frame->linesize, data, pix_fmt, width, height, 1);
   if (ret < 0) {
     return nullptr;
   }
@@ -173,26 +153,12 @@ inline raii::AVFramePtr CreateFrameFromBuffer(
   const uint8_t* src_data[4] = {nullptr};
   int src_linesize[4] = {0};
 
-  ret = av_image_fill_arrays(
-      const_cast<uint8_t**>(src_data),
-      src_linesize,
-      data,
-      pix_fmt,
-      width,
-      height,
-      1);
+  ret = av_image_fill_arrays(const_cast<uint8_t**>(src_data), src_linesize, data, pix_fmt, width, height, 1);
   if (ret < 0) {
     return nullptr;
   }
 
-  av_image_copy(
-      frame->data,
-      frame->linesize,
-      src_data,
-      src_linesize,
-      pix_fmt,
-      width,
-      height);
+  av_image_copy(frame->data, frame->linesize, src_data, src_linesize, pix_fmt, width, height);
 
   return frame;
 }

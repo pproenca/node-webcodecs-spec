@@ -33,9 +33,9 @@ namespace webcodecs {
 
 struct CodecInfo {
   AVCodecID codec_id;
-  int profile;       // -1 if not applicable
-  int level;         // -1 if not applicable
-  int bit_depth;     // -1 if not applicable
+  int profile;    // -1 if not applicable
+  int level;      // -1 if not applicable
+  int bit_depth;  // -1 if not applicable
 };
 
 /**
@@ -62,22 +62,22 @@ std::string GetCodecPrefix(AVCodecID codec_id);
  */
 bool IsCodecSupported(const std::string& codec_string);
 
-// Video codec prefixes
-constexpr const char* CODEC_AVC = "avc1";   // H.264/AVC
-constexpr const char* CODEC_HEVC = "hvc1";  // H.265/HEVC
-constexpr const char* CODEC_HEVC_ALT = "hev1";
-constexpr const char* CODEC_VP8 = "vp8";
-constexpr const char* CODEC_VP9 = "vp09";
-constexpr const char* CODEC_AV1 = "av01";
+// Video codec prefixes (kPascalCase per Google C++ Style Guide)
+constexpr const char* kCodecAvc = "avc1";   // H.264/AVC
+constexpr const char* kCodecHevc = "hvc1";  // H.265/HEVC
+constexpr const char* kCodecHevcAlt = "hev1";
+constexpr const char* kCodecVp8 = "vp8";
+constexpr const char* kCodecVp9 = "vp09";
+constexpr const char* kCodecAv1 = "av01";
 
 // Audio codec prefixes
-constexpr const char* CODEC_AAC = "mp4a";
-constexpr const char* CODEC_OPUS = "opus";
-constexpr const char* CODEC_FLAC = "flac";
-constexpr const char* CODEC_MP3 = "mp3";
-constexpr const char* CODEC_VORBIS = "vorbis";
-constexpr const char* CODEC_PCM = "pcm";
-constexpr const char* CODEC_ULAW = "ulaw";
-constexpr const char* CODEC_ALAW = "alaw";
+constexpr const char* kCodecAac = "mp4a";
+constexpr const char* kCodecOpus = "opus";
+constexpr const char* kCodecFlac = "flac";
+constexpr const char* kCodecMp3 = "mp3";
+constexpr const char* kCodecVorbis = "vorbis";
+constexpr const char* kCodecPcm = "pcm";
+constexpr const char* kCodecUlaw = "ulaw";
+constexpr const char* kCodecAlaw = "alaw";
 
 }  // namespace webcodecs

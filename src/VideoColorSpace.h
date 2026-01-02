@@ -9,15 +9,15 @@ namespace webcodecs {
  * @see spec/context/VideoColorSpace.md
  */
 class VideoColorSpace : public Napi::ObjectWrap<VideoColorSpace> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  VideoColorSpace(const Napi::CallbackInfo& info);
+  explicit VideoColorSpace(const Napi::CallbackInfo& info);
   ~VideoColorSpace() override;
 
   // RAII Release
   void Release();
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // Internal Native Handle
@@ -29,7 +29,6 @@ private:
   Napi::Value GetTransfer(const Napi::CallbackInfo& info);
   Napi::Value GetMatrix(const Napi::CallbackInfo& info);
   Napi::Value GetFullRange(const Napi::CallbackInfo& info);
-
 
   // Methods
   Napi::Value ToJSON(const Napi::CallbackInfo& info);

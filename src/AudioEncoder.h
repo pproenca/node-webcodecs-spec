@@ -9,15 +9,15 @@ namespace webcodecs {
  * @see spec/context/AudioEncoder.md
  */
 class AudioEncoder : public Napi::ObjectWrap<AudioEncoder> {
-public:
+ public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  AudioEncoder(const Napi::CallbackInfo& info);
+  explicit AudioEncoder(const Napi::CallbackInfo& info);
   ~AudioEncoder() override;
 
   // RAII Release
   void Release();
 
-private:
+ private:
   static Napi::FunctionReference constructor;
 
   // Internal Native Handle

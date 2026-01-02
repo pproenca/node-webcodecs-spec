@@ -12,7 +12,10 @@
  */
 
 #include <napi.h>
+
+#include <string>
 #include <utility>
+
 #include "../ffmpeg_raii.h"
 
 namespace webcodecs {
@@ -32,15 +35,24 @@ namespace napi_guards {
  *   bool matches;
  *   napi_check_object_type_tag(env, jsObject, &VIDEO_FRAME_TAG, &matches);
  */
-constexpr napi_type_tag VIDEO_FRAME_TAG = {0x574542434F444543ULL, 0x564944454F465241ULL};       // "WEBCODEC" "VIDEOFRA"
-constexpr napi_type_tag AUDIO_DATA_TAG = {0x574542434F444543ULL, 0x415544494F444154ULL};        // "WEBCODEC" "AUDIODAT"
-constexpr napi_type_tag ENCODED_VIDEO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E5656494443ULL}; // "WEBCODEC" "ENVVIDC"
-constexpr napi_type_tag ENCODED_AUDIO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E4155444943ULL}; // "WEBCODEC" "ENAUDIC"
-constexpr napi_type_tag VIDEO_DECODER_TAG = {0x574542434F444543ULL, 0x5649444445434F44ULL};     // "WEBCODEC" "VIDDECOD"
-constexpr napi_type_tag VIDEO_ENCODER_TAG = {0x574542434F444543ULL, 0x564944454E434F44ULL};     // "WEBCODEC" "VIDENCODE"
-constexpr napi_type_tag AUDIO_DECODER_TAG = {0x574542434F444543ULL, 0x4155444445434F44ULL};     // "WEBCODEC" "AUDDECOD"
-constexpr napi_type_tag AUDIO_ENCODER_TAG = {0x574542434F444543ULL, 0x415544454E434F44ULL};     // "WEBCODEC" "AUDENCODE"
-constexpr napi_type_tag IMAGE_DECODER_TAG = {0x574542434F444543ULL, 0x494D474445434F44ULL};     // "WEBCODEC" "IMGDECOD"
+// "WEBCODEC" "VIDEOFRA"
+constexpr napi_type_tag VIDEO_FRAME_TAG = {0x574542434F444543ULL, 0x564944454F465241ULL};
+// "WEBCODEC" "AUDIODAT"
+constexpr napi_type_tag AUDIO_DATA_TAG = {0x574542434F444543ULL, 0x415544494F444154ULL};
+// "WEBCODEC" "ENVVIDC"
+constexpr napi_type_tag ENCODED_VIDEO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E5656494443ULL};
+// "WEBCODEC" "ENAUDIC"
+constexpr napi_type_tag ENCODED_AUDIO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E4155444943ULL};
+// "WEBCODEC" "VIDDECOD"
+constexpr napi_type_tag VIDEO_DECODER_TAG = {0x574542434F444543ULL, 0x5649444445434F44ULL};
+// "WEBCODEC" "VIDENCODE"
+constexpr napi_type_tag VIDEO_ENCODER_TAG = {0x574542434F444543ULL, 0x564944454E434F44ULL};
+// "WEBCODEC" "AUDDECOD"
+constexpr napi_type_tag AUDIO_DECODER_TAG = {0x574542434F444543ULL, 0x4155444445434F44ULL};
+// "WEBCODEC" "AUDENCODE"
+constexpr napi_type_tag AUDIO_ENCODER_TAG = {0x574542434F444543ULL, 0x415544454E434F44ULL};
+// "WEBCODEC" "IMGDECOD"
+constexpr napi_type_tag IMAGE_DECODER_TAG = {0x574542434F444543ULL, 0x494D474445434F44ULL};
 
 // =============================================================================
 // HANDLE SCOPE GUARDS
@@ -59,7 +71,7 @@ constexpr napi_type_tag IMAGE_DECODER_TAG = {0x574542434F444543ULL, 0x494D474445
  *   }  // All handles released here
  */
 class HandleScopeGuard {
-public:
+ public:
   explicit HandleScopeGuard(napi_env env) : env_(env), scope_(nullptr) {
     napi_status status = napi_open_handle_scope(env_, &scope_);
     if (status != napi_ok) {
@@ -81,7 +93,7 @@ public:
 
   bool valid() const { return scope_ != nullptr; }
 
-private:
+ private:
   napi_env env_;
   napi_handle_scope scope_;
 };
@@ -100,7 +112,7 @@ private:
  *   }
  */
 class EscapableHandleScopeGuard {
-public:
+ public:
   explicit EscapableHandleScopeGuard(napi_env env) : env_(env), scope_(nullptr) {
     napi_status status = napi_open_escapable_handle_scope(env_, &scope_);
     if (status != napi_ok) {
@@ -133,7 +145,7 @@ public:
     return escaped;
   }
 
-private:
+ private:
   napi_env env_;
   napi_escapable_handle_scope scope_;
 };
@@ -159,9 +171,9 @@ private:
  *     // Create JS objects that reference frame data
  *   }  // Frame freed, then handle scope closed
  */
-template<typename FFmpegPtr>
+template <typename FFmpegPtr>
 class ScopedResourceWithHandleScope {
-public:
+ public:
   ScopedResourceWithHandleScope(napi_env env, FFmpegPtr resource)
       : env_(env), resource_(std::move(resource)), scope_(nullptr) {
     napi_status status = napi_open_handle_scope(env_, &scope_);
@@ -199,7 +211,7 @@ public:
    */
   [[nodiscard]] auto release() { return resource_.release(); }
 
-private:
+ private:
   napi_env env_;
   FFmpegPtr resource_;
   napi_handle_scope scope_;
@@ -247,15 +259,10 @@ inline bool TagObject(napi_env env, napi_value object, const napi_type_tag* tag)
  * Usage:
  *   VideoFrame* frame = SafeUnwrap<VideoFrame>(env, jsValue, VIDEO_FRAME_TAG);
  *   if (!frame) { /* handle error */ }
- *
- * @tparam T The C++ wrapper class (e.g., VideoFrame)
- * @param env The N-API environment
- * @param value The JS value to unwrap
- * @param tag The expected type tag
- * @return Pointer to the unwrapped object, or nullptr on failure
- */
-template<typename T>
-T* SafeUnwrap(Napi::Env env, Napi::Value value, const napi_type_tag& tag) {
+**@tparam T The C++ wrapper class(e.g., VideoFrame) * @param env The N - API environment *@param value The JS value to
+    unwrap *@param tag The expected type tag *@ return Pointer to the unwrapped object,
+    or nullptr on failure * / template <typename T>
+                              T *SafeUnwrap(Napi::Env env, Napi::Value value, const napi_type_tag& tag) {
   if (!value.IsObject()) {
     Napi::TypeError::New(env, "Expected an object").ThrowAsJavaScriptException();
     return nullptr;
@@ -275,7 +282,7 @@ T* SafeUnwrap(Napi::Env env, Napi::Value value, const napi_type_tag& tag) {
 /**
  * SafeUnwrap variant that doesn't throw, returns nullptr on failure.
  */
-template<typename T>
+template <typename T>
 T* SafeUnwrapNoThrow(Napi::Env env, Napi::Value value, const napi_type_tag& tag) {
   if (!value.IsObject()) {
     return nullptr;
@@ -307,25 +314,20 @@ T* SafeUnwrapNoThrow(Napi::Env env, Napi::Value value, const napi_type_tag& tag)
  *     }
  *   };
  */
-template<typename T>
+template <typename T>
 class PersistentRef {
-public:
+ public:
   PersistentRef() = default;
 
-  explicit PersistentRef(const T& value) {
-    ref_.Reset(value, 1);
-  }
+  explicit PersistentRef(const T& value) { ref_.Reset(value, 1); }
 
-  ~PersistentRef() {
-    Reset();
-  }
+  ~PersistentRef() { Reset(); }
 
   // Move-only
   PersistentRef(const PersistentRef&) = delete;
   PersistentRef& operator=(const PersistentRef&) = delete;
 
-  PersistentRef(PersistentRef&& other) noexcept
-      : ref_(std::move(other.ref_)) {}
+  PersistentRef(PersistentRef&& other) noexcept : ref_(std::move(other.ref_)) {}
 
   PersistentRef& operator=(PersistentRef&& other) noexcept {
     if (this != &other) {
@@ -352,7 +354,7 @@ public:
 
   explicit operator bool() const { return !ref_.IsEmpty(); }
 
-private:
+ private:
   Napi::Reference<T> ref_;
 };
 

@@ -152,17 +152,13 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * Creates a new AVFrame wrapped in RAII.
  * Returns nullptr on allocation failure.
  */
-[[nodiscard]] inline AVFramePtr MakeAvFrame() {
-  return AVFramePtr(av_frame_alloc());
-}
+[[nodiscard]] inline AVFramePtr MakeAvFrame() { return AVFramePtr(av_frame_alloc()); }
 
 /**
  * Creates a new AVPacket wrapped in RAII.
  * Returns nullptr on allocation failure.
  */
-[[nodiscard]] inline AVPacketPtr MakeAvPacket() {
-  return AVPacketPtr(av_packet_alloc());
-}
+[[nodiscard]] inline AVPacketPtr MakeAvPacket() { return AVPacketPtr(av_packet_alloc()); }
 
 /**
  * Creates a new AVCodecContext for the given codec.
@@ -213,9 +209,7 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * Returns nullptr on allocation failure.
  * Caller must call swr_init() after setting options via av_opt_set_*.
  */
-[[nodiscard]] inline SwrContextPtr MakeSwrContext() {
-  return SwrContextPtr(swr_alloc());
-}
+[[nodiscard]] inline SwrContextPtr MakeSwrContext() { return SwrContextPtr(swr_alloc()); }
 
 /**
  * Creates and initializes a SwrContext in one call.
@@ -228,14 +222,13 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * @param in_sample_fmt Input sample format
  * @param in_sample_rate Input sample rate
  */
-[[nodiscard]] inline SwrContextPtr MakeSwrContextInitialized(
-    const AVChannelLayout* out_ch_layout, AVSampleFormat out_sample_fmt, int out_sample_rate,
-    const AVChannelLayout* in_ch_layout, AVSampleFormat in_sample_fmt, int in_sample_rate) {
+[[nodiscard]] inline SwrContextPtr MakeSwrContextInitialized(const AVChannelLayout* out_ch_layout,
+                                                             AVSampleFormat out_sample_fmt, int out_sample_rate,
+                                                             const AVChannelLayout* in_ch_layout,
+                                                             AVSampleFormat in_sample_fmt, int in_sample_rate) {
   SwrContext* ctx = nullptr;
-  int ret = swr_alloc_set_opts2(&ctx,
-      out_ch_layout, out_sample_fmt, out_sample_rate,
-      in_ch_layout, in_sample_fmt, in_sample_rate,
-      0, nullptr);
+  int ret = swr_alloc_set_opts2(&ctx, out_ch_layout, out_sample_fmt, out_sample_rate, in_ch_layout, in_sample_fmt,
+                                in_sample_rate, 0, nullptr);
   if (ret < 0 || !ctx) return nullptr;
 
   if (swr_init(ctx) < 0) {
@@ -249,9 +242,7 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * Creates a new AVFilterGraph for video/audio filtering.
  * Returns nullptr on allocation failure.
  */
-[[nodiscard]] inline AVFilterGraphPtr MakeFilterGraph() {
-  return AVFilterGraphPtr(avfilter_graph_alloc());
-}
+[[nodiscard]] inline AVFilterGraphPtr MakeFilterGraph() { return AVFilterGraphPtr(avfilter_graph_alloc()); }
 
 // =============================================================================
 // THREAD-SAFE ASYNC DECODE CONTEXT
@@ -270,7 +261,7 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * 3. Release TSFN
  * 4. Free codec context (via RAII)
  */
-template<typename TSFN>
+template <typename TSFN>
 struct SafeAsyncContext {
   // Thread synchronization
   mutable std::mutex mutex;
@@ -315,17 +306,13 @@ struct SafeAsyncContext {
   /**
    * Thread-safe check if context should exit.
    */
-  bool ShouldExit() const {
-    return shouldExit.load(std::memory_order_acquire);
-  }
+  bool ShouldExit() const { return shouldExit.load(std::memory_order_acquire); }
 
   /**
    * Lock the mutex for codec operations.
    * Use with std::lock_guard or std::unique_lock.
    */
-  std::unique_lock<std::mutex> lock() const {
-    return std::unique_lock<std::mutex>(mutex);
-  }
+  std::unique_lock<std::mutex> lock() const { return std::unique_lock<std::mutex>(mutex); }
 };
 
 // =============================================================================
@@ -338,17 +325,11 @@ struct SafeAsyncContext {
  */
 class AtomicCodecState {
  public:
-  enum class State : int {
-    Unconfigured = 0,
-    Configured = 1,
-    Closed = 2
-  };
+  enum class State : int { Unconfigured = 0, Configured = 1, Closed = 2 };
 
   AtomicCodecState() : state_(static_cast<int>(State::Unconfigured)) {}
 
-  State get() const {
-    return static_cast<State>(state_.load(std::memory_order_acquire));
-  }
+  State get() const { return static_cast<State>(state_.load(std::memory_order_acquire)); }
 
   /**
    * Attempt to transition from expected state to new state.
@@ -357,37 +338,35 @@ class AtomicCodecState {
   bool transition(State expected, State desired) {
     int exp = static_cast<int>(expected);
     int des = static_cast<int>(desired);
-    return state_.compare_exchange_strong(exp, des,
-                                          std::memory_order_acq_rel,
-                                          std::memory_order_acquire);
+    return state_.compare_exchange_strong(exp, des, std::memory_order_acq_rel, std::memory_order_acquire);
   }
 
   /**
    * Force transition to Closed state (always succeeds).
    */
-  void close() {
-    state_.store(static_cast<int>(State::Closed), std::memory_order_release);
-  }
+  void Close() { state_.store(static_cast<int>(State::Closed), std::memory_order_release); }
 
   /**
    * Check if state is Configured (valid for decode/encode operations).
    */
-  bool is_configured() const {
-    return get() == State::Configured;
-  }
+  bool IsConfigured() const { return get() == State::Configured; }
 
   /**
    * Check if state is Closed (no operations allowed).
    */
-  bool is_closed() const {
-    return get() == State::Closed;
-  }
+  bool IsClosed() const { return get() == State::Closed; }
 
-  const char* to_string() const {
+  /**
+   * Get string representation of current state.
+   */
+  const char* ToString() const {
     switch (get()) {
-      case State::Unconfigured: return "unconfigured";
-      case State::Configured: return "configured";
-      case State::Closed: return "closed";
+      case State::Unconfigured:
+        return "unconfigured";
+      case State::Configured:
+        return "configured";
+      case State::Closed:
+        return "closed";
     }
     return "unknown";
   }
@@ -407,8 +386,7 @@ class AVMallocBuffer {
  public:
   AVMallocBuffer() : data_(nullptr), size_(0) {}
 
-  explicit AVMallocBuffer(size_t size)
-      : data_(static_cast<uint8_t*>(av_malloc(size))), size_(size) {
+  explicit AVMallocBuffer(size_t size) : data_(static_cast<uint8_t*>(av_malloc(size))), size_(size) {
     if (!data_) size_ = 0;
   }
 
@@ -422,8 +400,7 @@ class AVMallocBuffer {
   AVMallocBuffer(const AVMallocBuffer&) = delete;
   AVMallocBuffer& operator=(const AVMallocBuffer&) = delete;
 
-  AVMallocBuffer(AVMallocBuffer&& other) noexcept
-      : data_(other.data_), size_(other.size_) {
+  AVMallocBuffer(AVMallocBuffer&& other) noexcept : data_(other.data_), size_(other.size_) {
     other.data_ = nullptr;
     other.size_ = 0;
   }

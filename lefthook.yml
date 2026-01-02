@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    clang-format:
+      glob: "*.{cpp,h}"
+      run: clang-format --dry-run --Werror {staged_files}
+    cpplint:
+      glob: "*.{cpp,h}"
+      run: cpplint {staged_files}
+    prettier:
+      glob: "*.{ts,js,json}"
+      run: npx prettier --check {staged_files}

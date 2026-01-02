@@ -13,10 +13,12 @@
  */
 
 #include <napi.h>
-#include <mutex>
-#include <unordered_map>
+
 #include <atomic>
+#include <mutex>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace webcodecs {
@@ -45,7 +47,7 @@ namespace promise_utils {
  *   };
  */
 class PromiseTracker {
-public:
+ public:
   /**
    * Result of creating a tracked promise.
    */
@@ -231,7 +233,7 @@ public:
     return ids;
   }
 
-private:
+ private:
   mutable std::mutex mutex_;
   std::atomic<uint32_t> nextId_;
   std::unordered_map<uint32_t, Napi::Promise::Deferred> pending_;
@@ -250,9 +252,7 @@ struct PromiseResolution {
   std::string errorName;
   std::string errorMessage;
 
-  static PromiseResolution Success(uint32_t id) {
-    return PromiseResolution{id, true, "", ""};
-  }
+  static PromiseResolution Success(uint32_t id) { return PromiseResolution{id, true, "", ""}; }
 
   static PromiseResolution Failure(uint32_t id, const std::string& name, const std::string& msg) {
     return PromiseResolution{id, false, name, msg};
@@ -266,11 +266,7 @@ struct PromiseResolution {
  * @param env The Napi environment
  * @param resolution The resolution info
  */
-inline void ProcessPromiseResolution(
-    PromiseTracker& tracker,
-    Napi::Env env,
-    const PromiseResolution& resolution) {
-
+inline void ProcessPromiseResolution(PromiseTracker& tracker, Napi::Env env, const PromiseResolution& resolution) {
   if (resolution.success) {
     tracker.Resolve(resolution.promiseId);
   } else {
