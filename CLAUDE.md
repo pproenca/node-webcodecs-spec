@@ -82,6 +82,50 @@ When writing C++ code that interfaces with FFmpeg, the **ffmpeg-cpp-sentinel** a
 
 ## Troubleshooting
 
+### C++ Debugging Rules (Segfaults, Memory Issues, Threading Bugs)
+
+**STOP. Do not edit source code until you complete triage.**
+
+#### Triage First (Mandatory)
+
+1. **Check build output for linker warnings** — version mismatches like "built for macOS-X but linking with Y" mean the problem is ABI/environment, not code
+2. **If crash is in trivial code** (empty constructor, simple allocation) → problem is NOT the code
+3. **If crash "moves around"** when you change unrelated code → memory corruption elsewhere or ABI mismatch
+
+#### Diagnostic Commands
+
+```bash
+# macOS - check linked library versions
+otool -L ./build/Release/*.node
+
+# Linux - same
+ldd ./build/Release/*.node
+
+# Check for ABI issues in symbol mangling
+nm -gU ./build/Release/*.node | head -50
+```
+
+#### If Linker Version Mismatch Detected
+
+Fix `binding.gyp` or `CMakeLists.txt` deployment target. Rebuild dependencies. Do NOT touch source code.
+
+#### If No Build Issues, Then Instrument
+
+```bash
+# Memory bugs (ASan)
+npm run test:native:asan
+
+# Threading bugs (TSan)
+npm run test:native:tsan
+
+# Undefined behavior
+npm run test:native:ubsan
+```
+
+#### Loop Detection
+
+If you've edited the same file 3+ times with the same crash → STOP. The bug is not in that file. Re-run triage.
+
 ### macOS ABI Mismatch (Segfaults on Object Instantiation)
 
 **Symptom:** Segfaults when instantiating C++ objects, especially those with STL members (`std::function`, `std::vector`). Crashes happen during construction, not during use. Backtrace shows crash in constructor or `std::make_unique`.
