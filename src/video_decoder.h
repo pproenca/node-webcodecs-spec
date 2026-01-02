@@ -61,6 +61,16 @@ class VideoDecoder : public Napi::ObjectWrap<VideoDecoder> {
   // --- Decode Queue Size (atomic for JS access) ---
   std::atomic<uint32_t> decode_queue_size_{0};
 
+  // --- [[dequeue event scheduled]] per spec ---
+  // Prevents duplicate ondequeue events within the same task
+  // Coalesces multiple queue size changes into one event
+  std::atomic<bool> dequeue_event_scheduled_{false};
+
+  // --- [[codec saturated]] per spec ---
+  // True when codec cannot accept more work (EAGAIN from FFmpeg)
+  // Cleared after successfully receiving output frames
+  std::atomic<bool> codec_saturated_{false};
+
   // --- Key Chunk Tracking ---
   std::atomic<bool> key_chunk_required_{true};
 

@@ -199,21 +199,20 @@ void VideoEncoder::OnOutputChunk(Napi::Env env, Napi::Function jsCallback,
   }
 
   // Create metadata if needed (first keyframe after configure)
-  if (output->include_decoder_config && context->worker_) {
+  if (output->include_decoder_config) {
     Napi::Object metadata = Napi::Object::New(env);
 
-    // Build decoderConfig
+    // Build decoderConfig from OutputData (thread-safe - no codec_ctx_ access)
     Napi::Object decoderConfig = Napi::Object::New(env);
-    decoderConfig.Set("codec", Napi::String::New(env, context->active_config_.codec));
-    decoderConfig.Set("codedWidth", Napi::Number::New(env, context->active_config_.width));
-    decoderConfig.Set("codedHeight", Napi::Number::New(env, context->active_config_.height));
+    decoderConfig.Set("codec", Napi::String::New(env, output->codec));
+    decoderConfig.Set("codedWidth", Napi::Number::New(env, output->coded_width));
+    decoderConfig.Set("codedHeight", Napi::Number::New(env, output->coded_height));
 
-    // Include extradata as description if available
-    AVCodecContext* codec_ctx = context->worker_->GetCodecContext();
-    if (codec_ctx && codec_ctx->extradata && codec_ctx->extradata_size > 0) {
-      Napi::ArrayBuffer desc = Napi::ArrayBuffer::New(env, codec_ctx->extradata_size);
-      std::memcpy(desc.Data(), codec_ctx->extradata, codec_ctx->extradata_size);
-      decoderConfig.Set("description", Napi::Uint8Array::New(env, codec_ctx->extradata_size, desc, 0));
+    // Include extradata as description if available (copied from worker thread)
+    if (!output->extradata.empty()) {
+      Napi::ArrayBuffer desc = Napi::ArrayBuffer::New(env, output->extradata.size());
+      std::memcpy(desc.Data(), output->extradata.data(), output->extradata.size());
+      decoderConfig.Set("description", Napi::Uint8Array::New(env, output->extradata.size(), desc, 0));
     }
 
     metadata.Set("decoderConfig", decoderConfig);
@@ -288,6 +287,9 @@ void VideoEncoder::OnDequeue(Napi::Env env, Napi::Function jsCallback,
   if (!context->ondequeue_callback_.IsEmpty()) {
     context->ondequeue_callback_.Call({});
   }
+
+  // [SPEC] Reset [[dequeue event scheduled]] after firing
+  context->dequeue_event_scheduled_.store(false, std::memory_order_release);
 }
 
 // --- Attributes ---
@@ -416,6 +418,9 @@ Napi::Value VideoEncoder::Configure(const Napi::CallbackInfo& info) {
     worker_->Start();
   }
 
+  // [SPEC] Set [[message queue blocked]] before configure
+  queue_.SetBlocked(true);
+
   // Create configure message
   VideoControlQueue::ConfigureMessage msg{
       [this]() -> bool {
@@ -424,6 +429,7 @@ Napi::Value VideoEncoder::Configure(const Napi::CallbackInfo& info) {
 
   // Enqueue configure message
   if (!queue_.Enqueue(std::move(msg))) {
+    queue_.SetBlocked(false);  // Reset on failure
     errors::ThrowInvalidStateError(env, "Failed to enqueue configure");
     return env.Undefined();
   }
@@ -720,7 +726,15 @@ bool VideoEncoderWorker::OnConfigure(const ConfigureMessage& msg) {
   // Get config from parent encoder
   if (!encoder_) return false;
 
-  const VideoEncoder::EncoderConfig& config = encoder_->active_config_;
+  // Helper to unblock queue on exit (RAII pattern)
+  struct ScopeGuard {
+    VideoEncoder* e;
+    ~ScopeGuard() { if (e) e->queue_.SetBlocked(false); }
+  } guard{encoder_};
+
+  // Thread-safe: copy config at start to avoid race with main thread
+  // The main thread may call Configure() again while we're processing
+  const VideoEncoder::EncoderConfig config = encoder_->active_config_;
 
   // Parse codec string
   auto codec_info = ParseCodecString(config.codec);
@@ -816,6 +830,9 @@ bool VideoEncoderWorker::OnConfigure(const ConfigureMessage& msg) {
     return false;
   }
 
+  // Store codec string for thread-safe access in OutputChunk
+  codec_ = config.codec;
+
   // Reset state for new configuration
   first_output_after_configure_ = true;
   frame_count_ = 0;
@@ -853,7 +870,14 @@ void VideoEncoderWorker::OnEncode(const EncodeMessage& msg) {
 
   // Send frame to encoder
   int ret = avcodec_send_frame(codec_ctx_.get(), frame);
-  if (ret < 0 && ret != AVERROR(EAGAIN)) {
+
+  // [SPEC] [[codec saturated]] - track when codec cannot accept more input
+  if (ret == AVERROR(EAGAIN)) {
+    // Codec input buffer full - set saturation flag
+    if (encoder_) {
+      encoder_->codec_saturated_.store(true, std::memory_order_release);
+    }
+  } else if (ret < 0) {
     OutputError(ret, "Failed to send frame to encoder");
     return;
   }
@@ -865,6 +889,7 @@ void VideoEncoderWorker::OnEncode(const EncodeMessage& msg) {
     return;
   }
 
+  bool received_packet = false;
   while (!ShouldExit()) {
     ret = avcodec_receive_packet(codec_ctx_.get(), packet.get());
 
@@ -878,6 +903,8 @@ void VideoEncoderWorker::OnEncode(const EncodeMessage& msg) {
       OutputError(ret, "Error receiving packet");
       return;
     }
+
+    received_packet = true;
 
     // Determine if this is a keyframe
     bool is_key = (packet->flags & AV_PKT_FLAG_KEY) != 0;
@@ -899,6 +926,11 @@ void VideoEncoderWorker::OnEncode(const EncodeMessage& msg) {
     }
 
     av_packet_unref(packet.get());
+  }
+
+  // [SPEC] Clear [[codec saturated]] after receiving output
+  if (received_packet && encoder_) {
+    encoder_->codec_saturated_.store(false, std::memory_order_release);
   }
 
   // Decrement queue size and signal dequeue
@@ -979,7 +1011,25 @@ void VideoEncoderWorker::OutputChunk(raii::AVPacketPtr packet, bool is_key,
       is_key,
       ts,
       dur,
-      include_config};
+      include_config,
+      {},  // extradata - populated below
+      {},  // codec - populated below
+      0,   // coded_width - populated below
+      0    // coded_height - populated below
+  };
+
+  // Copy decoder config data on worker thread (thread-safe)
+  // All data is from worker's local copies, avoiding cross-thread access
+  if (include_config && codec_ctx_) {
+    if (codec_ctx_->extradata && codec_ctx_->extradata_size > 0) {
+      data->extradata.assign(
+          codec_ctx_->extradata,
+          codec_ctx_->extradata + codec_ctx_->extradata_size);
+    }
+    data->codec = codec_;  // Use worker's local copy, not encoder_->active_config_
+    data->coded_width = width_;
+    data->coded_height = height_;
+  }
 
   if (!encoder_->output_tsfn_.Call(data)) {
     delete data;
@@ -1007,9 +1057,21 @@ void VideoEncoderWorker::FlushComplete(uint32_t promise_id, bool success, const 
 void VideoEncoderWorker::SignalDequeue(uint32_t new_size) {
   if (!encoder_ || encoder_->state_.IsClosed()) return;
 
+  // [SPEC] [[dequeue event scheduled]] - coalesce multiple dequeue events
+  // Use compare_exchange to atomically check-and-set; if already scheduled, skip
+  bool expected = false;
+  if (!encoder_->dequeue_event_scheduled_.compare_exchange_strong(
+          expected, true,
+          std::memory_order_acq_rel,
+          std::memory_order_acquire)) {
+    return;  // Already scheduled, coalesce this event
+  }
+
   auto* data = new VideoEncoder::DequeueData{new_size};
   if (!encoder_->dequeue_tsfn_.Call(data)) {
     delete data;
+    // Reset flag on TSFN failure
+    encoder_->dequeue_event_scheduled_.store(false, std::memory_order_release);
   }
 }
 

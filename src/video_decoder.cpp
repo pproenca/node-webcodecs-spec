@@ -264,6 +264,9 @@ void VideoDecoder::OnDequeue(Napi::Env env, Napi::Function jsCallback,
   if (!context->ondequeue_callback_.IsEmpty()) {
     context->ondequeue_callback_.Call({});
   }
+
+  // [SPEC] Reset [[dequeue event scheduled]] after firing
+  context->dequeue_event_scheduled_.store(false, std::memory_order_release);
 }
 
 // --- Attributes ---
@@ -366,8 +369,12 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
     worker_->Start();
   }
 
+  // [SPEC] Set [[message queue blocked]] before configure
+  queue_.SetBlocked(true);
+
   // Enqueue configure message
   if (!queue_.Enqueue(std::move(msg))) {
+    queue_.SetBlocked(false);  // Reset on failure
     errors::ThrowInvalidStateError(env, "Failed to enqueue configure");
     return env.Undefined();
   }
@@ -672,9 +679,21 @@ VideoDecoderWorker::VideoDecoderWorker(VideoControlQueue& queue, VideoDecoder* d
   SetDequeueCallback([this](uint32_t new_queue_size) {
     if (!decoder_ || decoder_->state_.IsClosed()) return;
 
+    // [SPEC] [[dequeue event scheduled]] - coalesce multiple dequeue events
+    // Use compare_exchange to atomically check-and-set; if already scheduled, skip
+    bool expected = false;
+    if (!decoder_->dequeue_event_scheduled_.compare_exchange_strong(
+            expected, true,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire)) {
+      return;  // Already scheduled, coalesce this event
+    }
+
     auto* data = new VideoDecoder::DequeueData{new_queue_size};
     if (!decoder_->dequeue_tsfn_.Call(data)) {
       delete data;
+      // Reset flag on TSFN failure
+      decoder_->dequeue_event_scheduled_.store(false, std::memory_order_release);
     }
   });
 }
@@ -686,6 +705,12 @@ VideoDecoderWorker::~VideoDecoderWorker() {
 bool VideoDecoderWorker::OnConfigure(const ConfigureMessage& msg) {
   // Get config from parent decoder
   if (!decoder_) return false;
+
+  // Helper to unblock queue on exit (RAII pattern)
+  struct ScopeGuard {
+    VideoDecoder* d;
+    ~ScopeGuard() { if (d) d->queue_.SetBlocked(false); }
+  } guard{decoder_};
 
   const VideoDecoder::DecoderConfig& config = decoder_->active_config_;
 
@@ -746,6 +771,7 @@ bool VideoDecoderWorker::OnConfigure(const ConfigureMessage& msg) {
   key_chunk_required_.store(true, std::memory_order_release);
 
   return true;
+  // [SPEC] [[message queue blocked]] reset by ScopeGuard destructor
 }
 
 void VideoDecoderWorker::OnDecode(const DecodeMessage& msg) {
@@ -753,7 +779,14 @@ void VideoDecoderWorker::OnDecode(const DecodeMessage& msg) {
 
   // Send packet to decoder
   int ret = avcodec_send_packet(codec_ctx_.get(), msg.packet.get());
-  if (ret < 0 && ret != AVERROR(EAGAIN)) {
+
+  // [SPEC] [[codec saturated]] - track when codec cannot accept more input
+  if (ret == AVERROR(EAGAIN)) {
+    // Codec input buffer full - set saturation flag
+    if (decoder_) {
+      decoder_->codec_saturated_.store(true, std::memory_order_release);
+    }
+  } else if (ret < 0) {
     OutputError(ret, "Failed to send packet to decoder");
     return;
   }
@@ -765,6 +798,7 @@ void VideoDecoderWorker::OnDecode(const DecodeMessage& msg) {
     return;
   }
 
+  bool received_frame = false;
   while (!ShouldExit()) {
     ret = avcodec_receive_frame(codec_ctx_.get(), frame.get());
 
@@ -778,6 +812,8 @@ void VideoDecoderWorker::OnDecode(const DecodeMessage& msg) {
       OutputError(ret, "Error receiving frame");
       return;
     }
+
+    received_frame = true;
 
     // Update format info from first frame
     if (format_ == AV_PIX_FMT_NONE) {
@@ -794,6 +830,11 @@ void VideoDecoderWorker::OnDecode(const DecodeMessage& msg) {
 
     // Reset frame for next iteration
     av_frame_unref(frame.get());
+  }
+
+  // [SPEC] Clear [[codec saturated]] after receiving output
+  if (received_frame && decoder_) {
+    decoder_->codec_saturated_.store(false, std::memory_order_release);
   }
 
   // Decrement queue size and signal dequeue
