@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include <thread>
 #include <condition_variable>
 
 extern "C" {

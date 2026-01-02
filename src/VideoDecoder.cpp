@@ -1,4 +1,9 @@
 #include "VideoDecoder.h"
+#include "VideoFrame.h"
+#include "EncodedVideoChunk.h"
+#include "shared/codec_registry.h"
+#include "error_builder.h"
+#include "shared/buffer_utils.h"
 
 namespace webcodecs {
 
@@ -99,12 +104,18 @@ Napi::Value VideoDecoder::GetDecodeQueueSize(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value VideoDecoder::GetOndequeue(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return ondequeue
-  return info.Env().Null();
+  if (ondequeueCallback_.IsEmpty()) {
+    return info.Env().Null();
+  }
+  return ondequeueCallback_.Value();
 }
 
 void VideoDecoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Value& value) {
-  // TODO(impl): Set ondequeue
+  if (value.IsNull() || value.IsUndefined()) {
+    ondequeueCallback_.Reset();
+  } else if (value.IsFunction()) {
+    ondequeueCallback_ = Napi::Persistent(value.As<Napi::Function>());
+  }
 }
 
 
@@ -113,48 +124,351 @@ void VideoDecoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Valu
 Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * \[=Enqueues a control message=\] to configure the video decoder for decoding chunks as described by |config|. NOTE: This method will trigger a {{NotSupportedError}} if the User Agent does not support |config|. Authors are encouraged to first check support by calling {{VideoDecoder/isConfigSupported()}} with |config|. User Agents don't have to support any particular codec type or configuration. When invoked, run these steps: 1. If |config| is not a \[=valid VideoDecoderConfig=\], throw a {{TypeError}}. 2. If {{VideoDecoder/\[\[state\]\]}} is \`“closed”\`, throw an {{InvalidStateError}}. 3. Set {{VideoDecoder/\[\[state\]\]}} to \`"configured"\`. 4. Set {{VideoDecoder/\[\[key chunk required\]\]}} to \`true\`. 5. \[=Queue a control message=\] to configure the decoder with |config|. 6. \[=Process the control message queue=\]. \[=Running a control message=\] to configure the decoder means running these steps: 1. Assign \`true\` to {{VideoDecoder/\[\[message queue blocked\]\]}}. 2. Enqueue the following steps to {{VideoDecoder/\[\[codec work queue\]\]}}: 1. Let |supported| be the result of running the Check Configuration Support algorithm with |config|. 2. If |supported| is \`false\`, \[=queue a task=\] to run the Close VideoDecoder algorithm with {{NotSupportedError}} and abort these steps. 3. If needed, assign {{VideoDecoder/\[\[codec implementation\]\]}} with an implementation supporting |config|. 4. Configure {{VideoDecoder/\[\[codec implementation\]\]}} with |config|. 5. \[=queue a task=\] to run the following steps: 1. Assign \`false\` to {{VideoDecoder/\[\[message queue blocked\]\]}}. 2. \[=Queue a task=\] to \[=Process the control message queue=\]. 3. Return \`"processed"\`.
-   */
+  // [SPEC] 1. If config is not a valid VideoDecoderConfig, throw TypeError
+  if (info.Length() < 1 || !info[0].IsObject()) {
+    errors::throw_type_error(env, "VideoDecoderConfig is required");
+    return env.Undefined();
+  }
 
-  // TODO(impl): Implement method logic
+  Napi::Object config = info[0].As<Napi::Object>();
+
+  // Required: codec string
+  if (!config.Has("codec") || !config.Get("codec").IsString()) {
+    errors::throw_type_error(env, "codec is required and must be a string");
+    return env.Undefined();
+  }
+
+  std::string codec_string = config.Get("codec").As<Napi::String>().Utf8Value();
+
+  // [SPEC] 2. If state is "closed", throw InvalidStateError
+  if (state_.is_closed()) {
+    errors::throw_invalid_state_error(env, "configure called on closed decoder");
+    return env.Undefined();
+  }
+
+  // Parse codec string to get FFmpeg codec ID
+  auto codec_info = ParseCodecString(codec_string);
+  if (!codec_info) {
+    errors::throw_not_supported_error(env, "Unsupported codec: " + codec_string);
+    return env.Undefined();
+  }
+
+  // Find FFmpeg decoder
+  const AVCodec* decoder = avcodec_find_decoder(codec_info->codec_id);
+  if (!decoder) {
+    errors::throw_not_supported_error(env, "No decoder available for: " + codec_string);
+    return env.Undefined();
+  }
+
+  // Lock for codec operations
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Allocate codec context (RAII)
+  codecCtx_ = raii::make_av_codec_context(decoder);
+  if (!codecCtx_) {
+    errors::throw_encoding_error(env, "Failed to allocate codec context");
+    return env.Undefined();
+  }
+
+  // Set codec parameters from config
+  if (config.Has("codedWidth") && config.Get("codedWidth").IsNumber()) {
+    codecCtx_->width = config.Get("codedWidth").As<Napi::Number>().Int32Value();
+  }
+  if (config.Has("codedHeight") && config.Get("codedHeight").IsNumber()) {
+    codecCtx_->height = config.Get("codedHeight").As<Napi::Number>().Int32Value();
+  }
+
+  // Handle description (extradata) if provided - e.g., for H.264 avcC
+  if (config.Has("description")) {
+    Napi::Value desc = config.Get("description");
+    const uint8_t* data = nullptr;
+    size_t size = 0;
+
+    if (buffer_utils::ExtractBufferData(desc, &data, &size) && data && size > 0) {
+      codecCtx_->extradata = static_cast<uint8_t*>(
+          av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
+      if (codecCtx_->extradata) {
+        std::memcpy(codecCtx_->extradata, data, size);
+        codecCtx_->extradata_size = static_cast<int>(size);
+      }
+    }
+  }
+
+  // Set threading model
+  codecCtx_->thread_count = 0;  // Auto-detect
+  codecCtx_->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+
+  // Open codec
+  int ret = avcodec_open2(codecCtx_.get(), decoder, nullptr);
+  if (ret < 0) {
+    codecCtx_.reset();
+    errors::throw_encoding_error(env, ret, "Failed to open decoder");
+    return env.Undefined();
+  }
+
+  // [SPEC] 3. Set state to "configured"
+  // [SPEC] 4. Set key chunk required to true
+  state_.transition(raii::AtomicCodecState::State::Unconfigured,
+                    raii::AtomicCodecState::State::Configured);
+  keyChunkRequired_ = true;
+
   return env.Undefined();
 }
 
 Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * \[=Enqueues a control message=\] to decode the given |chunk|. NOTE: Authors are encouraged to call {{VideoFrame/close()}} on output {{VideoFrame}}s immediately when frames are no longer needed. The underlying \[=media resource=\]s are owned by the {{VideoDecoder}} and failing to release them (or waiting for garbage collection) can cause decoding to stall. NOTE: {{VideoDecoder}} requires that frames are output in the order they expect to be presented, commonly known as presentation order. When using some {{VideoDecoder/\[\[codec implementation\]\]}}s the User Agent will have to reorder outputs into presentation order. When invoked, run these steps: 1. If {{VideoDecoder/\[\[state\]\]}} is not \`"configured"\`, throw an {{InvalidStateError}}. 2. If {{VideoDecoder/\[\[key chunk required\]\]}} is \`true\`: 1. If |chunk|.{{EncodedVideoChunk/type}} is not {{EncodedVideoChunkType/key}}, throw a {{DataError}}. 2. Implementers _SHOULD_ inspect the |chunk|'s {{EncodedVideoChunk/\[\[internal data\]\]}} to verify that it is truly a \[=key chunk=\]. If a mismatch is detected, throw a {{DataError}}. 3. Otherwise, assign \`false\` to {{VideoDecoder/\[\[key chunk required\]\]}}. 3. Increment {{VideoDecoder/\[\[decodeQueueSize\]\]}}. 4. \[=Queue a control message=\] to decode the |chunk|. 5. \[=Process the control message queue=\]. \[=Running a control message=\] to decode the chunk means performing these steps: 1. If {{VideoDecoder/\[\[codec saturated\]\]}} equals \`true\`, return \`"not processed"\`. 2. If decoding chunk will cause the {{VideoDecoder/\[\[codec implementation\]\]}} to become \[=saturated=\], assign \`true\` to {{VideoDecoder/\[\[codec saturated\]\]}}. 3. Decrement {{VideoDecoder/\[\[decodeQueueSize\]\]}} and run the \[=VideoDecoder/Schedule Dequeue Event=\] algorithm. 4. Enqueue the following steps to the {{VideoDecoder/\[\[codec work queue\]\]}}: 1. Attempt to use {{VideoDecoder/\[\[codec implementation\]\]}} to decode the chunk. 2. If decoding results in an error, \[=queue a task=\] to run the \[=Close VideoDecoder=\] algorithm with {{EncodingError}} and return. 3. If {{VideoDecoder/\[\[codec saturated\]\]}} equals \`true\` and {{VideoDecoder/\[\[codec implementation\]\]}} is no longer \[=saturated=\], \[=queue a task=\] to perform the following steps: 1. Assign \`false\` to {{VideoDecoder/\[\[codec saturated\]\]}}. 2. \[=Process the control message queue=\]. 4. Let |decoded outputs| be a \[=list=\] of decoded video data outputs emitted by {{VideoDecoder/\[\[codec implementation\]\]}} in presentation order. 5. If |decoded outputs| is not empty, \[=queue a task=\] to run the \[=Output VideoFrame=\] algorithm with |decoded outputs|. 5. Return \`"processed"\`.
-   */
+  // [SPEC] 1. If state is not "configured", throw InvalidStateError
+  if (!state_.is_configured()) {
+    errors::throw_invalid_state_error(env, "decode called on " +
+        std::string(state_.to_string()) + " decoder");
+    return env.Undefined();
+  }
 
-  // TODO(impl): Implement method logic
+  // Validate chunk argument
+  if (info.Length() < 1 || !info[0].IsObject()) {
+    errors::throw_type_error(env, "EncodedVideoChunk is required");
+    return env.Undefined();
+  }
+
+  Napi::Object chunk = info[0].As<Napi::Object>();
+
+  // Get chunk type
+  std::string chunk_type;
+  if (chunk.Has("type") && chunk.Get("type").IsString()) {
+    chunk_type = chunk.Get("type").As<Napi::String>().Utf8Value();
+  }
+
+  // [SPEC] 2. If key chunk required is true, check for key frame
+  if (keyChunkRequired_) {
+    if (chunk_type != "key") {
+      errors::throw_data_error(env, "A key frame is required");
+      return env.Undefined();
+    }
+    keyChunkRequired_ = false;
+  }
+
+  // Get chunk data - support both EncodedVideoChunk wrapper and plain objects
+  const uint8_t* data = nullptr;
+  size_t size = 0;
+
+  // Try to get data from EncodedVideoChunk wrapper
+  if (chunk.InstanceOf(EncodedVideoChunk::constructor.Value())) {
+    EncodedVideoChunk* enc = Napi::ObjectWrap<EncodedVideoChunk>::Unwrap(chunk);
+    const AVPacket* pkt = enc->packet();
+    if (pkt && pkt->data && pkt->size > 0) {
+      data = pkt->data;
+      size = static_cast<size_t>(pkt->size);
+    }
+  } else if (chunk.Has("data")) {
+    // Plain object with data property
+    buffer_utils::ExtractBufferData(chunk.Get("data"), &data, &size);
+  }
+
+  if (!data || size == 0) {
+    errors::throw_type_error(env, "Chunk data is required");
+    return env.Undefined();
+  }
+
+  // Get timestamp (microseconds)
+  int64_t timestamp = 0;
+  if (chunk.Has("timestamp") && chunk.Get("timestamp").IsNumber()) {
+    timestamp = chunk.Get("timestamp").As<Napi::Number>().Int64Value();
+  }
+
+  // [SPEC] 3. Increment decodeQueueSize
+  decodeQueueSize_.fetch_add(1, std::memory_order_relaxed);
+
+  // Create AVPacket from data
+  raii::AVPacketPtr packet = buffer_utils::CreatePacketFromBuffer(data, size);
+  if (!packet) {
+    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    errors::throw_encoding_error(env, "Failed to create packet");
+    return env.Undefined();
+  }
+
+  // Set packet timestamp (convert microseconds to codec timebase)
+  packet->pts = timestamp;
+  packet->dts = timestamp;
+
+  // Set key frame flag
+  if (chunk_type == "key") {
+    packet->flags |= AV_PKT_FLAG_KEY;
+  }
+
+  // Lock for codec operations
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (!codecCtx_) {
+    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    errors::throw_invalid_state_error(env, "Decoder not configured");
+    return env.Undefined();
+  }
+
+  // Send packet to decoder
+  int ret = avcodec_send_packet(codecCtx_.get(), packet.get());
+  if (ret < 0 && ret != AVERROR(EAGAIN)) {
+    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    errors::throw_encoding_error(env, ret, "Failed to send packet to decoder");
+    return env.Undefined();
+  }
+
+  // Receive all available frames
+  raii::AVFramePtr frame = raii::make_av_frame();
+  if (!frame) {
+    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    errors::throw_encoding_error(env, "Failed to allocate frame");
+    return env.Undefined();
+  }
+
+  while (true) {
+    ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+      break;  // Need more input or end of stream
+    }
+    if (ret < 0) {
+      decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+      errors::throw_encoding_error(env, ret, "Error receiving frame");
+      return env.Undefined();
+    }
+
+    // Output the frame via callback
+    if (!outputCallback_.IsEmpty()) {
+      Napi::Object jsFrame = VideoFrame::CreateFromAVFrame(env, frame.get());
+      if (!jsFrame.IsEmpty()) {
+        outputCallback_.Call({jsFrame});
+      }
+    }
+
+    // Reset frame for next iteration
+    av_frame_unref(frame.get());
+  }
+
+  // [SPEC] Decrement decodeQueueSize and schedule dequeue event
+  decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+
+  // Call ondequeue if set
+  if (!ondequeueCallback_.IsEmpty()) {
+    ondequeueCallback_.Call({});
+  }
+
   return env.Undefined();
 }
 
 Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * Completes all \[=control messages=\] in the \[=control message queue=\] and emits all outputs. When invoked, run these steps: 1. If {{VideoDecoder/\[\[state\]\]}} is not \`"configured"\`, return \[=a promise rejected with=\] {{InvalidStateError}} {{DOMException}}. 2. Set {{VideoDecoder/\[\[key chunk required\]\]}} to \`true\`. 3. Let |promise| be a new Promise. 4. Append |promise| to {{VideoDecoder/\[\[pending flush promises\]\]}}. 5. \[=Queue a control message=\] to flush the codec with |promise|. 6. \[=Process the control message queue=\]. 7. Return |promise|. \[=Running a control message=\] to flush the codec means performing these steps with |promise|. 1. Enqueue the following steps to the {{VideoDecoder/\[\[codec work queue\]\]}}: 1. Signal {{VideoDecoder/\[\[codec implementation\]\]}} to emit all \[=internal pending outputs=\]. 2. Let |decoded outputs| be a \[=list=\] of decoded video data outputs emitted by {{VideoDecoder/\[\[codec implementation\]\]}}. 3. \[=Queue a task=\] to perform these steps: 1. If |decoded outputs| is not empty, run the \[=Output VideoFrame=\] algorithm with |decoded outputs|. 2. Remove |promise| from {{VideoDecoder/\[\[pending flush promises\]\]}}. 3. Resolve |promise|. 2. Return \`"processed"\`.
-   */
+  // [SPEC] 1. If state is not "configured", reject with InvalidStateError
+  if (!state_.is_configured()) {
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+    Napi::Error error = Napi::Error::New(env,
+        "InvalidStateError: flush called on " + std::string(state_.to_string()) + " decoder");
+    error.Set("name", Napi::String::New(env, "InvalidStateError"));
+    deferred.Reject(error.Value());
+    return deferred.Promise();
+  }
 
-  // TODO(impl): Implement method logic
-  return env.Undefined();
+  // [SPEC] 2. Set key chunk required to true
+  keyChunkRequired_ = true;
+
+  // [SPEC] 3. Create promise
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  // Lock for codec operations
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (!codecCtx_) {
+    deferred.Resolve(env.Undefined());
+    return deferred.Promise();
+  }
+
+  // Drain the decoder by sending a null packet
+  int ret = avcodec_send_packet(codecCtx_.get(), nullptr);
+  if (ret < 0 && ret != AVERROR_EOF) {
+    Napi::Error error = Napi::Error::New(env,
+        "EncodingError: Failed to flush decoder");
+    error.Set("name", Napi::String::New(env, "EncodingError"));
+    deferred.Reject(error.Value());
+    return deferred.Promise();
+  }
+
+  // Receive all remaining frames
+  raii::AVFramePtr frame = raii::make_av_frame();
+  if (!frame) {
+    Napi::Error error = Napi::Error::New(env,
+        "EncodingError: Failed to allocate frame");
+    error.Set("name", Napi::String::New(env, "EncodingError"));
+    deferred.Reject(error.Value());
+    return deferred.Promise();
+  }
+
+  while (true) {
+    ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
+    if (ret == AVERROR_EOF) {
+      break;  // All frames drained
+    }
+    if (ret == AVERROR(EAGAIN)) {
+      break;  // Should not happen after null packet, but handle it
+    }
+    if (ret < 0) {
+      Napi::Error error = Napi::Error::New(env,
+          "EncodingError: Error receiving frame during flush");
+      error.Set("name", Napi::String::New(env, "EncodingError"));
+      deferred.Reject(error.Value());
+      return deferred.Promise();
+    }
+
+    // Output the frame via callback
+    if (!outputCallback_.IsEmpty()) {
+      Napi::Object jsFrame = VideoFrame::CreateFromAVFrame(env, frame.get());
+      if (!jsFrame.IsEmpty()) {
+        outputCallback_.Call({jsFrame});
+      }
+    }
+
+    // Reset frame for next iteration
+    av_frame_unref(frame.get());
+  }
+
+  // Resolve the promise
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
 }
 
 Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * Immediately resets all state including configuration, \[=control messages=\] in the \[=control message queue=\], and all pending callbacks. When invoked, run the \[=Reset VideoDecoder=\] algorithm with an {{AbortError}} {{DOMException}}.
-   */
+  // [SPEC] If state is "closed", throw InvalidStateError
+  if (state_.is_closed()) {
+    errors::throw_invalid_state_error(env, "reset called on closed decoder");
+    return env.Undefined();
+  }
 
-  // TODO(impl): Implement method logic
+  // Lock for codec operations
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Clear decode queue
+  while (!decodeQueue_.empty()) {
+    decodeQueue_.pop();
+  }
+  decodeQueueSize_.store(0, std::memory_order_release);
+
+  // Flush the codec buffers (discard all pending frames)
+  if (codecCtx_) {
+    avcodec_flush_buffers(codecCtx_.get());
+  }
+
+  // Reset key chunk requirement
+  keyChunkRequired_ = true;
+
+  // Transition back to unconfigured state
+  // Release codec context so configure() must be called again
+  codecCtx_.reset();
+
+  // Transition state to unconfigured
+  state_.transition(raii::AtomicCodecState::State::Configured,
+                    raii::AtomicCodecState::State::Unconfigured);
+
   return env.Undefined();
 }
 
@@ -173,13 +487,58 @@ Napi::Value VideoDecoder::Close(const Napi::CallbackInfo& info) {
 Napi::Value VideoDecoder::IsConfigSupported(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * Returns a promise indicating whether the provided |config| is supported by the User Agent. NOTE: The returned {{VideoDecoderSupport}} {{VideoDecoderSupport/config}} will contain only the dictionary members that User Agent recognized. Unrecognized dictionary members will be ignored. Authors can detect unrecognized dictionary members by comparing {{VideoDecoderSupport/config}} to their provided |config|. When invoked, run these steps: 1. If |config| is not a valid VideoDecoderConfig, return \[=a promise rejected with=\] {{TypeError}}. 2. Let |p| be a new Promise. 3. Let |checkSupportQueue| be the result of starting a new parallel queue. 4. Enqueue the following steps to |checkSupportQueue|: 1. Let |supported| be the result of running the Check Configuration Support algorithm with |config|. 2. \[=Queue a task=\] to run the following steps: 1. Let |decoderSupport| be a newly constructed {{VideoDecoderSupport}}, initialized as follows: 1. Set {{VideoDecoderSupport/config}} to the result of running the Clone Configuration algorithm with |config|. 2. Set {{VideoDecoderSupport/supported}} to |supported|. 2. Resolve |p| with |decoderSupport|. 5. Return |p|.
-   */
+  // [SPEC] 1. If config is not a valid VideoDecoderConfig, reject with TypeError
+  if (info.Length() < 1 || !info[0].IsObject()) {
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+    deferred.Reject(Napi::TypeError::New(env, "VideoDecoderConfig is required").Value());
+    return deferred.Promise();
+  }
 
-  // TODO(impl): Implement method logic
-  return env.Undefined();
+  Napi::Object config = info[0].As<Napi::Object>();
+
+  // Required: codec string
+  if (!config.Has("codec") || !config.Get("codec").IsString()) {
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+    deferred.Reject(Napi::TypeError::New(env, "codec is required and must be a string").Value());
+    return deferred.Promise();
+  }
+
+  std::string codec_string = config.Get("codec").As<Napi::String>().Utf8Value();
+
+  // [SPEC] 2. Create promise
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  // Check if codec is supported
+  bool supported = IsCodecSupported(codec_string);
+
+  // [SPEC] Create VideoDecoderSupport object
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("supported", Napi::Boolean::New(env, supported));
+
+  // Clone the config (only recognized members)
+  Napi::Object clonedConfig = Napi::Object::New(env);
+  clonedConfig.Set("codec", config.Get("codec"));
+
+  if (config.Has("codedWidth") && config.Get("codedWidth").IsNumber()) {
+    clonedConfig.Set("codedWidth", config.Get("codedWidth"));
+  }
+  if (config.Has("codedHeight") && config.Get("codedHeight").IsNumber()) {
+    clonedConfig.Set("codedHeight", config.Get("codedHeight"));
+  }
+  if (config.Has("description")) {
+    clonedConfig.Set("description", config.Get("description"));
+  }
+  if (config.Has("hardwareAcceleration") && config.Get("hardwareAcceleration").IsString()) {
+    clonedConfig.Set("hardwareAcceleration", config.Get("hardwareAcceleration"));
+  }
+  if (config.Has("optimizeForLatency") && config.Get("optimizeForLatency").IsBoolean()) {
+    clonedConfig.Set("optimizeForLatency", config.Get("optimizeForLatency"));
+  }
+
+  result.Set("config", clonedConfig);
+
+  deferred.Resolve(result);
+  return deferred.Promise();
 }
 
 }  // namespace webcodecs

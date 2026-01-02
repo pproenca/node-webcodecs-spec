@@ -45,6 +45,11 @@ set(TEST_SOURCES
     test_frame_pool.cpp
     test_packet_pool.cpp
     test_ffmpeg_raii.cpp
+    test_buffer_utils.cpp
+    test_security_issues.cpp
+    test_video_decoder_spec.cpp
+    # Source files needed for testing
+    ${CMAKE_SOURCE_DIR}/../../src/shared/codec_registry.cpp
 )
 
 add_executable(webcodecs_tests ${TEST_SOURCES})
@@ -62,6 +67,7 @@ target_link_directories(webcodecs_tests PRIVATE
 target_link_libraries(webcodecs_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
+    GTest::gmock
     ${FFMPEG_LINK_LIBRARIES}
 )
 

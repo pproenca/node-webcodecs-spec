@@ -30,8 +30,10 @@ public:
   // Access underlying packet (for decoders)
   const AVPacket* packet() const { return packet_.get(); }
 
-private:
+  // Public for VideoDecoder access
   static Napi::FunctionReference constructor;
+
+private:
 
   // --- Typed Storage (NO void*) ---
   raii::AVPacketPtr packet_;           // Owns encoded data

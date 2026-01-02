@@ -41,6 +41,9 @@ private:
   std::queue<raii::AVPacketPtr> decodeQueue_;
   std::atomic<uint32_t> decodeQueueSize_{0};
 
+  // --- Key Chunk Tracking ---
+  bool keyChunkRequired_{true};
+
   // --- Callbacks ---
   Napi::FunctionReference outputCallback_;
   Napi::FunctionReference errorCallback_;

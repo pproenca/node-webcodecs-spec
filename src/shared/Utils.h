@@ -1,5 +1,10 @@
 #pragma once
+
+// Only include napi.h when not in pure C++ testing mode
+#ifndef WEBCODECS_TESTING
 #include <napi.h>
+#endif
+
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -7,14 +12,9 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "../ffmpeg_raii.h"
 
-// FFmpeg headers are required here because AsyncDecodeContext uses them
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/frame.h>
-#include <libswscale/swscale.h>
-}
+// Note: FFmpeg headers are included via ffmpeg_raii.h
 
 namespace webcodecs {
 
@@ -40,7 +40,17 @@ namespace webcodecs {
  * 5. Free codec context (after worker is done using it)
  */
 struct AsyncDecodeContext {
+#ifndef WEBCODECS_TESTING
   using TSFN = Napi::TypedThreadSafeFunction<AsyncDecodeContext, AVFrame*>;
+#else
+  // Mock TSFN for testing
+  struct MockTSFN {
+    bool released = false;
+    void Release() { released = true; }
+    explicit operator bool() const { return !released; }
+  };
+  using TSFN = MockTSFN;
+#endif
 
   // Thread synchronization
   mutable std::mutex codecMutex;
@@ -50,8 +60,8 @@ struct AsyncDecodeContext {
   // TSFN for callbacks to JS main thread
   TSFN tsfn;
 
-  // FFmpeg codec context (protected by codecMutex)
-  AVCodecContext* codecCtx = nullptr;
+  // FFmpeg codec context (RAII managed, protected by codecMutex)
+  raii::AVCodecContextPtr codecCtx;
 
   // Worker thread
   std::thread workerThread;
@@ -81,11 +91,7 @@ struct AsyncDecodeContext {
       tsfn.Release();
     }
 
-    // 5. Free codec context (worker is done, safe to free)
-    if (codecCtx) {
-      avcodec_free_context(&codecCtx);
-      codecCtx = nullptr;
-    }
+    // 5. codecCtx is freed automatically by RAII destructor
   }
 
   /**
@@ -108,6 +114,9 @@ struct AsyncDecodeContext {
 }  // namespace webcodecs
 
 // --- ENGINEERING EXCELLENCE: Guardrails ---
+// These macros and classes require NAPI and are not available in pure C++ tests
+
+#ifndef WEBCODECS_TESTING
 
 // Macro: Ensure condition is met or throw JS Error
 #define ENSURE(env, condition, message) \
@@ -142,6 +151,8 @@ public:
         Callback().Call({e.Value()});
     }
 };
+
+#endif  // WEBCODECS_TESTING
 
 // --- RAII HANDLE WRAPPER ---
 // Template for automatic cleanup of native handles
@@ -194,6 +205,9 @@ private:
 };
 
 // --- TYPE CONVERSION HELPERS ---
+// These require NAPI and are not available in pure C++ tests
+
+#ifndef WEBCODECS_TESTING
 
 // JS -> Native
 inline std::string ToStdString(const Napi::Value& value) {
@@ -232,6 +246,8 @@ inline Napi::Number FromDouble(Napi::Env env, double value) {
 inline Napi::Boolean FromBool(Napi::Env env, bool value) {
     return Napi::Boolean::New(env, value);
 }
+
+#endif  // WEBCODECS_TESTING
 
 // --- COMMON TYPES ---
 

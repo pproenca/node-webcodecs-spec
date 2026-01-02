@@ -40,29 +40,51 @@ VideoEncoder::~VideoEncoder() {
 }
 
 void VideoEncoder::Release() {
-  // TODO(impl): Free handle_ and native resources
-  handle_ = nullptr;
+  // RAII cleanup - codecCtx_ is automatically freed
+  // Clear the encode queue
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    while (!encodeQueue_.empty()) {
+      encodeQueue_.pop();
+    }
+  }
+  encodeQueueSize_.store(0, std::memory_order_release);
+
+  // Transition to closed state
+  state_.close();
+
+  // codecCtx_ is freed automatically by RAII destructor
+  codecCtx_.reset();
 }
 
 // --- Attributes ---
 
 Napi::Value VideoEncoder::GetState(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return state
-  return info.Env().Null();
+  return Napi::String::New(info.Env(), state_.to_string());
 }
 
 Napi::Value VideoEncoder::GetEncodeQueueSize(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return encodeQueueSize
-  return info.Env().Null();
+  return Napi::Number::New(info.Env(),
+      encodeQueueSize_.load(std::memory_order_acquire));
 }
 
 Napi::Value VideoEncoder::GetOndequeue(const Napi::CallbackInfo& info) {
-  // TODO(impl): Return ondequeue
-  return info.Env().Null();
+  if (ondequeueCallback_.IsEmpty()) {
+    return info.Env().Null();
+  }
+  return ondequeueCallback_.Value();
 }
 
 void VideoEncoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Value& value) {
-  // TODO(impl): Set ondequeue
+  Napi::Env env = info.Env();
+  if (value.IsNull() || value.IsUndefined()) {
+    ondequeueCallback_.Reset();
+  } else if (value.IsFunction()) {
+    ondequeueCallback_.Reset(value.As<Napi::Function>(), 1);
+  } else {
+    Napi::TypeError::New(env, "ondequeue must be a function or null")
+        .ThrowAsJavaScriptException();
+  }
 }
 
 
