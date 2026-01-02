@@ -49,7 +49,7 @@ class TestLatch {
 };
 
 #include "../../src/ffmpeg_raii.h"
-#include "../../src/shared/Utils.h"
+#include "../../src/shared/utils.h"
 
 using webcodecs::AsyncDecodeContext;
 using webcodecs::raii::AtomicCodecState;
@@ -237,17 +237,17 @@ TEST(SecurityIssuesTest, WorkerThreadJoinedBeforeCodecFreed) {
   {
     // Using the fixed AsyncDecodeContext from Utils.h
     AsyncDecodeContext ctx;
-    ctx.codecCtx = MakeAvCodecContext(codec);
-    ASSERT_NE(ctx.codecCtx, nullptr);
+    ctx.codec_ctx = MakeAvCodecContext(codec);
+    ASSERT_NE(ctx.codec_ctx, nullptr);
 
     // Start worker that accesses codec
-    ctx.workerThread = std::thread([&ctx, &codec_accesses, &worker_started, &worker_finished]() {
+    ctx.worker_thread = std::thread([&ctx, &codec_accesses, &worker_started, &worker_finished]() {
       worker_started.store(true, std::memory_order_release);
 
       while (!ctx.ShouldExit()) {
         // Simulate codec access under lock
-        auto lock = ctx.lock();
-        if (ctx.codecCtx) {
+        auto lock = ctx.Lock();
+        if (ctx.codec_ctx) {
           codec_accesses.fetch_add(1, std::memory_order_relaxed);
         }
         // Brief work simulation
@@ -290,16 +290,16 @@ TEST(SecurityIssuesTest, ConcurrentCloseWhileWorkerRunning) {
 
   for (int iter = 0; iter < 10; iter++) {
     AsyncDecodeContext ctx;
-    ctx.codecCtx = MakeAvCodecContext(codec);
+    ctx.codec_ctx = MakeAvCodecContext(codec);
     std::atomic<bool> worker_started{false};
 
-    ctx.workerThread = std::thread([&ctx, &worker_started]() {
+    ctx.worker_thread = std::thread([&ctx, &worker_started]() {
       worker_started.store(true);
       while (!ctx.ShouldExit()) {
-        auto lock = ctx.lock();
-        if (ctx.codecCtx) {
+        auto lock = ctx.Lock();
+        if (ctx.codec_ctx) {
           // Access codec (would crash if freed prematurely)
-          [[maybe_unused]] auto id = ctx.codecCtx->codec_id;
+          [[maybe_unused]] auto id = ctx.codec_ctx->codec_id;
         }
         std::this_thread::sleep_for(1ms);
       }
@@ -449,9 +449,9 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
   struct OrderTrackingContext {
     std::vector<std::string>& order;
     std::mutex& mutex;
-    std::atomic<bool> shouldExit{false};
-    std::thread workerThread;
-    AVCodecContextPtr codecCtx;
+    std::atomic<bool> should_exit{false};
+    std::thread worker_thread;
+    AVCodecContextPtr codec_ctx;
 
     OrderTrackingContext(std::vector<std::string>& o, std::mutex& m) : order(o), mutex(m) {}
 
@@ -460,21 +460,21 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
         std::lock_guard<std::mutex> lock(mutex);
         order.push_back("1_signal_exit");
       }
-      shouldExit.store(true);
+      should_exit.store(true);
 
       {
         std::lock_guard<std::mutex> lock(mutex);
         order.push_back("2_join_thread");
       }
-      if (workerThread.joinable()) {
-        workerThread.join();
+      if (worker_thread.joinable()) {
+        worker_thread.join();
       }
 
       {
         std::lock_guard<std::mutex> lock(mutex);
         order.push_back("3_free_codec");
       }
-      codecCtx.reset();
+      codec_ctx.reset();
 
       {
         std::lock_guard<std::mutex> lock(mutex);
@@ -490,10 +490,10 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
 
   {
     OrderTrackingContext ctx(cleanup_order, order_mutex);
-    ctx.codecCtx = MakeAvCodecContext(codec);
+    ctx.codec_ctx = MakeAvCodecContext(codec);
 
-    ctx.workerThread = std::thread([&ctx, &cleanup_order, &order_mutex]() {
-      while (!ctx.shouldExit.load()) {
+    ctx.worker_thread = std::thread([&ctx, &cleanup_order, &order_mutex]() {
+      while (!ctx.should_exit.load()) {
         std::this_thread::sleep_for(1ms);
       }
       {
@@ -789,10 +789,10 @@ TEST(SecurityIssuesTest, StressTestManyDecoderContexts) {
 
   for (int i = 0; i < 20; i++) {
     AsyncDecodeContext ctx;
-    ctx.codecCtx = MakeAvCodecContext(codec);
+    ctx.codec_ctx = MakeAvCodecContext(codec);
 
     std::atomic<bool> started{false};
-    ctx.workerThread = std::thread([&ctx, &started]() {
+    ctx.worker_thread = std::thread([&ctx, &started]() {
       started.store(true);
       while (!ctx.ShouldExit()) {
         std::this_thread::sleep_for(1ms);

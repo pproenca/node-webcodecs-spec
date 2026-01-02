@@ -1,7 +1,7 @@
 #pragma once
 #include <napi.h>
 #include <atomic>
-#include "shared/Utils.h"
+#include "shared/utils.h"
 #include "ffmpeg_raii.h"
 
 namespace webcodecs {

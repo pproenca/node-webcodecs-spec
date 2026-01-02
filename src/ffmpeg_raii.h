@@ -266,13 +266,13 @@ struct SafeAsyncContext {
   // Thread synchronization
   mutable std::mutex mutex;
   std::condition_variable cv;
-  std::atomic<bool> shouldExit{false};
+  std::atomic<bool> should_exit{false};
 
   // FFmpeg resources (RAII managed)
-  AVCodecContextPtr codecCtx;
+  AVCodecContextPtr codec_ctx;
 
   // Worker thread
-  std::thread workerThread;
+  std::thread worker_thread;
 
   // Thread-safe function for JS callbacks
   TSFN tsfn;
@@ -287,12 +287,12 @@ struct SafeAsyncContext {
 
   ~SafeAsyncContext() {
     // 1. Signal worker to exit
-    shouldExit.store(true, std::memory_order_release);
+    should_exit.store(true, std::memory_order_release);
     cv.notify_all();
 
     // 2. Join worker thread FIRST (before releasing any resources)
-    if (workerThread.joinable()) {
-      workerThread.join();
+    if (worker_thread.joinable()) {
+      worker_thread.join();
     }
 
     // 3. Release TSFN (after worker is done)
@@ -300,19 +300,19 @@ struct SafeAsyncContext {
       tsfn.Release();
     }
 
-    // 4. codecCtx is freed automatically by RAII
+    // 4. codec_ctx is freed automatically by RAII
   }
 
   /**
    * Thread-safe check if context should exit.
    */
-  bool ShouldExit() const { return shouldExit.load(std::memory_order_acquire); }
+  bool ShouldExit() const { return should_exit.load(std::memory_order_acquire); }
 
   /**
    * Lock the mutex for codec operations.
    * Use with std::lock_guard or std::unique_lock.
    */
-  std::unique_lock<std::mutex> lock() const { return std::unique_lock<std::mutex>(mutex); }
+  std::unique_lock<std::mutex> Lock() const { return std::unique_lock<std::mutex>(mutex); }
 };
 
 // =============================================================================

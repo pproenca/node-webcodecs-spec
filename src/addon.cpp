@@ -1,5 +1,5 @@
 #include <napi.h>
-#include "shared/Utils.h"  // Brings in FFmpeg headers and AsyncDecodeContext
+#include "shared/utils.h"  // Brings in FFmpeg headers and AsyncDecodeContext
 
 // WebCodecs class headers
 #include "VideoDecoder.h"

@@ -28,8 +28,8 @@ namespace webcodecs {
  * - Worker thread for non-blocking decode
  *
  * Thread Safety:
- * - shouldExit is atomic for lock-free shutdown signaling
- * - codecMutex protects all codec operations
+ * - should_exit is atomic for lock-free shutdown signaling
+ * - codec_mutex protects all codec operations
  * - Destructor ordering: join thread -> release TSFN -> free codec
  *
  * CRITICAL: The destructor order is essential:
@@ -53,18 +53,18 @@ struct AsyncDecodeContext {
 #endif
 
   // Thread synchronization
-  mutable std::mutex codecMutex;
+  mutable std::mutex codec_mutex;
   std::condition_variable cv;
-  std::atomic<bool> shouldExit{false};
+  std::atomic<bool> should_exit{false};
 
   // TSFN for callbacks to JS main thread
   TSFN tsfn;
 
-  // FFmpeg codec context (RAII managed, protected by codecMutex)
-  raii::AVCodecContextPtr codecCtx;
+  // FFmpeg codec context (RAII managed, protected by codec_mutex)
+  raii::AVCodecContextPtr codec_ctx;
 
   // Worker thread
-  std::thread workerThread;
+  std::thread worker_thread;
 
   AsyncDecodeContext() = default;
 
@@ -76,14 +76,14 @@ struct AsyncDecodeContext {
 
   ~AsyncDecodeContext() {
     // 1. Signal worker to exit (atomic, no lock needed)
-    shouldExit.store(true, std::memory_order_release);
+    should_exit.store(true, std::memory_order_release);
 
     // 2. Wake any threads waiting on the condition variable
     cv.notify_all();
 
     // 3. Join worker thread FIRST (before releasing any resources it uses)
-    if (workerThread.joinable()) {
-      workerThread.join();
+    if (worker_thread.joinable()) {
+      worker_thread.join();
     }
 
     // 4. Release TSFN (worker is done, safe to release)
@@ -91,20 +91,20 @@ struct AsyncDecodeContext {
       tsfn.Release();
     }
 
-    // 5. codecCtx is freed automatically by RAII destructor
+    // 5. codec_ctx is freed automatically by RAII destructor
   }
 
   /**
    * Thread-safe check if context should exit.
    * Use this in worker loops.
    */
-  bool ShouldExit() const { return shouldExit.load(std::memory_order_acquire); }
+  bool ShouldExit() const { return should_exit.load(std::memory_order_acquire); }
 
   /**
    * Lock the codec mutex for thread-safe operations.
    * Use with std::lock_guard or std::unique_lock.
    */
-  std::unique_lock<std::mutex> lock() const { return std::unique_lock<std::mutex>(codecMutex); }
+  std::unique_lock<std::mutex> Lock() const { return std::unique_lock<std::mutex>(codec_mutex); }
 };
 
 }  // namespace webcodecs

@@ -1,7 +1,7 @@
 #pragma once
 #include <napi.h>
 #include <queue>
-#include "shared/Utils.h"
+#include "shared/utils.h"
 #include "ffmpeg_raii.h"
 
 namespace webcodecs {

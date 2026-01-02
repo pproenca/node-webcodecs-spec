@@ -424,7 +424,7 @@ TEST(SafeAsyncContextTest, ShouldExitSignaling) {
   SafeAsyncContext<MockTSFN> ctx;
   EXPECT_FALSE(ctx.ShouldExit());
 
-  ctx.shouldExit.store(true, std::memory_order_release);
+  ctx.should_exit.store(true, std::memory_order_release);
   EXPECT_TRUE(ctx.ShouldExit());
 }
 
@@ -446,7 +446,7 @@ TEST(SafeAsyncContextTest, WorkerThreadJoinedOnDestruction) {
   {
     SafeAsyncContext<MockTSFN> ctx;
 
-    ctx.workerThread = std::thread([&ctx, &worker_started, &worker_exited]() {
+    ctx.worker_thread = std::thread([&ctx, &worker_started, &worker_exited]() {
       worker_started.store(true, std::memory_order_release);
       while (!ctx.ShouldExit()) {
         std::this_thread::sleep_for(1ms);
@@ -471,7 +471,7 @@ TEST(SafeAsyncContextTest, LockAcquiresMutex) {
   std::atomic<bool> waiting{false};
 
   std::thread t1([&ctx, &locked, &waiting]() {
-    auto lock = ctx.lock();
+    auto lock = ctx.Lock();
     locked.store(true, std::memory_order_release);
     while (!waiting.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(1ms);
@@ -486,7 +486,7 @@ TEST(SafeAsyncContextTest, LockAcquiresMutex) {
 
   std::atomic<bool> t2_acquired{false};
   std::thread t2([&ctx, &t2_acquired]() {
-    auto lock = ctx.lock();  // Should block
+    auto lock = ctx.Lock();  // Should block
     t2_acquired.store(true, std::memory_order_release);
   });
 

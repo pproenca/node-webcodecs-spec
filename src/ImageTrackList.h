@@ -1,6 +1,6 @@
 #pragma once
 #include <napi.h>
-#include "shared/Utils.h"
+#include "shared/utils.h"
 
 namespace webcodecs {
 
