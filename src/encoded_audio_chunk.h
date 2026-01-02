@@ -29,8 +29,10 @@ class EncodedAudioChunk : public Napi::ObjectWrap<EncodedAudioChunk> {
   // Access underlying packet (for decoders)
   const AVPacket* packet() const { return packet_.get(); }
 
- private:
+  // Access constructor for InstanceOf checks
   static Napi::FunctionReference constructor;
+
+ private:
 
   // --- Typed Storage (NO void*) ---
   raii::AVPacketPtr packet_;         // Owns encoded data
