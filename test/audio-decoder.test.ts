@@ -1,11 +1,11 @@
-// test/video-decoder.test.ts
+// test/audio-decoder.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
-import { VideoDecoder } from '@pproenca/node-webcodecs';
+import { AudioDecoder } from '@pproenca/node-webcodecs';
 
-describe('VideoDecoder', () => {
+describe('AudioDecoder', () => {
   describe('Constructor', () => {
-    it('should create a VideoDecoder instance', () => {
-      const decoder = new VideoDecoder({
+    it('should create an AudioDecoder instance', () => {
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -16,30 +16,30 @@ describe('VideoDecoder', () => {
     it('should require output callback', () => {
       expect(() => {
         // @ts-ignore - Testing missing required field
-        new VideoDecoder({ error: () => {} });
+        new AudioDecoder({ error: () => {} });
       }).toThrow();
     });
 
     it('should require error callback', () => {
       expect(() => {
         // @ts-ignore - Testing missing required field
-        new VideoDecoder({ output: () => {} });
+        new AudioDecoder({ output: () => {} });
       }).toThrow();
     });
 
     it('should require init object', () => {
       expect(() => {
         // @ts-ignore - Testing missing required field
-        new VideoDecoder();
+        new AudioDecoder();
       }).toThrow();
     });
   });
 
   describe('State Machine', () => {
-    let decoder: InstanceType<typeof VideoDecoder>;
+    let decoder: InstanceType<typeof AudioDecoder>;
 
     beforeEach(() => {
-      decoder = new VideoDecoder({
+      decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -60,7 +60,7 @@ describe('VideoDecoder', () => {
 
   describe('close()', () => {
     it('should transition to closed state', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -69,7 +69,7 @@ describe('VideoDecoder', () => {
     });
 
     it('should be idempotent', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -81,18 +81,18 @@ describe('VideoDecoder', () => {
 
   describe('configure()', () => {
     it('should throw on closed decoder', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
       decoder.close();
       expect(() => {
-        decoder.configure({ codec: 'avc1.42E01E' });
+        decoder.configure({ codec: 'opus' });
       }).toThrow(/closed/i);
     });
 
     it('should throw on missing codec', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -103,7 +103,7 @@ describe('VideoDecoder', () => {
     });
 
     it('should throw on unsupported codec', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -111,20 +111,11 @@ describe('VideoDecoder', () => {
         decoder.configure({ codec: 'not-a-real-codec' });
       }).toThrow(/unsupported|not supported/i);
     });
-
-    it('should transition to configured state on valid config', () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-      decoder.configure({ codec: 'avc1.42E01E' });
-      expect(decoder.state).toBe('configured');
-    });
   });
 
   describe('decode()', () => {
     it('should throw on unconfigured decoder', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -134,7 +125,7 @@ describe('VideoDecoder', () => {
     });
 
     it('should throw on closed decoder', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -143,22 +134,11 @@ describe('VideoDecoder', () => {
         decoder.decode({ type: 'key', timestamp: 0, data: new Uint8Array(10) });
       }).toThrow(/closed/i);
     });
-
-    it('should require key frame first after configure', () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-      decoder.configure({ codec: 'avc1.42E01E' });
-      expect(() => {
-        decoder.decode({ type: 'delta', timestamp: 0, data: new Uint8Array(10) });
-      }).toThrow(/key/i);
-    });
   });
 
   describe('flush()', () => {
     it('should return a rejected promise on unconfigured decoder', async () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -166,30 +146,18 @@ describe('VideoDecoder', () => {
     });
 
     it('should return a rejected promise on closed decoder', async () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
       decoder.close();
       await expect(decoder.flush()).rejects.toThrow(/closed/i);
     });
-
-    it('should return a promise on configured decoder', async () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-      decoder.configure({ codec: 'avc1.42E01E' });
-      const promise = decoder.flush();
-      expect(promise).toBeInstanceOf(Promise);
-      // Flush should resolve since no decode calls were made
-      await expect(promise).resolves.toBeUndefined();
-    });
   });
 
   describe('reset()', () => {
     it('should throw on closed decoder', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -198,40 +166,19 @@ describe('VideoDecoder', () => {
         decoder.reset();
       }).toThrow(/closed/i);
     });
-
-    it('should transition from configured to unconfigured', () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-      decoder.configure({ codec: 'avc1.42E01E' });
-      expect(decoder.state).toBe('configured');
-      decoder.reset();
-      expect(decoder.state).toBe('unconfigured');
-    });
-
-    it('should reset decodeQueueSize to 0', () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-      decoder.configure({ codec: 'avc1.42E01E' });
-      decoder.reset();
-      expect(decoder.decodeQueueSize).toBe(0);
-    });
   });
 
   describe('isConfigSupported()', () => {
     it('should return a promise with supported=true for valid codec', async () => {
-      const result = await VideoDecoder.isConfigSupported({ codec: 'avc1.42E01E' });
+      const result = await AudioDecoder.isConfigSupported({ codec: 'opus' });
       expect(result).toBeDefined();
       expect(result.supported).toBe(true);
       expect(result.config).toBeDefined();
-      expect(result.config.codec).toBe('avc1.42E01E');
+      expect(result.config.codec).toBe('opus');
     });
 
     it('should return a promise with supported=false for invalid codec', async () => {
-      const result = await VideoDecoder.isConfigSupported({ codec: 'not-a-codec' });
+      const result = await AudioDecoder.isConfigSupported({ codec: 'not-a-codec' });
       expect(result).toBeDefined();
       expect(result.supported).toBe(false);
     });
@@ -239,30 +186,30 @@ describe('VideoDecoder', () => {
     it('should reject on missing codec', async () => {
       await expect(
         // @ts-ignore - Testing missing required field
-        VideoDecoder.isConfigSupported({})
+        AudioDecoder.isConfigSupported({})
       ).rejects.toThrow();
     });
 
-    it('should clone config with codedWidth', async () => {
-      const result = await VideoDecoder.isConfigSupported({
-        codec: 'avc1.42E01E',
-        codedWidth: 1920,
+    it('should clone config with sampleRate', async () => {
+      const result = await AudioDecoder.isConfigSupported({
+        codec: 'opus',
+        sampleRate: 48000,
       });
-      expect(result.config.codedWidth).toBe(1920);
+      expect(result.config.sampleRate).toBe(48000);
     });
 
-    it('should clone config with codedHeight', async () => {
-      const result = await VideoDecoder.isConfigSupported({
-        codec: 'avc1.42E01E',
-        codedHeight: 1080,
+    it('should clone config with numberOfChannels', async () => {
+      const result = await AudioDecoder.isConfigSupported({
+        codec: 'opus',
+        numberOfChannels: 2,
       });
-      expect(result.config.codedHeight).toBe(1080);
+      expect(result.config.numberOfChannels).toBe(2);
     });
   });
 
   describe('ondequeue', () => {
     it('should be settable and gettable', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
@@ -272,63 +219,13 @@ describe('VideoDecoder', () => {
     });
 
     it('should be clearable with null', () => {
-      const decoder = new VideoDecoder({
+      const decoder = new AudioDecoder({
         output: () => {},
         error: () => {},
       });
       decoder.ondequeue = () => {};
       decoder.ondequeue = null;
       expect(decoder.ondequeue).toBeNull();
-    });
-  });
-
-  describe('Integration: configure → flush → reset cycle', () => {
-    it('should complete configure → flush → reset cycle', async () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-
-      // Initial state
-      expect(decoder.state).toBe('unconfigured');
-
-      // Configure
-      decoder.configure({ codec: 'avc1.42E01E' });
-      expect(decoder.state).toBe('configured');
-
-      // Flush (should resolve immediately since no decode calls)
-      await decoder.flush();
-      expect(decoder.state).toBe('configured');
-
-      // Reset
-      decoder.reset();
-      expect(decoder.state).toBe('unconfigured');
-
-      // Can reconfigure after reset
-      decoder.configure({ codec: 'vp8' });
-      expect(decoder.state).toBe('configured');
-
-      // Close
-      decoder.close();
-      expect(decoder.state).toBe('closed');
-    });
-
-    it('should reject pending flush on reset', async () => {
-      const decoder = new VideoDecoder({
-        output: () => {},
-        error: () => {},
-      });
-
-      decoder.configure({ codec: 'avc1.42E01E' });
-
-      // Start flush
-      const flushPromise = decoder.flush();
-
-      // Immediately reset - this should reject the flush
-      decoder.reset();
-
-      // Flush should reject with AbortError
-      await expect(flushPromise).rejects.toThrow(/abort/i);
     });
   });
 });
