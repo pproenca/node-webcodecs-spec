@@ -45,15 +45,24 @@ namespace webcodecs {
  *
  * @tparam Context The context type passed to the TSFN callback
  * @tparam DataType The data type passed through the TSFN
+ * @tparam CallJs Optional CallJs function pointer (compile-time callback)
  */
-template <typename Context, typename DataType>
+template <typename Context, typename DataType,
+          void (*CallJs)(Napi::Env, Napi::Function, Context*, DataType*) = nullptr>
 class SafeThreadSafeFunction {
  public:
-  using TSFN = Napi::TypedThreadSafeFunction<Context, DataType>;
+  using TSFN = Napi::TypedThreadSafeFunction<Context, DataType, CallJs>;
 
   SafeThreadSafeFunction() = default;
 
-  ~SafeThreadSafeFunction() { Release(); }
+  ~SafeThreadSafeFunction() {
+    // Only release in destructor if not unref'd.
+    // If Unref() was called, Node.js will clean up the TSFN during shutdown.
+    // Calling Release() here after Unref() during process exit can cause crashes.
+    if (!unrefed_) {
+      Release();
+    }
+  }
 
   // Non-copyable, non-movable (wraps non-copyable TSFN)
   SafeThreadSafeFunction(const SafeThreadSafeFunction&) = delete;
@@ -116,10 +125,14 @@ class SafeThreadSafeFunction {
    * Release the TSFN.
    * Idempotent - safe to call multiple times.
    * After this call, all future call() operations will return false.
+   *
+   * Note: If Unref() was called, Release() becomes a no-op because
+   * Node.js will handle cleanup during process shutdown. Calling Release()
+   * after Unref() during process exit can cause crashes.
    */
   void Release() {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (initialized_ && !released_) {
+    if (initialized_ && !released_ && !unrefed_) {
       tsfn_.Release();
       released_ = true;
     }
@@ -154,11 +167,15 @@ class SafeThreadSafeFunction {
 
   /**
    * Release a reference without fully releasing the TSFN.
+   * This allows Node.js to exit even if the TSFN is still active.
+   *
+   * @param env The N-API environment
    */
-  void Unref() {
+  void Unref(Napi::Env env) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_ && !released_) {
-      tsfn_.Unref();
+      tsfn_.Unref(env);
+      unrefed_ = true;
     }
   }
 
@@ -167,6 +184,7 @@ class SafeThreadSafeFunction {
   TSFN tsfn_;
   bool initialized_{false};
   bool released_{true};  // Start as released (not initialized)
+  bool unrefed_{false};  // Track if Unref was called
 };
 
 /**
@@ -174,10 +192,11 @@ class SafeThreadSafeFunction {
  * Acquires a reference on construction, releases on destruction.
  * Useful for ensuring TSFN stays alive during async operations.
  */
-template <typename Context, typename DataType>
+template <typename Context, typename DataType,
+          void (*CallJs)(Napi::Env, Napi::Function, Context*, DataType*) = nullptr>
 class ScopedTSFNRef {
  public:
-  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType>& tsfn) : tsfn_(tsfn) { tsfn_.Acquire(); }
+  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType, CallJs>& tsfn) : tsfn_(tsfn) { tsfn_.Acquire(); }
 
   ~ScopedTSFNRef() { tsfn_.Unref(); }
 
@@ -186,33 +205,7 @@ class ScopedTSFNRef {
   ScopedTSFNRef& operator=(const ScopedTSFNRef&) = delete;
 
  private:
-  SafeThreadSafeFunction<Context, DataType>& tsfn_;
+  SafeThreadSafeFunction<Context, DataType, CallJs>& tsfn_;
 };
-
-/**
- * Helper to create a TSFN with proper error handling.
- *
- * @param env N-API environment
- * @param name Name for debugging
- * @param callback The JS function to call
- * @param context Context pointer passed to callbacks
- * @param callJs The C++ callback function
- * @return Initialized SafeThreadSafeFunction, or throws on error
- */
-template <typename Context, typename DataType, typename CallbackType>
-SafeThreadSafeFunction<Context, DataType> MakeSafeTsfn(Napi::Env env, const char* name, Napi::Function callback,
-                                                       Context* context, CallbackType callJs) {
-  SafeThreadSafeFunction<Context, DataType> safe_tsfn;
-
-  auto tsfn = Napi::TypedThreadSafeFunction<Context, DataType>::New(
-      env, callback, name,
-      0,                                           // Unlimited queue
-      1,                                           // Initial thread count
-      context, [](Napi::Env, void*, Context*) {},  // Destructor callback
-      callJs);
-
-  safe_tsfn.Init(std::move(tsfn));
-  return safe_tsfn;
-}
 
 }  // namespace webcodecs
