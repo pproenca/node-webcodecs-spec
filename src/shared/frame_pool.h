@@ -54,7 +54,7 @@ struct PoolStats {
   std::atomic<uint64_t> current_pooled{0};     // Frames in pool waiting
   std::atomic<uint64_t> peak_in_flight{0};     // High water mark
 
-  void reset() {
+  void Reset() {
     total_allocated.store(0, std::memory_order_relaxed);
     pool_hits.store(0, std::memory_order_relaxed);
     pool_misses.store(0, std::memory_order_relaxed);
@@ -64,7 +64,7 @@ struct PoolStats {
   }
 
   // Calculate hit rate (0.0 to 1.0)
-  [[nodiscard]] double hit_rate() const {
+  [[nodiscard]] double HitRate() const {
     uint64_t hits = pool_hits.load(std::memory_order_relaxed);
     uint64_t misses = pool_misses.load(std::memory_order_relaxed);
     uint64_t total = hits + misses;
@@ -142,7 +142,7 @@ class GlobalFramePool {
    * Get the global frame pool instance.
    * Thread-safe lazy initialization.
    */
-  static GlobalFramePool& instance() {
+  static GlobalFramePool& Instance() {
     static GlobalFramePool pool;
     return pool;
   }
@@ -184,7 +184,7 @@ class GlobalFramePool {
    * @param format Pixel format (AVPixelFormat)
    * @return PooledFrame smart pointer, or nullptr on allocation failure
    */
-  [[nodiscard]] PooledFrame acquire(int width, int height, int format) {
+  [[nodiscard]] PooledFrame Acquire(int width, int height, int format) {
     FramePoolKey key{width, height, format};
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -232,8 +232,8 @@ class GlobalFramePool {
    * @param align Buffer alignment (default: 32 for AVX)
    * @return PooledFrame with allocated buffers, or nullptr on failure
    */
-  [[nodiscard]] PooledFrame acquire_with_buffer(int width, int height, int format, int align = 32) {
-    auto frame = acquire(width, height, format);
+  [[nodiscard]] PooledFrame AcquireWithBuffer(int width, int height, int format, int align = 32) {
+    auto frame = Acquire(width, height, format);
     if (!frame) {
       return nullptr;
     }
@@ -262,12 +262,12 @@ class GlobalFramePool {
   /**
    * Reset statistics counters.
    */
-  void ResetStats() { stats_.reset(); }
+  void ResetStats() { stats_.Reset(); }
 
   /**
    * Get number of dimension pools.
    */
-  [[nodiscard]] size_t pool_count() const {
+  [[nodiscard]] size_t PoolCount() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return pools_.size();
   }
@@ -275,7 +275,7 @@ class GlobalFramePool {
   /**
    * Get total frames currently pooled across all dimensions.
    */
-  [[nodiscard]] size_t total_pooled() const {
+  [[nodiscard]] size_t TotalPooled() const {
     std::lock_guard<std::mutex> lock(mutex_);
     size_t total = 0;
     for (const auto& [key, pool] : pools_) {
@@ -293,7 +293,7 @@ class GlobalFramePool {
    * Frees all pooled frames and removes all dimension keys.
    * In-flight frames are unaffected.
    */
-  void clear() {
+  void Clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto& [key, pool] : pools_) {
       for (AVFrame* frame : pool) {
@@ -308,7 +308,7 @@ class GlobalFramePool {
    * Trim pools to target size.
    * Useful for reducing memory after burst periods.
    */
-  void trim(size_t target_per_pool) {
+  void Trim(size_t target_per_pool) {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto& [key, pool] : pools_) {
       while (pool.size() > target_per_pool) {
@@ -323,7 +323,7 @@ class GlobalFramePool {
  private:
   GlobalFramePool() = default;
 
-  ~GlobalFramePool() { clear(); }
+  ~GlobalFramePool() { Clear(); }
 
   // Non-copyable, non-movable
   GlobalFramePool(const GlobalFramePool&) = delete;
@@ -367,14 +367,14 @@ class GlobalFramePool {
  */
 class FramePoolHandle {
  public:
-  FramePoolHandle() : pool_(&GlobalFramePool::instance()) {}
+  FramePoolHandle() : pool_(&GlobalFramePool::Instance()) {}
 
-  [[nodiscard]] GlobalFramePool::PooledFrame acquire(int width, int height, int format) {
-    return pool_->acquire(width, height, format);
+  [[nodiscard]] GlobalFramePool::PooledFrame Acquire(int width, int height, int format) {
+    return pool_->Acquire(width, height, format);
   }
 
-  [[nodiscard]] GlobalFramePool::PooledFrame acquire_with_buffer(int width, int height, int format, int align = 32) {
-    return pool_->acquire_with_buffer(width, height, format, align);
+  [[nodiscard]] GlobalFramePool::PooledFrame AcquireWithBuffer(int width, int height, int format, int align = 32) {
+    return pool_->AcquireWithBuffer(width, height, format, align);
   }
 
   [[nodiscard]] const PoolStats& stats() const { return pool_->stats(); }

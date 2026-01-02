@@ -12,8 +12,8 @@
  * - MPEG-TS PTS wraparound (33-bit) causes jumps
  *
  * This header provides:
- * - to_microseconds(): FFmpeg PTS -> WebCodecs timestamp
- * - from_microseconds(): WebCodecs timestamp -> FFmpeg PTS
+ * - ToMicroseconds(): FFmpeg PTS -> WebCodecs timestamp
+ * - FromMicroseconds(): WebCodecs timestamp -> FFmpeg PTS
  * - PTS wraparound handling for MPEG-TS streams
  * - Frame duration calculation from framerate
  */
@@ -31,29 +31,29 @@ namespace webcodecs {
 namespace timebase {
 
 // ===========================================================================
-// CONSTANTS
+// CONSTANTS (kPascalCase per Google C++ Style Guide)
 // ===========================================================================
 
 /**
  * WebCodecs uses microseconds (1/1,000,000 second) for all timestamps.
  */
-constexpr AVRational WEBCODECS_TIMEBASE = {1, 1000000};
+constexpr AVRational kWebcodecsTimebase = {1, 1000000};
 
 /**
  * Common FFmpeg timebases.
  */
-constexpr AVRational TIMEBASE_90KHZ = {1, 90000};  // MPEG-TS, H.264
-constexpr AVRational TIMEBASE_1KHZ = {1, 1000};    // MP4, WebM
-constexpr AVRational TIMEBASE_48KHZ = {1, 48000};  // Common audio
+constexpr AVRational kTimebase90Khz = {1, 90000};  // MPEG-TS, H.264
+constexpr AVRational kTimebase1Khz = {1, 1000};    // MP4, WebM
+constexpr AVRational kTimebase48Khz = {1, 48000};  // Common audio
 
 /**
  * MPEG-TS PTS wrap threshold (2^32, half of 33-bit range).
  * Used for detecting PTS wraparound.
  */
-constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
+constexpr int64_t kMpegTsWrapThreshold = (1LL << 32);
 
 // ===========================================================================
-// CONVERSION FUNCTIONS
+// CONVERSION FUNCTIONS (PascalCase per Google C++ Style Guide)
 // ===========================================================================
 
 /**
@@ -63,11 +63,11 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param src_timebase Source timebase (from codec/stream)
  * @return Timestamp in microseconds, or std::nullopt if pts is AV_NOPTS_VALUE
  */
-[[nodiscard]] inline std::optional<int64_t> to_microseconds(int64_t pts, AVRational src_timebase) {
+[[nodiscard]] inline std::optional<int64_t> ToMicroseconds(int64_t pts, AVRational src_timebase) {
   if (pts == AV_NOPTS_VALUE) {
     return std::nullopt;
   }
-  return av_rescale_q(pts, src_timebase, WEBCODECS_TIMEBASE);
+  return av_rescale_q(pts, src_timebase, kWebcodecsTimebase);
 }
 
 /**
@@ -78,11 +78,11 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param default_value Value to return if pts is AV_NOPTS_VALUE
  * @return Timestamp in microseconds
  */
-[[nodiscard]] inline int64_t to_microseconds_or(int64_t pts, AVRational src_timebase, int64_t default_value) {
+[[nodiscard]] inline int64_t ToMicrosecondsOr(int64_t pts, AVRational src_timebase, int64_t default_value) {
   if (pts == AV_NOPTS_VALUE) {
     return default_value;
   }
-  return av_rescale_q(pts, src_timebase, WEBCODECS_TIMEBASE);
+  return av_rescale_q(pts, src_timebase, kWebcodecsTimebase);
 }
 
 /**
@@ -92,8 +92,8 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param dst_timebase Destination timebase
  * @return FFmpeg timestamp in destination timebase
  */
-[[nodiscard]] inline int64_t from_microseconds(int64_t us, AVRational dst_timebase) {
-  return av_rescale_q(us, WEBCODECS_TIMEBASE, dst_timebase);
+[[nodiscard]] inline int64_t FromMicroseconds(int64_t us, AVRational dst_timebase) {
+  return av_rescale_q(us, kWebcodecsTimebase, dst_timebase);
 }
 
 /**
@@ -103,11 +103,11 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param src_timebase Source timebase
  * @return Duration in microseconds, or 0 if duration <= 0
  */
-[[nodiscard]] inline int64_t duration_to_microseconds(int64_t duration, AVRational src_timebase) {
+[[nodiscard]] inline int64_t DurationToMicroseconds(int64_t duration, AVRational src_timebase) {
   if (duration <= 0) {
     return 0;
   }
-  return av_rescale_q(duration, src_timebase, WEBCODECS_TIMEBASE);
+  return av_rescale_q(duration, src_timebase, kWebcodecsTimebase);
 }
 
 /**
@@ -117,11 +117,11 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param dst_timebase Destination timebase
  * @return Duration in destination timebase
  */
-[[nodiscard]] inline int64_t duration_from_microseconds(int64_t us, AVRational dst_timebase) {
+[[nodiscard]] inline int64_t DurationFromMicroseconds(int64_t us, AVRational dst_timebase) {
   if (us <= 0) {
     return 0;
   }
-  return av_rescale_q(us, WEBCODECS_TIMEBASE, dst_timebase);
+  return av_rescale_q(us, kWebcodecsTimebase, dst_timebase);
 }
 
 // ===========================================================================
@@ -134,7 +134,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param framerate Frame rate as AVRational (e.g., {30, 1} for 30fps)
  * @return Frame duration in microseconds, or 0 if framerate is unknown/variable
  */
-[[nodiscard]] inline int64_t frame_duration_us(AVRational framerate) {
+[[nodiscard]] inline int64_t FrameDurationUs(AVRational framerate) {
   if (framerate.num <= 0 || framerate.den <= 0) {
     return 0;
   }
@@ -149,12 +149,12 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param dst_timebase Destination timebase
  * @return Frame duration in destination timebase
  */
-[[nodiscard]] inline int64_t frame_duration(AVRational framerate, AVRational dst_timebase) {
+[[nodiscard]] inline int64_t FrameDuration(AVRational framerate, AVRational dst_timebase) {
   if (framerate.num <= 0 || framerate.den <= 0) {
     return 0;
   }
-  int64_t us = frame_duration_us(framerate);
-  return av_rescale_q(us, WEBCODECS_TIMEBASE, dst_timebase);
+  int64_t us = FrameDurationUs(framerate);
+  return av_rescale_q(us, kWebcodecsTimebase, dst_timebase);
 }
 
 // ===========================================================================
@@ -173,7 +173,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param timebase Timebase (used to detect if wraparound is relevant)
  * @return true if a < b (accounting for potential wraparound)
  */
-[[nodiscard]] inline bool pts_less_than(int64_t a, int64_t b, AVRational timebase) {
+[[nodiscard]] inline bool PtsLessThan(int64_t a, int64_t b, AVRational timebase) {
   // Only apply wraparound logic for 90kHz timebase (MPEG-TS)
   if (timebase.den != 90000) {
     return a < b;
@@ -182,11 +182,11 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
   int64_t diff = b - a;
 
   // If difference is greater than half the wrap range, assume wraparound
-  if (diff > MPEG_TS_WRAP_THRESHOLD) {
+  if (diff > kMpegTsWrapThreshold) {
     // b wrapped, a is actually greater
     return false;
   }
-  if (diff < -MPEG_TS_WRAP_THRESHOLD) {
+  if (diff < -kMpegTsWrapThreshold) {
     // a wrapped, a is actually less
     return true;
   }
@@ -201,18 +201,18 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param timebase Timebase
  * @return Difference in microseconds
  */
-[[nodiscard]] inline int64_t pts_diff_us(int64_t end, int64_t start, AVRational timebase) {
+[[nodiscard]] inline int64_t PtsDiffUs(int64_t end, int64_t start, AVRational timebase) {
   int64_t diff = end - start;
 
   // Handle wraparound for MPEG-TS
   if (timebase.den == 90000) {
-    if (diff < -MPEG_TS_WRAP_THRESHOLD) {
+    if (diff < -kMpegTsWrapThreshold) {
       // Wraparound occurred: end wrapped, add full range
       diff += (1LL << 33);
     }
   }
 
-  return av_rescale_q(diff, timebase, WEBCODECS_TIMEBASE);
+  return av_rescale_q(diff, timebase, kWebcodecsTimebase);
 }
 
 // ===========================================================================
@@ -226,7 +226,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param sample_rate Sample rate in Hz
  * @return Duration in microseconds
  */
-[[nodiscard]] inline int64_t audio_duration_us(int64_t sample_count, int sample_rate) {
+[[nodiscard]] inline int64_t AudioDurationUs(int64_t sample_count, int sample_rate) {
   if (sample_rate <= 0) {
     return 0;
   }
@@ -240,7 +240,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param sample_rate Sample rate in Hz
  * @return Number of samples
  */
-[[nodiscard]] inline int64_t samples_from_duration_us(int64_t duration_us, int sample_rate) {
+[[nodiscard]] inline int64_t SamplesFromDurationUs(int64_t duration_us, int sample_rate) {
   if (sample_rate <= 0 || duration_us <= 0) {
     return 0;
   }
@@ -254,7 +254,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
 /**
  * Check if a timestamp is valid (not AV_NOPTS_VALUE and non-negative).
  */
-[[nodiscard]] inline bool is_valid_pts(int64_t pts) { return pts != AV_NOPTS_VALUE && pts >= 0; }
+[[nodiscard]] inline bool IsValidPts(int64_t pts) { return pts != AV_NOPTS_VALUE && pts >= 0; }
 
 /**
  * Clamp timestamp to valid range.
@@ -262,7 +262,7 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
  * @param pts Input PTS
  * @return PTS clamped to [0, INT64_MAX/2] or AV_NOPTS_VALUE if invalid
  */
-[[nodiscard]] inline int64_t clamp_pts(int64_t pts) {
+[[nodiscard]] inline int64_t ClampPts(int64_t pts) {
   if (pts == AV_NOPTS_VALUE) {
     return AV_NOPTS_VALUE;
   }
@@ -270,9 +270,9 @@ constexpr int64_t MPEG_TS_WRAP_THRESHOLD = (1LL << 32);
     return 0;
   }
   // Prevent overflow during conversions
-  constexpr int64_t MAX_SAFE_PTS = INT64_MAX / 2;
-  if (pts > MAX_SAFE_PTS) {
-    return MAX_SAFE_PTS;
+  constexpr int64_t kMaxSafePts = INT64_MAX / 2;
+  if (pts > kMaxSafePts) {
+    return kMaxSafePts;
   }
   return pts;
 }

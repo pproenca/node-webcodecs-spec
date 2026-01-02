@@ -42,12 +42,12 @@ class FramePoolTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Reset pool state before each test
-    GlobalFramePool::instance().clear();
-    GlobalFramePool::instance().ResetStats();
-    GlobalFramePool::instance().SetMaxPoolSize(32);
+    GlobalFramePool::Instance().Clear();
+    GlobalFramePool::Instance().ResetStats();
+    GlobalFramePool::Instance().SetMaxPoolSize(32);
   }
 
-  void TearDown() override { GlobalFramePool::instance().clear(); }
+  void TearDown() override { GlobalFramePool::Instance().Clear(); }
 };
 
 // =============================================================================
@@ -55,13 +55,13 @@ class FramePoolTest : public ::testing::Test {
 // =============================================================================
 
 TEST_F(FramePoolTest, AcquireReturnsValidFrame) {
-  auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
   // Frame is allocated but not filled with buffer data yet
 }
 
 TEST_F(FramePoolTest, AcquireWithBufferReturnsAllocatedFrame) {
-  auto frame = GlobalFramePool::instance().acquire_with_buffer(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::Instance().AcquireWithBuffer(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
   EXPECT_EQ(frame->width, 1920);
   EXPECT_EQ(frame->height, 1080);
@@ -72,12 +72,12 @@ TEST_F(FramePoolTest, AcquireWithBufferReturnsAllocatedFrame) {
 
 TEST_F(FramePoolTest, FrameIsReturnedToPoolOnDestruction) {
   {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame, nullptr);
   }
   // Frame should be returned to pool
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.current_pooled.load(), 1);
   EXPECT_EQ(stats.current_in_flight.load(), 0);
 }
@@ -85,17 +85,17 @@ TEST_F(FramePoolTest, FrameIsReturnedToPoolOnDestruction) {
 TEST_F(FramePoolTest, PoolHitOnSecondAcquire) {
   // First acquire - pool miss
   {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame, nullptr);
   }
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.pool_misses.load(), 1);
   EXPECT_EQ(stats.pool_hits.load(), 0);
 
   // Second acquire - pool hit
   {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame, nullptr);
   }
 
@@ -110,34 +110,34 @@ TEST_F(FramePoolTest, PoolHitOnSecondAcquire) {
 TEST_F(FramePoolTest, DifferentDimensionsSeparatePools) {
   // Acquire frames of different dimensions
   {
-    auto frame_1080p = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
-    auto frame_720p = GlobalFramePool::instance().acquire(1280, 720, AV_PIX_FMT_YUV420P);
+    auto frame_1080p = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame_720p = GlobalFramePool::Instance().Acquire(1280, 720, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame_1080p, nullptr);
     ASSERT_NE(frame_720p, nullptr);
   }
 
-  auto& pool = GlobalFramePool::instance();
-  EXPECT_EQ(pool.pool_count(), 2);
-  EXPECT_EQ(pool.total_pooled(), 2);
+  auto& pool = GlobalFramePool::Instance();
+  EXPECT_EQ(pool.PoolCount(), 2);
+  EXPECT_EQ(pool.TotalPooled(), 2);
 }
 
 TEST_F(FramePoolTest, DifferentFormatsSeparatePools) {
   {
-    auto frame_yuv = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
-    auto frame_rgb = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_RGB24);
+    auto frame_yuv = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame_rgb = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_RGB24);
     ASSERT_NE(frame_yuv, nullptr);
     ASSERT_NE(frame_rgb, nullptr);
   }
 
-  auto& pool = GlobalFramePool::instance();
-  EXPECT_EQ(pool.pool_count(), 2);
+  auto& pool = GlobalFramePool::Instance();
+  EXPECT_EQ(pool.PoolCount(), 2);
 }
 
 TEST_F(FramePoolTest, SameDimensionsSharePool) {
   // Acquire 3 frames simultaneously, then return them to pool
   std::vector<GlobalFramePool::PooledFrame> frames;
   for (int i = 0; i < 3; ++i) {
-    auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+    auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
     ASSERT_NE(frame, nullptr);
     frames.push_back(std::move(frame));
   }
@@ -145,8 +145,8 @@ TEST_F(FramePoolTest, SameDimensionsSharePool) {
   // Now return all frames to pool
   frames.clear();
 
-  EXPECT_EQ(GlobalFramePool::instance().pool_count(), 1);
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 3);
+  EXPECT_EQ(GlobalFramePool::Instance().PoolCount(), 1);
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 3);
 }
 
 // =============================================================================
@@ -157,20 +157,20 @@ TEST_F(FramePoolTest, StatsTrackTotalAllocated) {
   // Hold onto all frames to force 5 separate allocations
   std::vector<GlobalFramePool::PooledFrame> frames;
   for (int i = 0; i < 5; ++i) {
-    frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
   }
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 5);
 }
 
 TEST_F(FramePoolTest, StatsTrackPeakInFlight) {
   std::vector<GlobalFramePool::PooledFrame> frames;
   for (int i = 0; i < 10; ++i) {
-    frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+    frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
   }
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.peak_in_flight.load(), 10);
   EXPECT_EQ(stats.current_in_flight.load(), 10);
 
@@ -185,7 +185,7 @@ TEST_F(FramePoolTest, HitRateCalculation) {
   {
     std::vector<GlobalFramePool::PooledFrame> frames;
     for (int i = 0; i < 5; ++i) {
-      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+      frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
     }
     // All 5 frames returned to pool here
   }
@@ -194,20 +194,20 @@ TEST_F(FramePoolTest, HitRateCalculation) {
   {
     std::vector<GlobalFramePool::PooledFrame> frames;
     for (int i = 0; i < 5; ++i) {
-      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+      frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
     }
   }
 
-  auto& stats = GlobalFramePool::instance().stats();
-  double hit_rate = stats.hit_rate();
+  auto& stats = GlobalFramePool::Instance().stats();
+  double hit_rate = stats.HitRate();
   EXPECT_DOUBLE_EQ(hit_rate, 0.5);  // 5 hits / 10 total
 }
 
 TEST_F(FramePoolTest, ResetStats) {
-  auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
-  GlobalFramePool::instance().ResetStats();
+  auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  GlobalFramePool::Instance().ResetStats();
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 0);
   EXPECT_EQ(stats.pool_hits.load(), 0);
   EXPECT_EQ(stats.pool_misses.load(), 0);
@@ -218,18 +218,18 @@ TEST_F(FramePoolTest, ResetStats) {
 // =============================================================================
 
 TEST_F(FramePoolTest, MaxPoolSizeEnforced) {
-  GlobalFramePool::instance().SetMaxPoolSize(3);
+  GlobalFramePool::Instance().SetMaxPoolSize(3);
 
   // Acquire 5 frames simultaneously, then return them all
   {
     std::vector<GlobalFramePool::PooledFrame> frames;
     for (int i = 0; i < 5; ++i) {
-      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+      frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
     }
     // All 5 returned here, but only 3 kept due to max size
   }
 
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 3);
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 3);
 }
 
 TEST_F(FramePoolTest, TrimReducesPoolSize) {
@@ -237,13 +237,13 @@ TEST_F(FramePoolTest, TrimReducesPoolSize) {
   {
     std::vector<GlobalFramePool::PooledFrame> frames;
     for (int i = 0; i < 10; ++i) {
-      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+      frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
     }
   }
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 10);
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 10);
 
-  GlobalFramePool::instance().trim(3);
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 3);
+  GlobalFramePool::Instance().Trim(3);
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 3);
 }
 
 TEST_F(FramePoolTest, ClearRemovesAllPooledFrames) {
@@ -251,13 +251,13 @@ TEST_F(FramePoolTest, ClearRemovesAllPooledFrames) {
   {
     std::vector<GlobalFramePool::PooledFrame> frames;
     for (int i = 0; i < 5; ++i) {
-      frames.push_back(GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P));
+      frames.push_back(GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P));
     }
   }
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 5);
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 5);
 
-  GlobalFramePool::instance().clear();
-  EXPECT_EQ(GlobalFramePool::instance().total_pooled(), 0);
+  GlobalFramePool::Instance().Clear();
+  EXPECT_EQ(GlobalFramePool::Instance().TotalPooled(), 0);
 }
 
 // =============================================================================
@@ -265,14 +265,14 @@ TEST_F(FramePoolTest, ClearRemovesAllPooledFrames) {
 // =============================================================================
 
 TEST_F(FramePoolTest, MoveSemantics) {
-  auto frame1 = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame1 = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame1, nullptr);
 
   GlobalFramePool::PooledFrame frame2 = std::move(frame1);
   EXPECT_EQ(frame1, nullptr);
   EXPECT_NE(frame2, nullptr);
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.current_in_flight.load(), 1);  // Only one in flight
 }
 
@@ -295,7 +295,7 @@ TEST_F(FramePoolTest, ConcurrentAcquireRelease) {
     threads.emplace_back([&start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kIterations; ++i) {
-        auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+        auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
         EXPECT_NE(frame, nullptr);
         // Frame returned on scope exit
       }
@@ -306,7 +306,7 @@ TEST_F(FramePoolTest, ConcurrentAcquireRelease) {
     t.join();
   }
 
-  auto& stats = GlobalFramePool::instance().stats();
+  auto& stats = GlobalFramePool::Instance().stats();
   EXPECT_EQ(stats.current_in_flight.load(), 0);
   // Total operations = threads * iterations
   uint64_t total = stats.pool_hits.load() + stats.pool_misses.load();
@@ -326,7 +326,7 @@ TEST_F(FramePoolTest, ConcurrentDifferentDimensions) {
     threads.emplace_back([t, &dimensions, &start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kIterations; ++i) {
-        auto frame = GlobalFramePool::instance().acquire(dimensions[t][0], dimensions[t][1], AV_PIX_FMT_YUV420P);
+        auto frame = GlobalFramePool::Instance().Acquire(dimensions[t][0], dimensions[t][1], AV_PIX_FMT_YUV420P);
         EXPECT_NE(frame, nullptr);
       }
     });
@@ -336,7 +336,7 @@ TEST_F(FramePoolTest, ConcurrentDifferentDimensions) {
     t.join();
   }
 
-  EXPECT_EQ(GlobalFramePool::instance().pool_count(), 4);
+  EXPECT_EQ(GlobalFramePool::Instance().PoolCount(), 4);
 }
 
 TEST_F(FramePoolTest, ConcurrentClearDuringAcquire) {
@@ -349,7 +349,7 @@ TEST_F(FramePoolTest, ConcurrentClearDuringAcquire) {
     acquirers.emplace_back([&stop, &start_latch]() {
       start_latch.arrive_and_wait();
       while (!stop.load(std::memory_order_acquire)) {
-        auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+        auto frame = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
         // Release quickly
       }
     });
@@ -359,7 +359,7 @@ TEST_F(FramePoolTest, ConcurrentClearDuringAcquire) {
     start_latch.arrive_and_wait();
     for (int i = 0; i < 10; ++i) {
       std::this_thread::sleep_for(1ms);
-      GlobalFramePool::instance().clear();
+      GlobalFramePool::Instance().Clear();
     }
     stop.store(true, std::memory_order_release);
   });
@@ -370,7 +370,7 @@ TEST_F(FramePoolTest, ConcurrentClearDuringAcquire) {
   clearer.join();
 
   // Should complete without crashes or data races
-  EXPECT_EQ(GlobalFramePool::instance().stats().current_in_flight.load(), 0);
+  EXPECT_EQ(GlobalFramePool::Instance().stats().current_in_flight.load(), 0);
 }
 
 // =============================================================================
@@ -379,13 +379,13 @@ TEST_F(FramePoolTest, ConcurrentClearDuringAcquire) {
 
 TEST_F(FramePoolTest, FramePoolHandleAcquire) {
   FramePoolHandle handle;
-  auto frame = handle.acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = handle.Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
 }
 
 TEST_F(FramePoolTest, FramePoolHandleAcquireWithBuffer) {
   FramePoolHandle handle;
-  auto frame = handle.acquire_with_buffer(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = handle.AcquireWithBuffer(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
   EXPECT_EQ(frame->width, 1920);
   EXPECT_NE(frame->data[0], nullptr);
@@ -393,7 +393,7 @@ TEST_F(FramePoolTest, FramePoolHandleAcquireWithBuffer) {
 
 TEST_F(FramePoolTest, FramePoolHandleStats) {
   FramePoolHandle handle;
-  auto frame = handle.acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = handle.Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
 
   const auto& stats = handle.stats();
   EXPECT_GT(stats.pool_misses.load() + stats.pool_hits.load(), 0);
@@ -405,19 +405,19 @@ TEST_F(FramePoolTest, FramePoolHandleStats) {
 
 TEST_F(FramePoolTest, ZeroDimensionsHandled) {
   // Edge case: zero dimensions should still work (FFmpeg allows it)
-  auto frame = GlobalFramePool::instance().acquire(0, 0, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::Instance().Acquire(0, 0, AV_PIX_FMT_YUV420P);
   EXPECT_NE(frame, nullptr);
 }
 
 TEST_F(FramePoolTest, LargeDimensions) {
   // 8K resolution
-  auto frame = GlobalFramePool::instance().acquire(7680, 4320, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::Instance().Acquire(7680, 4320, AV_PIX_FMT_YUV420P);
   EXPECT_NE(frame, nullptr);
 }
 
 TEST_F(FramePoolTest, PooledFrameUnrefOnReturn) {
   // Verify frame is unref'd when returned to pool
-  auto frame = GlobalFramePool::instance().acquire_with_buffer(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame = GlobalFramePool::Instance().AcquireWithBuffer(1920, 1080, AV_PIX_FMT_YUV420P);
   ASSERT_NE(frame, nullptr);
 
   // Fill with data
@@ -427,6 +427,6 @@ TEST_F(FramePoolTest, PooledFrameUnrefOnReturn) {
   frame.reset();
 
   // Acquire again - should be unref'd (data pointers null until alloc)
-  auto frame2 = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
+  auto frame2 = GlobalFramePool::Instance().Acquire(1920, 1080, AV_PIX_FMT_YUV420P);
   EXPECT_EQ(frame2->data[0], nullptr);  // Unref'd, no buffer
 }

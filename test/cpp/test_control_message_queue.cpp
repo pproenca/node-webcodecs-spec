@@ -49,7 +49,7 @@ class ControlMessageQueueTest : public ::testing::Test {
   void SetUp() override { queue_ = std::make_unique<TestQueue>(); }
 
   void TearDown() override {
-    queue_->shutdown();
+    queue_->Shutdown();
     queue_.reset();
   }
 
@@ -152,7 +152,7 @@ TEST_F(ControlMessageQueueTest, CloseMessage) {
 // =============================================================================
 
 TEST_F(ControlMessageQueueTest, EnqueueFailsAfterShutdown) {
-  queue_->shutdown();
+  queue_->Shutdown();
   EXPECT_TRUE(queue_->IsClosed());
   EXPECT_FALSE(queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)}));
 }
@@ -163,7 +163,7 @@ TEST_F(ControlMessageQueueTest, TryDequeueReturnsNulloptWhenEmpty) {
 }
 
 TEST_F(ControlMessageQueueTest, DequeueReturnsNulloptAfterShutdownWhenEmpty) {
-  queue_->shutdown();
+  queue_->Shutdown();
   auto msg = queue_->TryDequeue();
   EXPECT_FALSE(msg.has_value());
 }
@@ -171,7 +171,7 @@ TEST_F(ControlMessageQueueTest, DequeueReturnsNulloptAfterShutdownWhenEmpty) {
 TEST_F(ControlMessageQueueTest, DequeueReturnsPendingMessagesAfterShutdown) {
   queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
   queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
-  queue_->shutdown();
+  queue_->Shutdown();
 
   // Should still be able to drain pending messages
   auto msg1 = queue_->TryDequeue();
@@ -193,14 +193,14 @@ TEST_F(ControlMessageQueueTest, ClearReturnsDroppedPackets) {
   queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(3)});
   queue_->Enqueue(TestQueue::FlushMessage{99});  // Non-decode message
 
-  auto dropped = queue_->clear();
+  auto dropped = queue_->Clear();
   EXPECT_EQ(dropped.size(), 3);  // Only DecodeMessages have packets
   EXPECT_TRUE(queue_->empty());
 }
 
 TEST_F(ControlMessageQueueTest, ClearPreservesPacketOwnership) {
   queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)});
-  auto dropped = queue_->clear();
+  auto dropped = queue_->Clear();
 
   ASSERT_EQ(dropped.size(), 1);
   EXPECT_EQ(*dropped[0], 42);  // Ownership transferred to dropped vector
@@ -250,7 +250,7 @@ TEST_F(ControlMessageQueueTest, ShutdownUnblocksDequeue) {
   });
 
   std::this_thread::sleep_for(10ms);
-  queue_->shutdown();
+  queue_->Shutdown();
   consumer.join();
 
   EXPECT_TRUE(unblocked.load(std::memory_order_acquire));
@@ -314,7 +314,7 @@ TEST_F(ControlMessageQueueTest, ConcurrentEnqueueDequeue) {
       queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
       produced.fetch_add(1, std::memory_order_relaxed);
     }
-    queue_->shutdown();
+    queue_->Shutdown();
   });
 
   std::thread consumer([this, &consumed]() {
@@ -357,7 +357,7 @@ TEST_F(ControlMessageQueueTest, MultipleConsumers) {
 
   // Wait a bit for consumption, then shutdown
   std::this_thread::sleep_for(100ms);
-  queue_->shutdown();
+  queue_->Shutdown();
 
   for (auto& c : consumers) {
     c.join();
@@ -386,7 +386,7 @@ TEST_F(ControlMessageQueueTest, ShutdownDuringBlockedDequeue) {
     std::this_thread::sleep_for(1ms);
   }
   std::this_thread::sleep_for(10ms);  // Let it block
-  queue_->shutdown();
+  queue_->Shutdown();
   consumer.join();
 
   EXPECT_TRUE(consumer_finished.load());
@@ -407,7 +407,7 @@ TEST_F(ControlMessageQueueTest, ClearDuringEnqueue) {
   while (!enqueuer_started.load(std::memory_order_acquire)) {
     std::this_thread::sleep_for(1ms);
   }
-  auto dropped = queue_->clear();
+  auto dropped = queue_->Clear();
   clear_done.store(true, std::memory_order_release);
 
   enqueuer.join();

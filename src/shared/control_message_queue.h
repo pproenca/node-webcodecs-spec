@@ -89,7 +89,7 @@ class ControlMessageQueue {
 
   ControlMessageQueue() = default;
 
-  ~ControlMessageQueue() { shutdown(); }
+  ~ControlMessageQueue() { Shutdown(); }
 
   // Non-copyable, non-movable (owns synchronization primitives)
   ControlMessageQueue(const ControlMessageQueue&) = delete;
@@ -190,7 +190,7 @@ class ControlMessageQueue {
    *
    * @return Vector of packets that were dropped
    */
-  std::vector<PacketType> clear() {
+  std::vector<PacketType> Clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<PacketType> dropped;
 
@@ -207,10 +207,10 @@ class ControlMessageQueue {
 
   /**
    * Shutdown the queue permanently.
-   * Any subsequent enqueue() calls will return false.
-   * Any blocked dequeue() calls will return std::nullopt.
+   * Any subsequent Enqueue() calls will return false.
+   * Any blocked Dequeue() calls will return std::nullopt.
    */
-  void shutdown() {
+  void Shutdown() {
     {
       std::lock_guard<std::mutex> lock(mutex_);
       closed_ = true;

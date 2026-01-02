@@ -43,7 +43,7 @@ struct PacketPoolStats {
   std::atomic<uint64_t> peak_in_flight{0};
   std::atomic<uint64_t> total_bytes_allocated{0};  // Track memory usage
 
-  void reset() {
+  void Reset() {
     total_allocated.store(0, std::memory_order_relaxed);
     pool_hits.store(0, std::memory_order_relaxed);
     pool_misses.store(0, std::memory_order_relaxed);
@@ -53,7 +53,7 @@ struct PacketPoolStats {
     total_bytes_allocated.store(0, std::memory_order_relaxed);
   }
 
-  [[nodiscard]] double hit_rate() const {
+  [[nodiscard]] double HitRate() const {
     uint64_t hits = pool_hits.load(std::memory_order_relaxed);
     uint64_t misses = pool_misses.load(std::memory_order_relaxed);
     uint64_t total = hits + misses;
@@ -94,7 +94,7 @@ class GlobalPacketPool {
   // SINGLETON
   // ---------------------------------------------------------------------------
 
-  static GlobalPacketPool& instance() {
+  static GlobalPacketPool& Instance() {
     static GlobalPacketPool pool;
     return pool;
   }
@@ -118,7 +118,7 @@ class GlobalPacketPool {
    *
    * @return PooledPacket smart pointer, or nullptr on allocation failure
    */
-  [[nodiscard]] PooledPacket acquire() {
+  [[nodiscard]] PooledPacket Acquire() {
     std::lock_guard<std::mutex> lock(mutex_);
 
     AVPacket* packet = nullptr;
@@ -156,10 +156,10 @@ class GlobalPacketPool {
    * @param src Source packet to reference
    * @return PooledPacket with referenced data, or nullptr on failure
    */
-  [[nodiscard]] PooledPacket acquire_ref(const AVPacket* src) {
+  [[nodiscard]] PooledPacket AcquireRef(const AVPacket* src) {
     if (!src) return nullptr;
 
-    auto packet = acquire();
+    auto packet = Acquire();
     if (!packet) return nullptr;
 
     if (av_packet_ref(packet.get(), src) < 0) {
@@ -176,8 +176,8 @@ class GlobalPacketPool {
    * @param size Buffer size to allocate
    * @return PooledPacket with allocated buffer, or nullptr on failure
    */
-  [[nodiscard]] PooledPacket acquire_with_buffer(int size) {
-    auto packet = acquire();
+  [[nodiscard]] PooledPacket AcquireWithBuffer(int size) {
+    auto packet = Acquire();
     if (!packet) return nullptr;
 
     if (av_new_packet(packet.get(), size) < 0) {
@@ -194,9 +194,9 @@ class GlobalPacketPool {
 
   [[nodiscard]] const PacketPoolStats& stats() const { return stats_; }
 
-  void ResetStats() { stats_.reset(); }
+  void ResetStats() { stats_.Reset(); }
 
-  [[nodiscard]] size_t pooled_count() const {
+  [[nodiscard]] size_t PooledCount() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return pool_.size();
   }
@@ -205,7 +205,7 @@ class GlobalPacketPool {
   // CLEANUP
   // ---------------------------------------------------------------------------
 
-  void clear() {
+  void Clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     for (AVPacket* packet : pool_) {
       av_packet_free(&packet);
@@ -214,7 +214,7 @@ class GlobalPacketPool {
     stats_.current_pooled.store(0, std::memory_order_relaxed);
   }
 
-  void trim(size_t target_size) {
+  void Trim(size_t target_size) {
     std::lock_guard<std::mutex> lock(mutex_);
     while (pool_.size() > target_size) {
       AVPacket* packet = pool_.back();
@@ -227,7 +227,7 @@ class GlobalPacketPool {
  private:
   GlobalPacketPool() = default;
 
-  ~GlobalPacketPool() { clear(); }
+  ~GlobalPacketPool() { Clear(); }
 
   GlobalPacketPool(const GlobalPacketPool&) = delete;
   GlobalPacketPool& operator=(const GlobalPacketPool&) = delete;
@@ -264,15 +264,13 @@ class GlobalPacketPool {
  */
 class PacketPoolHandle {
  public:
-  PacketPoolHandle() : pool_(&GlobalPacketPool::instance()) {}
+  PacketPoolHandle() : pool_(&GlobalPacketPool::Instance()) {}
 
-  [[nodiscard]] GlobalPacketPool::PooledPacket acquire() { return pool_->acquire(); }
+  [[nodiscard]] GlobalPacketPool::PooledPacket Acquire() { return pool_->Acquire(); }
 
-  [[nodiscard]] GlobalPacketPool::PooledPacket acquire_ref(const AVPacket* src) { return pool_->acquire_ref(src); }
+  [[nodiscard]] GlobalPacketPool::PooledPacket AcquireRef(const AVPacket* src) { return pool_->AcquireRef(src); }
 
-  [[nodiscard]] GlobalPacketPool::PooledPacket acquire_with_buffer(int size) {
-    return pool_->acquire_with_buffer(size);
-  }
+  [[nodiscard]] GlobalPacketPool::PooledPacket AcquireWithBuffer(int size) { return pool_->AcquireWithBuffer(size); }
 
   [[nodiscard]] const PacketPoolStats& stats() const { return pool_->stats(); }
 

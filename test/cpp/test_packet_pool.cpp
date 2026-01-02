@@ -45,12 +45,12 @@ using std::chrono_literals::operator""ms;
 class PacketPoolTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    GlobalPacketPool::instance().clear();
-    GlobalPacketPool::instance().ResetStats();
-    GlobalPacketPool::instance().SetMaxPoolSize(64);
+    GlobalPacketPool::Instance().Clear();
+    GlobalPacketPool::Instance().ResetStats();
+    GlobalPacketPool::Instance().SetMaxPoolSize(64);
   }
 
-  void TearDown() override { GlobalPacketPool::instance().clear(); }
+  void TearDown() override { GlobalPacketPool::Instance().Clear(); }
 };
 
 // =============================================================================
@@ -58,33 +58,33 @@ class PacketPoolTest : public ::testing::Test {
 // =============================================================================
 
 TEST_F(PacketPoolTest, AcquireReturnsValidPacket) {
-  auto packet = GlobalPacketPool::instance().acquire();
+  auto packet = GlobalPacketPool::Instance().Acquire();
   ASSERT_NE(packet, nullptr);
 }
 
 TEST_F(PacketPoolTest, PacketIsReturnedToPoolOnDestruction) {
   {
-    auto packet = GlobalPacketPool::instance().acquire();
+    auto packet = GlobalPacketPool::Instance().Acquire();
     ASSERT_NE(packet, nullptr);
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.current_pooled.load(), 1);
   EXPECT_EQ(stats.current_in_flight.load(), 0);
 }
 
 TEST_F(PacketPoolTest, PoolHitOnSecondAcquire) {
   {
-    auto packet = GlobalPacketPool::instance().acquire();
+    auto packet = GlobalPacketPool::Instance().Acquire();
     ASSERT_NE(packet, nullptr);
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.pool_misses.load(), 1);
   EXPECT_EQ(stats.pool_hits.load(), 0);
 
   {
-    auto packet = GlobalPacketPool::instance().acquire();
+    auto packet = GlobalPacketPool::Instance().Acquire();
     ASSERT_NE(packet, nullptr);
   }
 
@@ -97,12 +97,12 @@ TEST_F(PacketPoolTest, PoolHitOnSecondAcquire) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, AcquireWithBuffer) {
-  auto packet = GlobalPacketPool::instance().acquire_with_buffer(1024);
+  auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(1024);
   ASSERT_NE(packet, nullptr);
   EXPECT_EQ(packet->size, 1024);
   EXPECT_NE(packet->data, nullptr);
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.total_bytes_allocated.load(), 1024);
 }
 
@@ -115,7 +115,7 @@ TEST_F(PacketPoolTest, AcquireRef) {
   src->pts = 1000;
   src->dts = 900;
 
-  auto packet = GlobalPacketPool::instance().acquire_ref(src);
+  auto packet = GlobalPacketPool::Instance().AcquireRef(src);
   ASSERT_NE(packet, nullptr);
 
   // Should have same data (reference)
@@ -124,14 +124,14 @@ TEST_F(PacketPoolTest, AcquireRef) {
   EXPECT_EQ(packet->pts, 1000);
   EXPECT_EQ(packet->dts, 900);
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.total_bytes_allocated.load(), 512);
 
   av_packet_free(&src);
 }
 
 TEST_F(PacketPoolTest, AcquireRefNullptr) {
-  auto packet = GlobalPacketPool::instance().acquire_ref(nullptr);
+  auto packet = GlobalPacketPool::Instance().AcquireRef(nullptr);
   EXPECT_EQ(packet, nullptr);
 }
 
@@ -143,20 +143,20 @@ TEST_F(PacketPoolTest, StatsTrackTotalAllocated) {
   // Hold onto all packets to force 5 separate allocations
   std::vector<GlobalPacketPool::PooledPacket> packets;
   for (int i = 0; i < 5; ++i) {
-    packets.push_back(GlobalPacketPool::instance().acquire());
+    packets.push_back(GlobalPacketPool::Instance().Acquire());
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 5);
 }
 
 TEST_F(PacketPoolTest, StatsTrackPeakInFlight) {
   std::vector<GlobalPacketPool::PooledPacket> packets;
   for (int i = 0; i < 10; ++i) {
-    packets.push_back(GlobalPacketPool::instance().acquire());
+    packets.push_back(GlobalPacketPool::Instance().Acquire());
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.peak_in_flight.load(), 10);
   EXPECT_EQ(stats.current_in_flight.load(), 10);
 
@@ -171,7 +171,7 @@ TEST_F(PacketPoolTest, HitRateCalculation) {
   {
     std::vector<GlobalPacketPool::PooledPacket> packets;
     for (int i = 0; i < 4; ++i) {
-      packets.push_back(GlobalPacketPool::instance().acquire());
+      packets.push_back(GlobalPacketPool::Instance().Acquire());
     }
     // All 4 packets returned to pool here
   }
@@ -180,20 +180,20 @@ TEST_F(PacketPoolTest, HitRateCalculation) {
   {
     std::vector<GlobalPacketPool::PooledPacket> packets;
     for (int i = 0; i < 4; ++i) {
-      packets.push_back(GlobalPacketPool::instance().acquire());
+      packets.push_back(GlobalPacketPool::Instance().Acquire());
     }
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
-  double hit_rate = stats.hit_rate();
+  auto& stats = GlobalPacketPool::Instance().stats();
+  double hit_rate = stats.HitRate();
   EXPECT_DOUBLE_EQ(hit_rate, 0.5);  // 4 hits / 8 total
 }
 
 TEST_F(PacketPoolTest, ResetStats) {
-  auto packet = GlobalPacketPool::instance().acquire_with_buffer(100);
-  GlobalPacketPool::instance().ResetStats();
+  auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(100);
+  GlobalPacketPool::Instance().ResetStats();
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 0);
   EXPECT_EQ(stats.pool_hits.load(), 0);
   EXPECT_EQ(stats.pool_misses.load(), 0);
@@ -205,18 +205,18 @@ TEST_F(PacketPoolTest, ResetStats) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, MaxPoolSizeEnforced) {
-  GlobalPacketPool::instance().SetMaxPoolSize(3);
+  GlobalPacketPool::Instance().SetMaxPoolSize(3);
 
   // Acquire 5 packets simultaneously, then return them all
   {
     std::vector<GlobalPacketPool::PooledPacket> packets;
     for (int i = 0; i < 5; ++i) {
-      packets.push_back(GlobalPacketPool::instance().acquire());
+      packets.push_back(GlobalPacketPool::Instance().Acquire());
     }
     // All 5 returned here, but only 3 kept due to max size
   }
 
-  EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 3);
+  EXPECT_EQ(GlobalPacketPool::Instance().PooledCount(), 3);
 }
 
 TEST_F(PacketPoolTest, TrimReducesPoolSize) {
@@ -224,13 +224,13 @@ TEST_F(PacketPoolTest, TrimReducesPoolSize) {
   {
     std::vector<GlobalPacketPool::PooledPacket> packets;
     for (int i = 0; i < 10; ++i) {
-      packets.push_back(GlobalPacketPool::instance().acquire());
+      packets.push_back(GlobalPacketPool::Instance().Acquire());
     }
   }
-  EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 10);
+  EXPECT_EQ(GlobalPacketPool::Instance().PooledCount(), 10);
 
-  GlobalPacketPool::instance().trim(3);
-  EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 3);
+  GlobalPacketPool::Instance().Trim(3);
+  EXPECT_EQ(GlobalPacketPool::Instance().PooledCount(), 3);
 }
 
 TEST_F(PacketPoolTest, ClearRemovesAllPooledPackets) {
@@ -238,13 +238,13 @@ TEST_F(PacketPoolTest, ClearRemovesAllPooledPackets) {
   {
     std::vector<GlobalPacketPool::PooledPacket> packets;
     for (int i = 0; i < 5; ++i) {
-      packets.push_back(GlobalPacketPool::instance().acquire());
+      packets.push_back(GlobalPacketPool::Instance().Acquire());
     }
   }
-  EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 5);
+  EXPECT_EQ(GlobalPacketPool::Instance().PooledCount(), 5);
 
-  GlobalPacketPool::instance().clear();
-  EXPECT_EQ(GlobalPacketPool::instance().pooled_count(), 0);
+  GlobalPacketPool::Instance().Clear();
+  EXPECT_EQ(GlobalPacketPool::Instance().PooledCount(), 0);
 }
 
 // =============================================================================
@@ -252,14 +252,14 @@ TEST_F(PacketPoolTest, ClearRemovesAllPooledPackets) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, MoveSemantics) {
-  auto packet1 = GlobalPacketPool::instance().acquire();
+  auto packet1 = GlobalPacketPool::Instance().Acquire();
   ASSERT_NE(packet1, nullptr);
 
   GlobalPacketPool::PooledPacket packet2 = std::move(packet1);
   EXPECT_EQ(packet1, nullptr);
   EXPECT_NE(packet2, nullptr);
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.current_in_flight.load(), 1);
 }
 
@@ -270,7 +270,7 @@ TEST_F(PacketPoolTest, NullptrDeleterIsSafe) {
 
 TEST_F(PacketPoolTest, PacketUnrefOnReturn) {
   // Acquire and fill with data
-  auto packet = GlobalPacketPool::instance().acquire_with_buffer(256);
+  auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(256);
   ASSERT_NE(packet, nullptr);
   memset(packet->data, 42, 256);
   packet->pts = 12345;
@@ -279,7 +279,7 @@ TEST_F(PacketPoolTest, PacketUnrefOnReturn) {
   packet.reset();
 
   // Acquire again - should be unref'd
-  auto packet2 = GlobalPacketPool::instance().acquire();
+  auto packet2 = GlobalPacketPool::Instance().Acquire();
   EXPECT_EQ(packet2->data, nullptr);  // Unref'd
   EXPECT_EQ(packet2->size, 0);
   EXPECT_EQ(packet2->pts, AV_NOPTS_VALUE);
@@ -299,7 +299,7 @@ TEST_F(PacketPoolTest, ConcurrentAcquireRelease) {
     threads.emplace_back([&start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kIterations; ++i) {
-        auto packet = GlobalPacketPool::instance().acquire();
+        auto packet = GlobalPacketPool::Instance().Acquire();
         EXPECT_NE(packet, nullptr);
       }
     });
@@ -309,7 +309,7 @@ TEST_F(PacketPoolTest, ConcurrentAcquireRelease) {
     t.join();
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.current_in_flight.load(), 0);
   uint64_t total = stats.pool_hits.load() + stats.pool_misses.load();
   EXPECT_EQ(total, kThreads * kIterations);
@@ -326,7 +326,7 @@ TEST_F(PacketPoolTest, ConcurrentAcquireWithBuffer) {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kIterations; ++i) {
         int size = 100 + (t * 100) + (i % 10);  // Varying sizes
-        auto packet = GlobalPacketPool::instance().acquire_with_buffer(size);
+        auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(size);
         EXPECT_NE(packet, nullptr);
         EXPECT_EQ(packet->size, size);
       }
@@ -337,7 +337,7 @@ TEST_F(PacketPoolTest, ConcurrentAcquireWithBuffer) {
     t.join();
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.current_in_flight.load(), 0);
 }
 
@@ -351,7 +351,7 @@ TEST_F(PacketPoolTest, ConcurrentClearDuringAcquire) {
     acquirers.emplace_back([&stop, &start_latch]() {
       start_latch.arrive_and_wait();
       while (!stop.load(std::memory_order_acquire)) {
-        auto packet = GlobalPacketPool::instance().acquire();
+        auto packet = GlobalPacketPool::Instance().Acquire();
       }
     });
   }
@@ -360,7 +360,7 @@ TEST_F(PacketPoolTest, ConcurrentClearDuringAcquire) {
     start_latch.arrive_and_wait();
     for (int i = 0; i < 10; ++i) {
       std::this_thread::sleep_for(1ms);
-      GlobalPacketPool::instance().clear();
+      GlobalPacketPool::Instance().Clear();
     }
     stop.store(true, std::memory_order_release);
   });
@@ -370,7 +370,7 @@ TEST_F(PacketPoolTest, ConcurrentClearDuringAcquire) {
   }
   clearer.join();
 
-  EXPECT_EQ(GlobalPacketPool::instance().stats().current_in_flight.load(), 0);
+  EXPECT_EQ(GlobalPacketPool::Instance().stats().current_in_flight.load(), 0);
 }
 
 // =============================================================================
@@ -379,7 +379,7 @@ TEST_F(PacketPoolTest, ConcurrentClearDuringAcquire) {
 
 TEST_F(PacketPoolTest, PacketPoolHandleAcquire) {
   PacketPoolHandle handle;
-  auto packet = handle.acquire();
+  auto packet = handle.Acquire();
   ASSERT_NE(packet, nullptr);
 }
 
@@ -390,7 +390,7 @@ TEST_F(PacketPoolTest, PacketPoolHandleAcquireRef) {
   src->pts = 500;
 
   PacketPoolHandle handle;
-  auto packet = handle.acquire_ref(src);
+  auto packet = handle.AcquireRef(src);
   ASSERT_NE(packet, nullptr);
   EXPECT_EQ(packet->pts, 500);
 
@@ -399,14 +399,14 @@ TEST_F(PacketPoolTest, PacketPoolHandleAcquireRef) {
 
 TEST_F(PacketPoolTest, PacketPoolHandleAcquireWithBuffer) {
   PacketPoolHandle handle;
-  auto packet = handle.acquire_with_buffer(512);
+  auto packet = handle.AcquireWithBuffer(512);
   ASSERT_NE(packet, nullptr);
   EXPECT_EQ(packet->size, 512);
 }
 
 TEST_F(PacketPoolTest, PacketPoolHandleStats) {
   PacketPoolHandle handle;
-  auto packet = handle.acquire_with_buffer(100);
+  auto packet = handle.AcquireWithBuffer(100);
 
   const auto& stats = handle.stats();
   EXPECT_GT(stats.pool_misses.load() + stats.pool_hits.load(), 0);
@@ -418,7 +418,7 @@ TEST_F(PacketPoolTest, PacketPoolHandleStats) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, ZeroSizeBuffer) {
-  auto packet = GlobalPacketPool::instance().acquire_with_buffer(0);
+  auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(0);
   // av_new_packet with size 0 succeeds in modern FFmpeg (allocates empty buffer)
   ASSERT_NE(packet, nullptr);
   EXPECT_EQ(packet->size, 0);
@@ -426,22 +426,22 @@ TEST_F(PacketPoolTest, ZeroSizeBuffer) {
 
 TEST_F(PacketPoolTest, LargeBuffer) {
   // 1MB buffer
-  auto packet = GlobalPacketPool::instance().acquire_with_buffer(1024 * 1024);
+  auto packet = GlobalPacketPool::Instance().AcquireWithBuffer(1024 * 1024);
   ASSERT_NE(packet, nullptr);
   EXPECT_EQ(packet->size, 1024 * 1024);
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   EXPECT_EQ(stats.total_bytes_allocated.load(), 1024 * 1024);
 }
 
 TEST_F(PacketPoolTest, RapidAcquireRelease) {
   // Stress test rapid acquire/release
   for (int i = 0; i < 1000; ++i) {
-    auto packet = GlobalPacketPool::instance().acquire();
+    auto packet = GlobalPacketPool::Instance().Acquire();
     EXPECT_NE(packet, nullptr);
   }
 
-  auto& stats = GlobalPacketPool::instance().stats();
+  auto& stats = GlobalPacketPool::Instance().stats();
   // After warmup, most should be hits
   EXPECT_GT(stats.pool_hits.load(), stats.pool_misses.load());
 }

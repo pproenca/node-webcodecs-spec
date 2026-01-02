@@ -196,8 +196,7 @@ function generateIssueFiles(sections: Section[]): IssueFile[] {
       // Multiple files
       for (let i = 0; i < parts.length; i++) {
         const partNum = i + 1;
-        const partHeader =
-          header + `**Part ${partNum} of ${parts.length}**\n\n---\n\n`;
+        const partHeader = header + `**Part ${partNum} of ${parts.length}**\n\n---\n\n`;
 
         files.push({
           filename: `${baseSlug}-part-${partNum}-of-${parts.length}.md`,
@@ -273,9 +272,12 @@ async function pushIssuesToGitHub(files: IssueFile[]): Promise<void> {
 
     console.log(`  Creating: ${file.title}`);
     try {
-      execSync(`gh issue create --title "${file.title}" --body-file "${tmpFile}" --label "spec-section"`, {
-        stdio: 'inherit',
-      });
+      execSync(
+        `gh issue create --title "${file.title}" --body-file "${tmpFile}" --label "spec-section"`,
+        {
+          stdio: 'inherit',
+        }
+      );
     } catch (err) {
       console.error(`  Failed to create issue: ${file.title}`);
     }
