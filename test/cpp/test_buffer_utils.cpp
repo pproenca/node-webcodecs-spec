@@ -81,7 +81,7 @@ TEST(BufferUtilsTest, CalculateFrameBufferSize_UnknownFormat) {
 // =============================================================================
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_ValidFrame) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
 
   frame->width = 64;
@@ -105,7 +105,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_ValidFrame) {
 }
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_RGB24) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
 
   frame->width = 100;
@@ -141,7 +141,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_NullFrame) {
 }
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_NullDestination) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 64;
   frame->height = 64;
@@ -153,7 +153,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_NullDestination) {
 }
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_ZeroDestSize) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 64;
   frame->height = 64;
@@ -166,7 +166,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_ZeroDestSize) {
 }
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_DestinationTooSmall) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 1920;
   frame->height = 1080;
@@ -180,7 +180,7 @@ TEST(BufferUtilsTest, CopyFrameToBuffer_DestinationTooSmall) {
 }
 
 TEST(BufferUtilsTest, CopyFrameToBuffer_InvalidFormat) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 64;
   frame->height = 64;
@@ -319,7 +319,7 @@ TEST(BufferUtilsTest, CalculateAudioBufferSize_InvalidFormat) {
 // =============================================================================
 
 TEST(BufferUtilsTest, CopyPacketToBuffer_ValidPacket) {
-  AVPacketPtr packet = make_av_packet();
+  AVPacketPtr packet = MakeAvPacket();
   ASSERT_NE(packet, nullptr);
   ASSERT_GE(av_new_packet(packet.get(), 256), 0);
 
@@ -353,7 +353,7 @@ TEST(BufferUtilsTest, CopyPacketToBuffer_NullPacket) {
 }
 
 TEST(BufferUtilsTest, CopyPacketToBuffer_NullDest) {
-  AVPacketPtr packet = make_av_packet();
+  AVPacketPtr packet = MakeAvPacket();
   ASSERT_NE(packet, nullptr);
   ASSERT_GE(av_new_packet(packet.get(), 256), 0);
 
@@ -362,7 +362,7 @@ TEST(BufferUtilsTest, CopyPacketToBuffer_NullDest) {
 }
 
 TEST(BufferUtilsTest, CopyPacketToBuffer_DestTooSmall) {
-  AVPacketPtr packet = make_av_packet();
+  AVPacketPtr packet = MakeAvPacket();
   ASSERT_NE(packet, nullptr);
   ASSERT_GE(av_new_packet(packet.get(), 256), 0);
 
@@ -402,7 +402,7 @@ TEST(BufferUtilsTest, GetPlaneCount_InvalidFormat) {
 }
 
 TEST(BufferUtilsTest, GetPlaneSize_ValidFrame) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 1920;
   frame->height = 1080;
@@ -428,7 +428,7 @@ TEST(BufferUtilsTest, GetPlaneSize_NullFrame) {
 }
 
 TEST(BufferUtilsTest, GetPlaneSize_InvalidPlaneIndex) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 64;
   frame->height = 64;
@@ -448,7 +448,7 @@ TEST(BufferUtilsTest, GetPlaneSize_InvalidPlaneIndex) {
 
 TEST(BufferUtilsTest, RoundtripFrameData_YUV420P) {
   // Create original frame
-  AVFramePtr original = make_av_frame();
+  AVFramePtr original = MakeAvFrame();
   ASSERT_NE(original, nullptr);
   original->width = 64;
   original->height = 64;
@@ -487,7 +487,7 @@ TEST(BufferUtilsTest, RoundtripFrameData_YUV420P) {
 // =============================================================================
 
 TEST(BufferUtilsTest, StressTest_ManyFrameCopies) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
   frame->width = 640;
   frame->height = 480;
@@ -505,7 +505,7 @@ TEST(BufferUtilsTest, StressTest_ManyFrameCopies) {
 }
 
 TEST(BufferUtilsTest, StressTest_ManyPacketCopies) {
-  AVPacketPtr packet = make_av_packet();
+  AVPacketPtr packet = MakeAvPacket();
   ASSERT_NE(packet, nullptr);
   ASSERT_GE(av_new_packet(packet.get(), 1024), 0);
 

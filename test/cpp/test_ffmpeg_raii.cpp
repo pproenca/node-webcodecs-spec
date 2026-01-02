@@ -42,14 +42,14 @@ using namespace std::chrono_literals;
 // =============================================================================
 
 TEST(AVFrameRAIITest, MakeAVFrameReturnsValidFrame) {
-  AVFramePtr frame = make_av_frame();
+  AVFramePtr frame = MakeAvFrame();
   ASSERT_NE(frame, nullptr);
 }
 
 TEST(AVFrameRAIITest, FrameIsFreedOnScopeExit) {
   AVFrame* raw = nullptr;
   {
-    AVFramePtr frame = make_av_frame();
+    AVFramePtr frame = MakeAvFrame();
     ASSERT_NE(frame, nullptr);
     raw = frame.get();
   }
@@ -57,7 +57,7 @@ TEST(AVFrameRAIITest, FrameIsFreedOnScopeExit) {
 }
 
 TEST(AVFrameRAIITest, MoveSemantics) {
-  AVFramePtr frame1 = make_av_frame();
+  AVFramePtr frame1 = MakeAvFrame();
   ASSERT_NE(frame1, nullptr);
   AVFrame* raw = frame1.get();
 
@@ -72,7 +72,7 @@ TEST(AVFrameRAIITest, NullDeleterIsSafe) {
 }
 
 TEST(AVFrameRAIITest, CloneAVFrame) {
-  AVFramePtr src = make_av_frame();
+  AVFramePtr src = MakeAvFrame();
   ASSERT_NE(src, nullptr);
 
   src->width = 1920;
@@ -80,7 +80,7 @@ TEST(AVFrameRAIITest, CloneAVFrame) {
   src->format = AV_PIX_FMT_YUV420P;
   ASSERT_GE(av_frame_get_buffer(src.get(), 32), 0);
 
-  AVFramePtr dst = clone_av_frame(src.get());
+  AVFramePtr dst = CloneAvFrame(src.get());
   ASSERT_NE(dst, nullptr);
   EXPECT_EQ(dst->width, 1920);
   EXPECT_EQ(dst->height, 1080);
@@ -90,7 +90,7 @@ TEST(AVFrameRAIITest, CloneAVFrame) {
 }
 
 TEST(AVFrameRAIITest, CloneNullReturnsNull) {
-  AVFramePtr dst = clone_av_frame(nullptr);
+  AVFramePtr dst = CloneAvFrame(nullptr);
   EXPECT_EQ(dst, nullptr);
 }
 
@@ -99,13 +99,13 @@ TEST(AVFrameRAIITest, CloneNullReturnsNull) {
 // =============================================================================
 
 TEST(AVPacketRAIITest, MakeAVPacketReturnsValidPacket) {
-  AVPacketPtr packet = make_av_packet();
+  AVPacketPtr packet = MakeAvPacket();
   ASSERT_NE(packet, nullptr);
 }
 
 TEST(AVPacketRAIITest, PacketIsFreedOnScopeExit) {
   {
-    AVPacketPtr packet = make_av_packet();
+    AVPacketPtr packet = MakeAvPacket();
     ASSERT_NE(packet, nullptr);
     ASSERT_GE(av_new_packet(packet.get(), 1024), 0);
     memset(packet->data, 42, 1024);
@@ -114,13 +114,13 @@ TEST(AVPacketRAIITest, PacketIsFreedOnScopeExit) {
 }
 
 TEST(AVPacketRAIITest, CloneAVPacket) {
-  AVPacketPtr src = make_av_packet();
+  AVPacketPtr src = MakeAvPacket();
   ASSERT_NE(src, nullptr);
   ASSERT_GE(av_new_packet(src.get(), 256), 0);
   src->pts = 12345;
   src->dts = 12300;
 
-  AVPacketPtr dst = clone_av_packet(src.get());
+  AVPacketPtr dst = CloneAvPacket(src.get());
   ASSERT_NE(dst, nullptr);
   EXPECT_EQ(dst->size, 256);
   EXPECT_EQ(dst->pts, 12345);
@@ -130,7 +130,7 @@ TEST(AVPacketRAIITest, CloneAVPacket) {
 }
 
 TEST(AVPacketRAIITest, CloneNullReturnsNull) {
-  AVPacketPtr dst = clone_av_packet(nullptr);
+  AVPacketPtr dst = CloneAvPacket(nullptr);
   EXPECT_EQ(dst, nullptr);
 }
 
@@ -144,7 +144,7 @@ TEST(AVCodecContextRAIITest, MakeCodecContextReturnsValid) {
     GTEST_SKIP() << "H264 decoder not available";
   }
 
-  AVCodecContextPtr ctx = make_av_codec_context(codec);
+  AVCodecContextPtr ctx = MakeAvCodecContext(codec);
   ASSERT_NE(ctx, nullptr);
 }
 
@@ -155,7 +155,7 @@ TEST(AVCodecContextRAIITest, ContextIsFreedOnScopeExit) {
   }
 
   {
-    AVCodecContextPtr ctx = make_av_codec_context(codec);
+    AVCodecContextPtr ctx = MakeAvCodecContext(codec);
     ASSERT_NE(ctx, nullptr);
   }
   // AddressSanitizer will catch leaks
@@ -192,7 +192,7 @@ TEST(SwsContextRAIITest, ContextIsFreedOnScopeExit) {
 // =============================================================================
 
 TEST(SwrContextRAIITest, MakeSwrContext) {
-  SwrContextPtr ctx = make_swr_context();
+  SwrContextPtr ctx = MakeSwrContext();
   ASSERT_NE(ctx, nullptr);
 }
 
@@ -200,7 +200,7 @@ TEST(SwrContextRAIITest, MakeSwrContextInitialized) {
   AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
   AVChannelLayout mono = AV_CHANNEL_LAYOUT_MONO;
 
-  SwrContextPtr ctx = make_swr_context_initialized(
+  SwrContextPtr ctx = MakeSwrContextInitialized(
       &stereo, AV_SAMPLE_FMT_S16, 48000,
       &mono, AV_SAMPLE_FMT_FLT, 44100);
 
@@ -211,7 +211,7 @@ TEST(SwrContextRAIITest, ContextIsFreedOnScopeExit) {
   AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
 
   {
-    SwrContextPtr ctx = make_swr_context_initialized(
+    SwrContextPtr ctx = MakeSwrContextInitialized(
         &stereo, AV_SAMPLE_FMT_S16, 48000,
         &stereo, AV_SAMPLE_FMT_S16, 44100);
     ASSERT_NE(ctx, nullptr);
@@ -224,13 +224,13 @@ TEST(SwrContextRAIITest, ContextIsFreedOnScopeExit) {
 // =============================================================================
 
 TEST(AVFilterGraphRAIITest, MakeFilterGraph) {
-  AVFilterGraphPtr graph = make_filter_graph();
+  AVFilterGraphPtr graph = MakeFilterGraph();
   ASSERT_NE(graph, nullptr);
 }
 
 TEST(AVFilterGraphRAIITest, GraphIsFreedOnScopeExit) {
   {
-    AVFilterGraphPtr graph = make_filter_graph();
+    AVFilterGraphPtr graph = MakeFilterGraph();
     ASSERT_NE(graph, nullptr);
   }
   // AddressSanitizer will catch leaks
@@ -413,17 +413,17 @@ struct MockTSFN {
 TEST(SafeAsyncContextTest, ConstructionAndDestruction) {
   {
     SafeAsyncContext<MockTSFN> ctx;
-    EXPECT_FALSE(ctx.should_exit());
+    EXPECT_FALSE(ctx.ShouldExit());
   }
   // Destructor should complete without error
 }
 
 TEST(SafeAsyncContextTest, ShouldExitSignaling) {
   SafeAsyncContext<MockTSFN> ctx;
-  EXPECT_FALSE(ctx.should_exit());
+  EXPECT_FALSE(ctx.ShouldExit());
 
   ctx.shouldExit.store(true, std::memory_order_release);
-  EXPECT_TRUE(ctx.should_exit());
+  EXPECT_TRUE(ctx.ShouldExit());
 }
 
 TEST(SafeAsyncContextTest, TSFNReleasedOnDestruction) {
@@ -446,7 +446,7 @@ TEST(SafeAsyncContextTest, WorkerThreadJoinedOnDestruction) {
 
     ctx.workerThread = std::thread([&ctx, &worker_started, &worker_exited]() {
       worker_started.store(true, std::memory_order_release);
-      while (!ctx.should_exit()) {
+      while (!ctx.ShouldExit()) {
         std::this_thread::sleep_for(1ms);
       }
       worker_exited.store(true, std::memory_order_release);
@@ -509,7 +509,7 @@ TEST(SafeAsyncContextTest, LockAcquiresMutex) {
 TEST(FFmpegRAIITest, MultipleFramesWithBuffers) {
   std::vector<AVFramePtr> frames;
   for (int i = 0; i < 10; ++i) {
-    AVFramePtr frame = make_av_frame();
+    AVFramePtr frame = MakeAvFrame();
     ASSERT_NE(frame, nullptr);
     frame->width = 1920;
     frame->height = 1080;
@@ -523,7 +523,7 @@ TEST(FFmpegRAIITest, MultipleFramesWithBuffers) {
 TEST(FFmpegRAIITest, MultiplePacketsWithData) {
   std::vector<AVPacketPtr> packets;
   for (int i = 0; i < 10; ++i) {
-    AVPacketPtr packet = make_av_packet();
+    AVPacketPtr packet = MakeAvPacket();
     ASSERT_NE(packet, nullptr);
     ASSERT_GE(av_new_packet(packet.get(), 1024), 0);
     packets.push_back(std::move(packet));
@@ -541,7 +541,7 @@ TEST(FFmpegRAIITest, ConcurrentFrameAllocation) {
     threads.emplace_back([&start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kFramesPerThread; ++i) {
-        AVFramePtr frame = make_av_frame();
+        AVFramePtr frame = MakeAvFrame();
         EXPECT_NE(frame, nullptr);
         frame->width = 640;
         frame->height = 480;
@@ -567,7 +567,7 @@ TEST(FFmpegRAIITest, ConcurrentPacketAllocation) {
     threads.emplace_back([&start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kPacketsPerThread; ++i) {
-        AVPacketPtr packet = make_av_packet();
+        AVPacketPtr packet = MakeAvPacket();
         EXPECT_NE(packet, nullptr);
         av_new_packet(packet.get(), 256);
         // Packet freed on loop iteration

@@ -111,7 +111,7 @@ class VideoDecoderSimulator {
     std::lock_guard<std::mutex> lock(mutex_);
 
     // Allocate codec context (RAII)
-    codecCtx_ = make_av_codec_context(decoder);
+    codecCtx_ = MakeAvCodecContext(decoder);
     if (!codecCtx_) {
       return {ErrorType::EncodingError, "Failed to allocate codec context"};
     }
@@ -178,7 +178,7 @@ class VideoDecoderSimulator {
     }
 
     // Create packet from data
-    AVPacketPtr packet = make_av_packet();
+    AVPacketPtr packet = MakeAvPacket();
     if (!packet) {
       decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
       return {ErrorType::EncodingError, "Failed to allocate packet"};
@@ -206,7 +206,7 @@ class VideoDecoderSimulator {
 
     // Receive all available frames
     if (output_frames) {
-      AVFramePtr frame = make_av_frame();
+      AVFramePtr frame = MakeAvFrame();
       while (frame) {
         ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
@@ -216,7 +216,7 @@ class VideoDecoderSimulator {
           decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
           return {ErrorType::EncodingError, "Error receiving frame"};
         }
-        output_frames->push_back(clone_av_frame(frame.get()));
+        output_frames->push_back(CloneAvFrame(frame.get()));
         av_frame_unref(frame.get());
       }
     }
@@ -259,7 +259,7 @@ class VideoDecoderSimulator {
 
     // Receive all remaining frames
     if (output_frames) {
-      AVFramePtr frame = make_av_frame();
+      AVFramePtr frame = MakeAvFrame();
       while (frame) {
         ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
         if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
@@ -268,7 +268,7 @@ class VideoDecoderSimulator {
         if (ret < 0) {
           return {ErrorType::EncodingError, "Error draining frames"};
         }
-        output_frames->push_back(clone_av_frame(frame.get()));
+        output_frames->push_back(CloneAvFrame(frame.get()));
         av_frame_unref(frame.get());
       }
     }

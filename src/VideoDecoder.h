@@ -42,7 +42,7 @@ private:
   std::atomic<uint32_t> decodeQueueSize_{0};
 
   // --- Key Chunk Tracking ---
-  bool keyChunkRequired_{true};
+  std::atomic<bool> keyChunkRequired_{true};
 
   // --- Callbacks ---
   Napi::FunctionReference outputCallback_;

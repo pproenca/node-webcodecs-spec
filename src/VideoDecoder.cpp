@@ -126,7 +126,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
 
   // [SPEC] 1. If config is not a valid VideoDecoderConfig, throw TypeError
   if (info.Length() < 1 || !info[0].IsObject()) {
-    errors::throw_type_error(env, "VideoDecoderConfig is required");
+    errors::ThrowTypeError(env, "VideoDecoderConfig is required");
     return env.Undefined();
   }
 
@@ -134,7 +134,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
 
   // Required: codec string
   if (!config.Has("codec") || !config.Get("codec").IsString()) {
-    errors::throw_type_error(env, "codec is required and must be a string");
+    errors::ThrowTypeError(env, "codec is required and must be a string");
     return env.Undefined();
   }
 
@@ -142,21 +142,21 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
 
   // [SPEC] 2. If state is "closed", throw InvalidStateError
   if (state_.is_closed()) {
-    errors::throw_invalid_state_error(env, "configure called on closed decoder");
+    errors::ThrowInvalidStateError(env, "configure called on closed decoder");
     return env.Undefined();
   }
 
   // Parse codec string to get FFmpeg codec ID
   auto codec_info = ParseCodecString(codec_string);
   if (!codec_info) {
-    errors::throw_not_supported_error(env, "Unsupported codec: " + codec_string);
+    errors::ThrowNotSupportedError(env, "Unsupported codec: " + codec_string);
     return env.Undefined();
   }
 
   // Find FFmpeg decoder
   const AVCodec* decoder = avcodec_find_decoder(codec_info->codec_id);
   if (!decoder) {
-    errors::throw_not_supported_error(env, "No decoder available for: " + codec_string);
+    errors::ThrowNotSupportedError(env, "No decoder available for: " + codec_string);
     return env.Undefined();
   }
 
@@ -164,9 +164,9 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   // Allocate codec context (RAII)
-  codecCtx_ = raii::make_av_codec_context(decoder);
+  codecCtx_ = raii::MakeAvCodecContext(decoder);
   if (!codecCtx_) {
-    errors::throw_encoding_error(env, "Failed to allocate codec context");
+    errors::ThrowEncodingError(env, "Failed to allocate codec context");
     return env.Undefined();
   }
 
@@ -202,7 +202,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   int ret = avcodec_open2(codecCtx_.get(), decoder, nullptr);
   if (ret < 0) {
     codecCtx_.reset();
-    errors::throw_encoding_error(env, ret, "Failed to open decoder");
+    errors::ThrowEncodingError(env, ret, "Failed to open decoder");
     return env.Undefined();
   }
 
@@ -210,7 +210,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   // [SPEC] 4. Set key chunk required to true
   state_.transition(raii::AtomicCodecState::State::Unconfigured,
                     raii::AtomicCodecState::State::Configured);
-  keyChunkRequired_ = true;
+  keyChunkRequired_.store(true, std::memory_order_release);
 
   return env.Undefined();
 }
@@ -220,14 +220,14 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
 
   // [SPEC] 1. If state is not "configured", throw InvalidStateError
   if (!state_.is_configured()) {
-    errors::throw_invalid_state_error(env, "decode called on " +
+    errors::ThrowInvalidStateError(env, "decode called on " +
         std::string(state_.to_string()) + " decoder");
     return env.Undefined();
   }
 
   // Validate chunk argument
   if (info.Length() < 1 || !info[0].IsObject()) {
-    errors::throw_type_error(env, "EncodedVideoChunk is required");
+    errors::ThrowTypeError(env, "EncodedVideoChunk is required");
     return env.Undefined();
   }
 
@@ -240,12 +240,12 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] 2. If key chunk required is true, check for key frame
-  if (keyChunkRequired_) {
+  if (keyChunkRequired_.load(std::memory_order_acquire)) {
     if (chunk_type != "key") {
-      errors::throw_data_error(env, "A key frame is required");
+      errors::ThrowDataError(env, "A key frame is required");
       return env.Undefined();
     }
-    keyChunkRequired_ = false;
+    keyChunkRequired_.store(false, std::memory_order_release);
   }
 
   // Get chunk data - support both EncodedVideoChunk wrapper and plain objects
@@ -266,7 +266,7 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   }
 
   if (!data || size == 0) {
-    errors::throw_type_error(env, "Chunk data is required");
+    errors::ThrowTypeError(env, "Chunk data is required");
     return env.Undefined();
   }
 
@@ -283,7 +283,7 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   raii::AVPacketPtr packet = buffer_utils::CreatePacketFromBuffer(data, size);
   if (!packet) {
     decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
-    errors::throw_encoding_error(env, "Failed to create packet");
+    errors::ThrowEncodingError(env, "Failed to create packet");
     return env.Undefined();
   }
 
@@ -301,7 +301,7 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
 
   if (!codecCtx_) {
     decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
-    errors::throw_invalid_state_error(env, "Decoder not configured");
+    errors::ThrowInvalidStateError(env, "Decoder not configured");
     return env.Undefined();
   }
 
@@ -309,15 +309,15 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   int ret = avcodec_send_packet(codecCtx_.get(), packet.get());
   if (ret < 0 && ret != AVERROR(EAGAIN)) {
     decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
-    errors::throw_encoding_error(env, ret, "Failed to send packet to decoder");
+    errors::ThrowEncodingError(env, ret, "Failed to send packet to decoder");
     return env.Undefined();
   }
 
   // Receive all available frames
-  raii::AVFramePtr frame = raii::make_av_frame();
+  raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
     decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
-    errors::throw_encoding_error(env, "Failed to allocate frame");
+    errors::ThrowEncodingError(env, "Failed to allocate frame");
     return env.Undefined();
   }
 
@@ -328,7 +328,7 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
     }
     if (ret < 0) {
       decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
-      errors::throw_encoding_error(env, ret, "Error receiving frame");
+      errors::ThrowEncodingError(env, ret, "Error receiving frame");
       return env.Undefined();
     }
 
@@ -369,7 +369,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] 2. Set key chunk required to true
-  keyChunkRequired_ = true;
+  keyChunkRequired_.store(true, std::memory_order_release);
 
   // [SPEC] 3. Create promise
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -393,7 +393,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   }
 
   // Receive all remaining frames
-  raii::AVFramePtr frame = raii::make_av_frame();
+  raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
     Napi::Error error = Napi::Error::New(env,
         "EncodingError: Failed to allocate frame");
@@ -440,7 +440,7 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
 
   // [SPEC] If state is "closed", throw InvalidStateError
   if (state_.is_closed()) {
-    errors::throw_invalid_state_error(env, "reset called on closed decoder");
+    errors::ThrowInvalidStateError(env, "reset called on closed decoder");
     return env.Undefined();
   }
 
@@ -459,7 +459,7 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
   }
 
   // Reset key chunk requirement
-  keyChunkRequired_ = true;
+  keyChunkRequired_.store(true, std::memory_order_release);
 
   // Transition back to unconfigured state
   // Release codec context so configure() must be called again

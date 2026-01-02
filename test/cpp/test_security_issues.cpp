@@ -70,7 +70,7 @@ using namespace std::chrono_literals;
  *   if (some_error) return;  // LEAK! ctx not freed
  *
  * NEW CODE (SAFE with RAII):
- *   AVCodecContextPtr ctx = make_av_codec_context(codec);
+ *   AVCodecContextPtr ctx = MakeAvCodecContext(codec);
  *   if (some_error) return;  // No leak - RAII frees ctx
  */
 TEST(SecurityIssuesTest, RAIIPreventMemoryLeakOnEarlyReturn) {
@@ -81,7 +81,7 @@ TEST(SecurityIssuesTest, RAIIPreventMemoryLeakOnEarlyReturn) {
 
   // Simulate multiple early returns - each should not leak
   for (int i = 0; i < 100; i++) {
-    AVCodecContextPtr ctx = make_av_codec_context(codec);
+    AVCodecContextPtr ctx = MakeAvCodecContext(codec);
     ASSERT_NE(ctx, nullptr);
 
     // Simulate various early return conditions
@@ -105,7 +105,7 @@ TEST(SecurityIssuesTest, RAIIPreventMemoryLeakOnEarlyReturn) {
  *   do_something_that_throws();  // Exception! ctx leaked
  *
  * NEW CODE (SAFE with RAII):
- *   AVCodecContextPtr ctx = make_av_codec_context(codec);
+ *   AVCodecContextPtr ctx = MakeAvCodecContext(codec);
  *   do_something_that_throws();  // Exception! RAII cleans up ctx
  */
 TEST(SecurityIssuesTest, RAIIPreventMemoryLeakOnException) {
@@ -116,9 +116,9 @@ TEST(SecurityIssuesTest, RAIIPreventMemoryLeakOnException) {
 
   for (int i = 0; i < 50; i++) {
     try {
-      AVCodecContextPtr ctx = make_av_codec_context(codec);
-      AVFramePtr frame = make_av_frame();
-      AVPacketPtr packet = make_av_packet();
+      AVCodecContextPtr ctx = MakeAvCodecContext(codec);
+      AVFramePtr frame = MakeAvFrame();
+      AVPacketPtr packet = MakeAvPacket();
 
       ASSERT_NE(ctx, nullptr);
       ASSERT_NE(frame, nullptr);
@@ -166,7 +166,7 @@ TEST(SecurityIssuesTest, VideoEncoderPattern_RAIIvsRawPointer) {
     AtomicCodecState state;
 
     bool configure(const AVCodec* codec) {
-      codecCtx = make_av_codec_context(codec);
+      codecCtx = MakeAvCodecContext(codec);
       if (!codecCtx) return false;
       state.transition(AtomicCodecState::State::Unconfigured,
                        AtomicCodecState::State::Configured);
@@ -230,14 +230,14 @@ TEST(SecurityIssuesTest, WorkerThreadJoinedBeforeCodecFreed) {
   {
     // Using the fixed AsyncDecodeContext from Utils.h
     AsyncDecodeContext ctx;
-    ctx.codecCtx = make_av_codec_context(codec);
+    ctx.codecCtx = MakeAvCodecContext(codec);
     ASSERT_NE(ctx.codecCtx, nullptr);
 
     // Start worker that accesses codec
     ctx.workerThread = std::thread([&ctx, &codec_accesses, &worker_started, &worker_finished]() {
       worker_started.store(true, std::memory_order_release);
 
-      while (!ctx.should_exit()) {
+      while (!ctx.ShouldExit()) {
         // Simulate codec access under lock
         auto lock = ctx.lock();
         if (ctx.codecCtx) {
@@ -283,12 +283,12 @@ TEST(SecurityIssuesTest, ConcurrentCloseWhileWorkerRunning) {
 
   for (int iter = 0; iter < 10; iter++) {
     AsyncDecodeContext ctx;
-    ctx.codecCtx = make_av_codec_context(codec);
+    ctx.codecCtx = MakeAvCodecContext(codec);
     std::atomic<bool> worker_started{false};
 
     ctx.workerThread = std::thread([&ctx, &worker_started]() {
       worker_started.store(true);
-      while (!ctx.should_exit()) {
+      while (!ctx.ShouldExit()) {
         auto lock = ctx.lock();
         if (ctx.codecCtx) {
           // Access codec (would crash if freed prematurely)
@@ -321,7 +321,7 @@ TEST(SecurityIssuesTest, ConcurrentCloseWhileWorkerRunning) {
  * Tests that move semantics prevent double-free.
  */
 TEST(SecurityIssuesTest, MovePreventDoubleFree) {
-  AVFramePtr frame1 = make_av_frame();
+  AVFramePtr frame1 = MakeAvFrame();
   ASSERT_NE(frame1, nullptr);
 
   // Move to frame2
@@ -339,7 +339,7 @@ TEST(SecurityIssuesTest, MovePreventDoubleFree) {
  * Tests multiple moves don't cause issues.
  */
 TEST(SecurityIssuesTest, ChainedMovesAresSafe) {
-  AVPacketPtr p1 = make_av_packet();
+  AVPacketPtr p1 = MakeAvPacket();
   ASSERT_GE(av_new_packet(p1.get(), 1024), 0);
 
   AVPacketPtr p2 = std::move(p1);
@@ -486,7 +486,7 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
 
   {
     OrderTrackingContext ctx(cleanup_order, order_mutex);
-    ctx.codecCtx = make_av_codec_context(codec);
+    ctx.codecCtx = MakeAvCodecContext(codec);
 
     ctx.workerThread = std::thread([&ctx, &cleanup_order, &order_mutex]() {
       while (!ctx.shouldExit.load()) {
@@ -558,7 +558,7 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
     std::vector<std::string>* cleanup_order;
 
     void configure(const AVCodec* codec) {
-      codecCtx = make_av_codec_context(codec);
+      codecCtx = MakeAvCodecContext(codec);
       state.transition(AtomicCodecState::State::Unconfigured,
                        AtomicCodecState::State::Configured);
     }
@@ -662,7 +662,7 @@ TEST(SecurityIssuesTest, VideoEncoderReleaseConcurrentSafety) {
     std::atomic<int> rejected_uses{0};
 
     void configure(const AVCodec* codec) {
-      codecCtx = make_av_codec_context(codec);
+      codecCtx = MakeAvCodecContext(codec);
       state.transition(AtomicCodecState::State::Unconfigured,
                        AtomicCodecState::State::Configured);
     }
@@ -761,7 +761,7 @@ TEST(SecurityIssuesTest, StressTestManyEncoderInstances) {
   }
 
   for (int i = 0; i < 100; i++) {
-    AVCodecContextPtr ctx = make_av_codec_context(codec);
+    AVCodecContextPtr ctx = MakeAvCodecContext(codec);
     ASSERT_NE(ctx, nullptr);
 
     // Configure basic parameters
@@ -787,12 +787,12 @@ TEST(SecurityIssuesTest, StressTestManyDecoderContexts) {
 
   for (int i = 0; i < 20; i++) {
     AsyncDecodeContext ctx;
-    ctx.codecCtx = make_av_codec_context(codec);
+    ctx.codecCtx = MakeAvCodecContext(codec);
 
     std::atomic<bool> started{false};
     ctx.workerThread = std::thread([&ctx, &started]() {
       started.store(true);
-      while (!ctx.should_exit()) {
+      while (!ctx.ShouldExit()) {
         std::this_thread::sleep_for(1ms);
       }
     });
@@ -825,9 +825,9 @@ TEST(SecurityIssuesTest, StressTestConcurrentCreateDestroy) {
   for (int t = 0; t < kThreads; t++) {
     threads.emplace_back([codec]() {
       for (int i = 0; i < kIterations; i++) {
-        AVCodecContextPtr ctx = make_av_codec_context(codec);
-        AVFramePtr frame = make_av_frame();
-        AVPacketPtr packet = make_av_packet();
+        AVCodecContextPtr ctx = MakeAvCodecContext(codec);
+        AVFramePtr frame = MakeAvFrame();
+        AVPacketPtr packet = MakeAvPacket();
 
         if (ctx && frame && packet) {
           // Simulate some work

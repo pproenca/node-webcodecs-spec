@@ -6,7 +6,7 @@
  * These wrappers guarantee cleanup on all code paths including exceptions.
  *
  * Usage:
- *   AVFramePtr frame = make_av_frame();
+ *   AVFramePtr frame = MakeAvFrame();
  *   if (!frame) { handle allocation failure }
  *   Use frame->data, frame->linesize, etc.
  *   Automatically freed when scope exits
@@ -152,7 +152,7 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  * Creates a new AVFrame wrapped in RAII.
  * Returns nullptr on allocation failure.
  */
-inline AVFramePtr make_av_frame() {
+[[nodiscard]] inline AVFramePtr MakeAvFrame() {
   return AVFramePtr(av_frame_alloc());
 }
 
@@ -160,7 +160,7 @@ inline AVFramePtr make_av_frame() {
  * Creates a new AVPacket wrapped in RAII.
  * Returns nullptr on allocation failure.
  */
-inline AVPacketPtr make_av_packet() {
+[[nodiscard]] inline AVPacketPtr MakeAvPacket() {
   return AVPacketPtr(av_packet_alloc());
 }
 
@@ -168,7 +168,7 @@ inline AVPacketPtr make_av_packet() {
  * Creates a new AVCodecContext for the given codec.
  * Returns nullptr on allocation failure.
  */
-inline AVCodecContextPtr make_av_codec_context(const AVCodec* codec) {
+[[nodiscard]] inline AVCodecContextPtr MakeAvCodecContext(const AVCodec* codec) {
   return AVCodecContextPtr(avcodec_alloc_context3(codec));
 }
 
@@ -177,10 +177,10 @@ inline AVCodecContextPtr make_av_codec_context(const AVCodec* codec) {
  * The new frame references the same underlying buffers (refcounted).
  * Returns nullptr on failure.
  */
-inline AVFramePtr clone_av_frame(const AVFrame* src) {
+[[nodiscard]] inline AVFramePtr CloneAvFrame(const AVFrame* src) {
   if (!src) return nullptr;
 
-  AVFramePtr dst = make_av_frame();
+  AVFramePtr dst = MakeAvFrame();
   if (!dst) return nullptr;
 
   if (av_frame_ref(dst.get(), src) < 0) {
@@ -195,10 +195,10 @@ inline AVFramePtr clone_av_frame(const AVFrame* src) {
  * The new packet references the same underlying data (refcounted).
  * Returns nullptr on failure.
  */
-inline AVPacketPtr clone_av_packet(const AVPacket* src) {
+[[nodiscard]] inline AVPacketPtr CloneAvPacket(const AVPacket* src) {
   if (!src) return nullptr;
 
-  AVPacketPtr dst = make_av_packet();
+  AVPacketPtr dst = MakeAvPacket();
   if (!dst) return nullptr;
 
   if (av_packet_ref(dst.get(), src) < 0) {
@@ -213,7 +213,7 @@ inline AVPacketPtr clone_av_packet(const AVPacket* src) {
  * Returns nullptr on allocation failure.
  * Caller must call swr_init() after setting options via av_opt_set_*.
  */
-inline SwrContextPtr make_swr_context() {
+[[nodiscard]] inline SwrContextPtr MakeSwrContext() {
   return SwrContextPtr(swr_alloc());
 }
 
@@ -228,7 +228,7 @@ inline SwrContextPtr make_swr_context() {
  * @param in_sample_fmt Input sample format
  * @param in_sample_rate Input sample rate
  */
-[[nodiscard]] inline SwrContextPtr make_swr_context_initialized(
+[[nodiscard]] inline SwrContextPtr MakeSwrContextInitialized(
     const AVChannelLayout* out_ch_layout, AVSampleFormat out_sample_fmt, int out_sample_rate,
     const AVChannelLayout* in_ch_layout, AVSampleFormat in_sample_fmt, int in_sample_rate) {
   SwrContext* ctx = nullptr;
@@ -249,7 +249,7 @@ inline SwrContextPtr make_swr_context() {
  * Creates a new AVFilterGraph for video/audio filtering.
  * Returns nullptr on allocation failure.
  */
-inline AVFilterGraphPtr make_filter_graph() {
+[[nodiscard]] inline AVFilterGraphPtr MakeFilterGraph() {
   return AVFilterGraphPtr(avfilter_graph_alloc());
 }
 
@@ -315,7 +315,7 @@ struct SafeAsyncContext {
   /**
    * Thread-safe check if context should exit.
    */
-  bool should_exit() const {
+  bool ShouldExit() const {
     return shouldExit.load(std::memory_order_acquire);
   }
 

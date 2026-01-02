@@ -10,9 +10,9 @@
  * Usage:
  *   int ret = avcodec_send_packet(ctx, pkt);
  *   if (ret < 0) {
- *     auto classification = classify_ffmpeg_error(ret);
+ *     auto classification = ClassifyFfmpegError(ret);
  *     if (classification == FFmpegErrorClass::Error) {
- *       throw_encoding_error(env, ret, "Failed to send packet");
+ *       ThrowEncodingError(env, ret, "Failed to send packet");
  *     }
  *   }
  */
@@ -35,7 +35,7 @@ namespace errors {
  * Convert an FFmpeg error code to a human-readable string.
  * Uses av_strerror internally.
  */
-inline std::string ffmpeg_error_string(int errnum) {
+inline std::string FfmpegErrorString(int errnum) {
   char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
   av_strerror(errnum, errbuf, sizeof(errbuf));
   return std::string(errbuf);
@@ -45,10 +45,10 @@ inline std::string ffmpeg_error_string(int errnum) {
  * Create a detailed error message with FFmpeg error info.
  * Format: "context: ffmpeg_error (errno)"
  */
-inline std::string make_error_message(const char* context, int errnum) {
+inline std::string MakeErrorMessage(const char* context, int errnum) {
   std::string msg = context;
   msg += ": ";
-  msg += ffmpeg_error_string(errnum);
+  msg += FfmpegErrorString(errnum);
   msg += " (";
   msg += std::to_string(errnum);
   msg += ")";
@@ -72,7 +72,7 @@ enum class FFmpegErrorClass {
 /**
  * Classify an FFmpeg return value for control flow decisions.
  */
-inline FFmpegErrorClass classify_ffmpeg_error(int ret) {
+inline FFmpegErrorClass ClassifyFfmpegError(int ret) {
   if (ret >= 0) {
     return FFmpegErrorClass::Success;
   }
@@ -88,8 +88,8 @@ inline FFmpegErrorClass classify_ffmpeg_error(int ret) {
 /**
  * Check if error is recoverable (EAGAIN or EOF).
  */
-inline bool is_recoverable_error(int ret) {
-  auto cls = classify_ffmpeg_error(ret);
+inline bool IsRecoverableError(int ret) {
+  auto cls = ClassifyFfmpegError(ret);
   return cls == FFmpegErrorClass::Again || cls == FFmpegErrorClass::Eof;
 }
 
@@ -101,7 +101,7 @@ inline bool is_recoverable_error(int ret) {
  * Throw a NotSupportedError DOMException.
  * Used when: codec/config is not supported by the implementation.
  */
-inline void throw_not_supported_error(Napi::Env env, const std::string& message) {
+inline void ThrowNotSupportedError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "NotSupportedError: " + message);
   error.Set("name", Napi::String::New(env, "NotSupportedError"));
   error.ThrowAsJavaScriptException();
@@ -111,7 +111,7 @@ inline void throw_not_supported_error(Napi::Env env, const std::string& message)
  * Throw an InvalidStateError DOMException.
  * Used when: method called in wrong state (e.g., decode before configure).
  */
-inline void throw_invalid_state_error(Napi::Env env, const std::string& message) {
+inline void ThrowInvalidStateError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "InvalidStateError: " + message);
   error.Set("name", Napi::String::New(env, "InvalidStateError"));
   error.ThrowAsJavaScriptException();
@@ -121,7 +121,7 @@ inline void throw_invalid_state_error(Napi::Env env, const std::string& message)
  * Throw a DataError DOMException.
  * Used when: input data is malformed or invalid.
  */
-inline void throw_data_error(Napi::Env env, const std::string& message) {
+inline void ThrowDataError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "DataError: " + message);
   error.Set("name", Napi::String::New(env, "DataError"));
   error.ThrowAsJavaScriptException();
@@ -131,7 +131,7 @@ inline void throw_data_error(Napi::Env env, const std::string& message) {
  * Throw an EncodingError DOMException.
  * Used when: encode/decode operation fails due to codec error.
  */
-inline void throw_encoding_error(Napi::Env env, const std::string& message) {
+inline void ThrowEncodingError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "EncodingError: " + message);
   error.Set("name", Napi::String::New(env, "EncodingError"));
   error.ThrowAsJavaScriptException();
@@ -140,17 +140,17 @@ inline void throw_encoding_error(Napi::Env env, const std::string& message) {
 /**
  * Throw an EncodingError with FFmpeg error details.
  */
-inline void throw_encoding_error(Napi::Env env, int ffmpeg_err,
+inline void ThrowEncodingError(Napi::Env env, int ffmpeg_err,
                                   const char* context) {
-  std::string message = make_error_message(context, ffmpeg_err);
-  throw_encoding_error(env, message);
+  std::string message = MakeErrorMessage(context, ffmpeg_err);
+  ThrowEncodingError(env, message);
 }
 
 /**
  * Throw an AbortError DOMException.
  * Used when: operation was aborted by user (reset/close).
  */
-inline void throw_abort_error(Napi::Env env, const std::string& message) {
+inline void ThrowAbortError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "AbortError: " + message);
   error.Set("name", Napi::String::New(env, "AbortError"));
   error.ThrowAsJavaScriptException();
@@ -160,7 +160,7 @@ inline void throw_abort_error(Napi::Env env, const std::string& message) {
  * Throw a TypeError.
  * Used when: argument type/value is invalid.
  */
-inline void throw_type_error(Napi::Env env, const std::string& message) {
+inline void ThrowTypeError(Napi::Env env, const std::string& message) {
   Napi::TypeError::New(env, message).ThrowAsJavaScriptException();
 }
 
@@ -170,13 +170,13 @@ inline void throw_type_error(Napi::Env env, const std::string& message) {
 
 /**
  * Check FFmpeg return value and throw EncodingError on failure.
- * Usage: FFMPEG_CHECK(env, avcodec_send_packet(ctx, pkt), "send packet");
+ * Usage: WEBCODECS_FFMPEG_CHECK(env, avcodec_send_packet(ctx, pkt), "send packet");
  */
-#define FFMPEG_CHECK(env, expr, context) \
+#define WEBCODECS_FFMPEG_CHECK(env, expr, context) \
   do { \
     int __ret = (expr); \
-    if (__ret < 0 && !::webcodecs::errors::is_recoverable_error(__ret)) { \
-      ::webcodecs::errors::throw_encoding_error(env, __ret, context); \
+    if (__ret < 0 && !::webcodecs::errors::IsRecoverableError(__ret)) { \
+      ::webcodecs::errors::ThrowEncodingError(env, __ret, context); \
       return env.Undefined(); \
     } \
   } while (0)
@@ -184,8 +184,8 @@ inline void throw_type_error(Napi::Env env, const std::string& message) {
 /**
  * Check FFmpeg return value and return the error class for control flow.
  */
-#define FFMPEG_CLASSIFY(expr) \
-  ::webcodecs::errors::classify_ffmpeg_error(expr)
+#define WEBCODECS_FFMPEG_CLASSIFY(expr) \
+  ::webcodecs::errors::ClassifyFfmpegError(expr)
 
 // =============================================================================
 // STATE VALIDATION HELPERS
@@ -195,12 +195,12 @@ inline void throw_type_error(Napi::Env env, const std::string& message) {
  * Check if codec is in configured state, throw InvalidStateError if not.
  */
 template<typename StateType>
-inline bool require_configured_state(Napi::Env env, const StateType& state,
+inline bool RequireConfiguredState(Napi::Env env, const StateType& state,
                                       const char* method_name) {
   if (!state.is_configured()) {
     std::string msg = std::string(method_name) +
         " called on " + state.to_string() + " decoder";
-    throw_invalid_state_error(env, msg);
+    ThrowInvalidStateError(env, msg);
     return false;
   }
   return true;
@@ -210,11 +210,11 @@ inline bool require_configured_state(Napi::Env env, const StateType& state,
  * Check if codec is not closed, throw InvalidStateError if closed.
  */
 template<typename StateType>
-inline bool require_not_closed(Napi::Env env, const StateType& state,
+inline bool RequireNotClosed(Napi::Env env, const StateType& state,
                                 const char* method_name) {
   if (state.is_closed()) {
     std::string msg = std::string(method_name) + " called on closed codec";
-    throw_invalid_state_error(env, msg);
+    ThrowInvalidStateError(env, msg);
     return false;
   }
   return true;

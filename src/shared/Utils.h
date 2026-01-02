@@ -98,7 +98,7 @@ struct AsyncDecodeContext {
    * Thread-safe check if context should exit.
    * Use this in worker loops.
    */
-  bool should_exit() const {
+  bool ShouldExit() const {
     return shouldExit.load(std::memory_order_acquire);
   }
 
@@ -119,19 +119,19 @@ struct AsyncDecodeContext {
 #ifndef WEBCODECS_TESTING
 
 // Macro: Ensure condition is met or throw JS Error
-#define ENSURE(env, condition, message) \
+#define WEBCODECS_ENSURE(env, condition, message) \
     if (!(condition)) { \
         Napi::Error::New(env, message).ThrowAsJavaScriptException(); \
         return env.Null(); \
     }
 
 // Macro: Check argument count
-#define CHECK_ARGS(env, info, count) \
-    ENSURE(env, info.Length() >= count, "Invalid number of arguments")
+#define WEBCODECS_CHECK_ARGS(env, info, count) \
+    WEBCODECS_ENSURE(env, info.Length() >= count, "Invalid number of arguments")
 
 // Macro: Assert state matches expected
-#define ENSURE_STATE(env, actual, expected, message) \
-    ENSURE(env, actual == expected, message)
+#define WEBCODECS_ENSURE_STATE(env, actual, expected, message) \
+    WEBCODECS_ENSURE(env, actual == expected, message)
 
 // --- ASYNC WORKER TEMPLATE ---
 // Use this for all heavy FFmpeg tasks to avoid blocking the Event Loop.

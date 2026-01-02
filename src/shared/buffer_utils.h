@@ -134,7 +134,7 @@ inline raii::AVFramePtr CreateFrameFromBuffer(
   }
 
   // Allocate frame
-  raii::AVFramePtr frame = raii::make_av_frame();
+  raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
     return nullptr;
   }
@@ -360,7 +360,7 @@ inline raii::AVPacketPtr CreatePacketFromBuffer(const uint8_t* data, size_t size
     return nullptr;
   }
 
-  raii::AVPacketPtr packet = raii::make_av_packet();
+  raii::AVPacketPtr packet = raii::MakeAvPacket();
   if (!packet) {
     return nullptr;
   }

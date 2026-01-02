@@ -68,17 +68,17 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
 
     // Required: format
     if (!init.Has("format") || !init.Get("format").IsString()) {
-      errors::throw_type_error(env, "format is required");
+      errors::ThrowTypeError(env, "format is required");
       return;
     }
 
     // Required: codedWidth and codedHeight
     if (!init.Has("codedWidth") || !init.Get("codedWidth").IsNumber()) {
-      errors::throw_type_error(env, "codedWidth is required");
+      errors::ThrowTypeError(env, "codedWidth is required");
       return;
     }
     if (!init.Has("codedHeight") || !init.Get("codedHeight").IsNumber()) {
-      errors::throw_type_error(env, "codedHeight is required");
+      errors::ThrowTypeError(env, "codedHeight is required");
       return;
     }
 
@@ -87,13 +87,13 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
     int height = init.Get("codedHeight").As<Napi::Number>().Int32Value();
 
     if (width <= 0 || height <= 0) {
-      errors::throw_type_error(env, "codedWidth and codedHeight must be positive");
+      errors::ThrowTypeError(env, "codedWidth and codedHeight must be positive");
       return;
     }
 
     AVPixelFormat pix_fmt = StringToPixelFormat(format_str);
     if (pix_fmt == AV_PIX_FMT_NONE) {
-      errors::throw_type_error(env, "Unsupported pixel format: " + format_str);
+      errors::ThrowTypeError(env, "Unsupported pixel format: " + format_str);
       return;
     }
 
@@ -101,7 +101,7 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
     const uint8_t* data = nullptr;
     size_t size = 0;
     if (!buffer_utils::ExtractBufferData(info[0], &data, &size) || !data || size == 0) {
-      errors::throw_type_error(env, "data must be an ArrayBuffer or TypedArray");
+      errors::ThrowTypeError(env, "data must be an ArrayBuffer or TypedArray");
       return;
     }
 
@@ -109,7 +109,7 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
     frame_ = buffer_utils::CreateFrameFromBuffer(data, size, width, height,
                                                   static_cast<int>(pix_fmt));
     if (!frame_) {
-      errors::throw_type_error(env, "Failed to create frame from data");
+      errors::ThrowTypeError(env, "Failed to create frame from data");
       return;
     }
 
@@ -128,7 +128,7 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info)
 
   // If we get here with arguments but not matching pattern, error
   if (info.Length() > 0) {
-    errors::throw_type_error(env, "Invalid VideoFrame constructor arguments");
+    errors::ThrowTypeError(env, "Invalid VideoFrame constructor arguments");
   }
 }
 
@@ -157,7 +157,7 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
   VideoFrame* frame = Napi::ObjectWrap<VideoFrame>::Unwrap(jsFrame);
 
   // Clone the AVFrame (refcounted - shares underlying buffers)
-  frame->frame_ = raii::clone_av_frame(srcFrame);
+  frame->frame_ = raii::CloneAvFrame(srcFrame);
   if (!frame->frame_) {
     Napi::Error::New(env, "Failed to clone AVFrame")
         .ThrowAsJavaScriptException();
@@ -395,7 +395,7 @@ Napi::Value VideoFrame::AllocationSize(const Napi::CallbackInfo& info) {
   // Throws if frame is closed
 
   if (closed_.load(std::memory_order_acquire) || !frame_) {
-    errors::throw_invalid_state_error(env, "VideoFrame is closed");
+    errors::ThrowInvalidStateError(env, "VideoFrame is closed");
     return env.Undefined();
   }
 
@@ -405,7 +405,7 @@ Napi::Value VideoFrame::AllocationSize(const Napi::CallbackInfo& info) {
       frame_->format, frame_->width, frame_->height, 1);
 
   if (size < 0) {
-    errors::throw_encoding_error(env, "Failed to calculate buffer size");
+    errors::ThrowEncodingError(env, "Failed to calculate buffer size");
     return env.Undefined();
   }
 
