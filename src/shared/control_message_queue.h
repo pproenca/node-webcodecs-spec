@@ -315,6 +315,175 @@ using VideoControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePt
 using AudioControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePtr>;
 
 // ===========================================================================
+// IMAGE DECODER MESSAGE TYPES
+// ===========================================================================
+
+/**
+ * ImageDecoder has a different architecture than Video/AudioDecoder:
+ * - Image data is provided in constructor (BufferSource), not per-decode
+ * - decode() specifies which frame to decode by index
+ * - No flush() method (images are decoded on-demand)
+ * - Supports multi-track images (animated GIF, WebP)
+ */
+
+/**
+ * Configure message for ImageDecoder.
+ * Contains the image data and configuration options.
+ */
+struct ImageConfigureMessage {
+  std::string type;  // MIME type (e.g., "image/jpeg")
+  std::vector<uint8_t> data;  // Encoded image data
+  std::string color_space_conversion;
+  std::optional<uint32_t> desired_width;
+  std::optional<uint32_t> desired_height;
+  std::optional<bool> prefer_animation;
+};
+
+/**
+ * Decode message for ImageDecoder.
+ * Specifies which frame to decode.
+ */
+struct ImageDecodeMessage {
+  uint32_t frame_index;
+  bool complete_frames_only;
+  uint32_t promise_id;  // For resolving the decode promise
+};
+
+/**
+ * Reset message for ImageDecoder.
+ * Aborts pending decodes with AbortError.
+ */
+struct ImageResetMessage {};
+
+/**
+ * Close message for ImageDecoder.
+ * Permanently closes the decoder and releases resources.
+ */
+struct ImageCloseMessage {};
+
+/**
+ * Update selected track message for ImageDecoder.
+ * Changes which track is selected for decoding.
+ */
+struct ImageUpdateTrackMessage {
+  int32_t selected_index;
+};
+
+/**
+ * Variant type for all ImageDecoder messages.
+ */
+using ImageMessage = std::variant<ImageConfigureMessage, ImageDecodeMessage, ImageResetMessage,
+                                   ImageCloseMessage, ImageUpdateTrackMessage>;
+
+/**
+ * Thread-safe control message queue for ImageDecoder.
+ * Similar to ControlMessageQueue but with image-specific message types.
+ */
+class ImageControlQueue {
+ public:
+  using Message = ImageMessage;
+
+  ImageControlQueue() = default;
+  ~ImageControlQueue() { Shutdown(); }
+
+  // Non-copyable, non-movable
+  ImageControlQueue(const ImageControlQueue&) = delete;
+  ImageControlQueue& operator=(const ImageControlQueue&) = delete;
+  ImageControlQueue(ImageControlQueue&&) = delete;
+  ImageControlQueue& operator=(ImageControlQueue&&) = delete;
+
+  /**
+   * Enqueue a message for processing.
+   * Thread-safe, called from JS main thread.
+   */
+  [[nodiscard]] bool Enqueue(Message msg) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (closed_) {
+      return false;
+    }
+    queue_.push(std::move(msg));
+    cv_.notify_one();
+    return true;
+  }
+
+  /**
+   * Dequeue a message with timeout.
+   * Thread-safe, called from worker thread.
+   */
+  [[nodiscard]] std::optional<Message> DequeueFor(std::chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!cv_.wait_for(lock, timeout, [this] { return !queue_.empty() || closed_; })) {
+      return std::nullopt;
+    }
+
+    if (closed_ && queue_.empty()) {
+      return std::nullopt;
+    }
+
+    Message msg = std::move(queue_.front());
+    queue_.pop();
+    return msg;
+  }
+
+  /**
+   * Clear all pending decode messages.
+   * Returns promise IDs that need to be rejected.
+   */
+  std::vector<uint32_t> ClearDecodes() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<uint32_t> dropped_promises;
+
+    std::queue<Message> remaining;
+    while (!queue_.empty()) {
+      auto& msg = queue_.front();
+      if (auto* decode = std::get_if<ImageDecodeMessage>(&msg)) {
+        dropped_promises.push_back(decode->promise_id);
+      } else {
+        // Keep non-decode messages (like close)
+        remaining.push(std::move(queue_.front()));
+      }
+      queue_.pop();
+    }
+    queue_ = std::move(remaining);
+
+    return dropped_promises;
+  }
+
+  /**
+   * Shutdown the queue permanently.
+   */
+  void Shutdown() {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      closed_ = true;
+    }
+    cv_.notify_all();
+  }
+
+  /**
+   * Get the current queue size.
+   */
+  [[nodiscard]] size_t size() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.size();
+  }
+
+  /**
+   * Check if the queue is closed.
+   */
+  [[nodiscard]] bool IsClosed() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return closed_;
+  }
+
+ private:
+  mutable std::mutex mutex_;
+  std::condition_variable cv_;
+  std::queue<Message> queue_;
+  bool closed_{false};
+};
+
+// ===========================================================================
 // VISITOR HELPER
 // ===========================================================================
 

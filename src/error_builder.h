@@ -186,6 +186,60 @@ inline void ThrowTypeError(Napi::Env env, const std::string& message) {
 #define WEBCODECS_FFMPEG_CLASSIFY(expr) ::webcodecs::errors::ClassifyFfmpegError(expr)
 
 // =============================================================================
+// DOMEXCEPTION CREATORS (for Promise rejections)
+// =============================================================================
+
+/**
+ * Create a NotSupportedError DOMException without throwing.
+ * Used for Promise rejections.
+ */
+inline Napi::Error CreateNotSupportedError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "NotSupportedError: " + message);
+  error.Set("name", Napi::String::New(env, "NotSupportedError"));
+  return error;
+}
+
+/**
+ * Create an InvalidStateError DOMException without throwing.
+ * Used for Promise rejections.
+ */
+inline Napi::Error CreateInvalidStateError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "InvalidStateError: " + message);
+  error.Set("name", Napi::String::New(env, "InvalidStateError"));
+  return error;
+}
+
+/**
+ * Create an AbortError DOMException without throwing.
+ * Used for Promise rejections.
+ */
+inline Napi::Error CreateAbortError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "AbortError: " + message);
+  error.Set("name", Napi::String::New(env, "AbortError"));
+  return error;
+}
+
+/**
+ * Create an EncodingError DOMException without throwing.
+ * Used for Promise rejections.
+ */
+inline Napi::Error CreateEncodingError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "EncodingError: " + message);
+  error.Set("name", Napi::String::New(env, "EncodingError"));
+  return error;
+}
+
+/**
+ * Create a DataError DOMException without throwing.
+ * Used for Promise rejections.
+ */
+inline Napi::Error CreateDataError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "DataError: " + message);
+  error.Set("name", Napi::String::New(env, "DataError"));
+  return error;
+}
+
+// =============================================================================
 // STATE VALIDATION HELPERS
 // =============================================================================
 

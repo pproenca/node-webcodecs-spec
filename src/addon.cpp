@@ -34,10 +34,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   webcodecs::AudioDecoder::Init(env, exports);
   webcodecs::AudioEncoder::Init(env, exports);
 
-  // Image codec classes
-  webcodecs::ImageDecoder::Init(env, exports);
+  // Image codec classes (ImageTrack and ImageTrackList must be initialized before ImageDecoder
+  // because ImageDecoder's constructor calls ImageTrackList::Create which uses constructor_)
   webcodecs::ImageTrack::Init(env, exports);
   webcodecs::ImageTrackList::Init(env, exports);
+  webcodecs::ImageDecoder::Init(env, exports);
 
   return exports;
 }

@@ -45,7 +45,7 @@
             "xcode_settings": {
               "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
               "CLANG_CXX_LANGUAGE_STANDARD": "c++17",
-              "MACOSX_DEPLOYMENT_TARGET": "10.15"
+              "MACOSX_DEPLOYMENT_TARGET": "15.0"
             },
             "libraries": [
               "<!@(pkg-config --libs libavformat libavcodec libswscale libavutil 2>/dev/null || echo '-lavformat -lavcodec -lswscale -lavutil')",

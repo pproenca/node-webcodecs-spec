@@ -80,6 +80,27 @@ When writing C++ code that interfaces with FFmpeg, the **ffmpeg-cpp-sentinel** a
 - **ALWAYS** match allocators with deallocators (`av_frame_free` for `av_frame_alloc`, etc.)
 - **ALWAYS** flush codec at stream end (send nullptr packet)
 
+## Troubleshooting
+
+### macOS ABI Mismatch (Segfaults on Object Instantiation)
+
+**Symptom:** Segfaults when instantiating C++ objects, especially those with STL members (`std::function`, `std::vector`). Crashes happen during construction, not during use. Backtrace shows crash in constructor or `std::make_unique`.
+
+**Cause:** `MACOSX_DEPLOYMENT_TARGET` in `binding.gyp` is lower than FFmpeg's `minos` version. This creates ABI incompatibility in STL types between the addon and linked libraries.
+
+**Detection:** The build automatically runs `scripts/check-macos-abi.js` which compares versions and fails with a clear message if mismatched.
+
+**Manual check:**
+```bash
+# Check FFmpeg's minimum macOS version
+otool -l $(pkg-config --variable=libdir libavcodec)/libavcodec.dylib | grep -A3 LC_BUILD_VERSION
+
+# Check binding.gyp deployment target
+grep MACOSX_DEPLOYMENT_TARGET binding.gyp
+```
+
+**Fix:** Update `MACOSX_DEPLOYMENT_TARGET` in `binding.gyp` to match FFmpeg's `minos` version.
+
 ## Scripts
 
 ```bash

@@ -17,6 +17,7 @@
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "build": "npm run build:native && npm run build:ts",
+    "prebuild:native": "node scripts/check-macos-abi.cjs",
     "build:native": "node-gyp rebuild",
     "build:ts": "tsc && mkdir -p dist/types && cp types/webcodecs.d.ts dist/types/",
     "clean": "node-gyp clean && rm -rf dist",
