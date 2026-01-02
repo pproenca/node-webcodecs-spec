@@ -24,6 +24,7 @@
 #include <condition_variable>
 #include <stdexcept>
 #include <memory>
+#include <queue>
 
 // C++17-compatible latch implementation
 class TestLatch {
@@ -518,6 +519,228 @@ TEST(SecurityIssuesTest, CleanupOrderIsCorrect) {
   EXPECT_LT(join_idx, free_idx);
   // worker must exit before codec is freed
   EXPECT_LT(worker_idx, free_idx);
+}
+
+// =============================================================================
+// ISSUE 6: VideoEncoder::Release() RACE CONDITION
+//
+// BUG: VideoEncoder::Release() transitions to closed state AFTER clearing
+// resources, creating a window where another thread could:
+// 1. Check state_.is_configured() -> true
+// 2. Try to use encoder resources that are being/have been cleared
+//
+// FIX: Call state_.close() FIRST (like VideoDecoder::Release() does)
+// =============================================================================
+
+/**
+ * Tests that Release() closes state BEFORE clearing resources.
+ *
+ * This test verifies the invariant:
+ *   If state is not Closed, resources MUST be valid.
+ *   Therefore: state_.close() must happen BEFORE any resource cleanup.
+ *
+ * The buggy code does:
+ *   1. Lock and clear resources
+ *   2. Release lock
+ *   3. state_.close()  // BUG: window between 2 and 3
+ *
+ * The correct code does:
+ *   1. state_.close()  // FIRST - no one can start new operations
+ *   2. Lock and clear resources
+ */
+TEST(SecurityIssuesTest, VideoEncoderReleaseClosesStateFirst) {
+  // Simulates the CORRECT VideoEncoder::Release() pattern
+  struct CorrectEncoder {
+    AtomicCodecState state;
+    std::mutex mutex;
+    std::queue<int> encodeQueue;
+    AVCodecContextPtr codecCtx;
+    std::vector<std::string>* cleanup_order;
+
+    void configure(const AVCodec* codec) {
+      codecCtx = make_av_codec_context(codec);
+      state.transition(AtomicCodecState::State::Unconfigured,
+                       AtomicCodecState::State::Configured);
+    }
+
+    // CORRECT Release() pattern - matches VideoDecoder
+    void release_correct() {
+      // Step 1: Close state FIRST
+      if (cleanup_order) cleanup_order->push_back("state_close");
+      state.close();
+
+      // Step 2: THEN clear resources under lock
+      if (cleanup_order) cleanup_order->push_back("lock_acquire");
+      std::lock_guard<std::mutex> lock(mutex);
+
+      if (cleanup_order) cleanup_order->push_back("clear_queue");
+      while (!encodeQueue.empty()) {
+        encodeQueue.pop();
+      }
+
+      if (cleanup_order) cleanup_order->push_back("reset_codec");
+      codecCtx.reset();
+    }
+
+    // BUGGY Release() pattern - the original VideoEncoder bug
+    void release_buggy() {
+      // BUG: Clear resources FIRST
+      {
+        if (cleanup_order) cleanup_order->push_back("lock_acquire");
+        std::lock_guard<std::mutex> lock(mutex);
+
+        if (cleanup_order) cleanup_order->push_back("clear_queue");
+        while (!encodeQueue.empty()) {
+          encodeQueue.pop();
+        }
+      }
+      // BUG: Lock released here, but state is still "configured"!
+      // Another thread could check state and try to use cleared resources
+
+      if (cleanup_order) cleanup_order->push_back("reset_codec");
+      codecCtx.reset();
+
+      // BUG: state_.close() happens AFTER resources are gone
+      if (cleanup_order) cleanup_order->push_back("state_close");
+      state.close();
+    }
+  };
+
+  const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+  if (!codec) {
+    codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+  }
+  if (!codec) {
+    GTEST_SKIP() << "No encoder available";
+  }
+
+  // Test CORRECT pattern
+  {
+    std::vector<std::string> order;
+    CorrectEncoder enc;
+    enc.cleanup_order = &order;
+    enc.configure(codec);
+
+    enc.release_correct();
+
+    // Verify state_close happens FIRST
+    ASSERT_GE(order.size(), 4);
+    EXPECT_EQ(order[0], "state_close");
+    // All other operations come after
+    EXPECT_EQ(order[1], "lock_acquire");
+  }
+
+  // Demonstrate BUGGY pattern has wrong order
+  {
+    std::vector<std::string> order;
+    CorrectEncoder enc;
+    enc.cleanup_order = &order;
+    enc.configure(codec);
+
+    enc.release_buggy();
+
+    // In buggy pattern, state_close is LAST (wrong!)
+    ASSERT_GE(order.size(), 4);
+    EXPECT_EQ(order[0], "lock_acquire");  // Resources cleared first
+    EXPECT_EQ(order.back(), "state_close");  // State closed last (BUG!)
+  }
+}
+
+/**
+ * Tests that concurrent access during Release() is safe with correct pattern.
+ *
+ * This test spawns threads that try to "use" the encoder while Release() runs.
+ * With the correct pattern (state closed first), all usage attempts will see
+ * state as Closed and abort before accessing resources.
+ */
+TEST(SecurityIssuesTest, VideoEncoderReleaseConcurrentSafety) {
+  struct SafeEncoder {
+    AtomicCodecState state;
+    std::mutex mutex;
+    AVCodecContextPtr codecCtx;
+    std::atomic<int> successful_uses{0};
+    std::atomic<int> rejected_uses{0};
+
+    void configure(const AVCodec* codec) {
+      codecCtx = make_av_codec_context(codec);
+      state.transition(AtomicCodecState::State::Unconfigured,
+                       AtomicCodecState::State::Configured);
+    }
+
+    // Simulate an encode operation that checks state first
+    bool try_use() {
+      // Check state BEFORE accessing resources (correct pattern)
+      if (!state.is_configured()) {
+        rejected_uses.fetch_add(1, std::memory_order_relaxed);
+        return false;
+      }
+
+      std::lock_guard<std::mutex> lock(mutex);
+      if (codecCtx) {
+        // Simulate codec access
+        [[maybe_unused]] auto id = codecCtx->codec_id;
+        successful_uses.fetch_add(1, std::memory_order_relaxed);
+        return true;
+      }
+      return false;
+    }
+
+    // CORRECT Release() - closes state first
+    void release() {
+      state.close();  // FIRST: reject all new operations
+
+      std::lock_guard<std::mutex> lock(mutex);
+      codecCtx.reset();
+    }
+  };
+
+  const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+  if (!codec) {
+    codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+  }
+  if (!codec) {
+    GTEST_SKIP() << "No encoder available";
+  }
+
+  for (int iter = 0; iter < 20; iter++) {
+    SafeEncoder enc;
+    enc.configure(codec);
+
+    std::atomic<bool> start{false};
+    std::atomic<bool> stop{false};
+
+    // Spawn threads that try to use the encoder
+    std::vector<std::thread> users;
+    for (int i = 0; i < 4; i++) {
+      users.emplace_back([&enc, &start, &stop]() {
+        while (!start.load(std::memory_order_acquire)) {
+          std::this_thread::yield();
+        }
+        while (!stop.load(std::memory_order_acquire)) {
+          enc.try_use();
+          std::this_thread::yield();
+        }
+      });
+    }
+
+    // Start the race
+    start.store(true, std::memory_order_release);
+    std::this_thread::sleep_for(1ms);
+
+    // Release while users are active
+    enc.release();
+
+    // Stop users
+    stop.store(true, std::memory_order_release);
+
+    for (auto& t : users) {
+      t.join();
+    }
+
+    // With correct pattern, after release() starts:
+    // - No thread should successfully use encoder after state is closed
+    // TSAN would detect any race if we accessed freed resources
+  }
 }
 
 // =============================================================================

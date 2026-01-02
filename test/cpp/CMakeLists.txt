@@ -48,6 +48,7 @@ set(TEST_SOURCES
     test_buffer_utils.cpp
     test_security_issues.cpp
     test_video_decoder_spec.cpp
+    test_codec_registry.cpp
     # Source files needed for testing
     ${CMAKE_SOURCE_DIR}/../../src/shared/codec_registry.cpp
 )

@@ -2,6 +2,9 @@
 #include "codec_registry.h"
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 #include <sstream>
 #include <unordered_map>
 
@@ -9,13 +12,44 @@ namespace webcodecs {
 
 namespace {
 
-// Convert hex string to integer
-int HexToInt(const std::string& hex) {
-  try {
-    return std::stoi(hex, nullptr, 16);
-  } catch (...) {
+/**
+ * Safe integer parsing without exceptions.
+ *
+ * Uses strtol instead of std::stoi to avoid throwing on invalid input.
+ * Returns -1 on any parsing failure (empty string, invalid chars, overflow,
+ * trailing garbage).
+ *
+ * @param str String to parse
+ * @param base Numeric base (10 for decimal, 16 for hex)
+ * @return Parsed integer, or -1 on failure
+ */
+int SafeParseInt(const std::string& str, int base) {
+  if (str.empty()) {
     return -1;
   }
+
+  // Reset errno before call
+  errno = 0;
+
+  char* end = nullptr;
+  const long val = std::strtol(str.c_str(), &end, base);
+
+  // Check for conversion errors:
+  // 1. No characters converted (end == str.c_str())
+  // 2. Trailing garbage (end doesn't point to null terminator)
+  // 3. Overflow/underflow (errno == ERANGE)
+  // 4. Value outside int range
+  if (end == str.c_str() || *end != '\0' || errno == ERANGE ||
+      val < INT_MIN || val > INT_MAX) {
+    return -1;
+  }
+
+  return static_cast<int>(val);
+}
+
+// Convert hex string to integer (no exceptions)
+int HexToInt(const std::string& hex) {
+  return SafeParseInt(hex, 16);
 }
 
 // Parse AVC codec string: avc1.PPCCLL
@@ -51,9 +85,10 @@ std::optional<CodecInfo> ParseVP9(const std::string& params) {
   std::string token;
   int profile = -1, level = -1, bit_depth = -1;
 
-  if (std::getline(ss, token, '.')) profile = std::stoi(token);
-  if (std::getline(ss, token, '.')) level = std::stoi(token);
-  if (std::getline(ss, token, '.')) bit_depth = std::stoi(token);
+  // Use SafeParseInt to avoid exceptions on invalid input
+  if (std::getline(ss, token, '.')) profile = SafeParseInt(token, 10);
+  if (std::getline(ss, token, '.')) level = SafeParseInt(token, 10);
+  if (std::getline(ss, token, '.')) bit_depth = SafeParseInt(token, 10);
 
   return CodecInfo{AV_CODEC_ID_VP9, profile, level, bit_depth};
 }
@@ -68,25 +103,31 @@ std::optional<CodecInfo> ParseAV1(const std::string& params) {
   std::string token;
   int profile = -1, level = -1, bit_depth = -1;
 
-  if (std::getline(ss, token, '.')) profile = std::stoi(token);
+  // Use SafeParseInt to avoid exceptions on invalid input
+  if (std::getline(ss, token, '.')) profile = SafeParseInt(token, 10);
   if (std::getline(ss, token, '.')) {
     // Level + tier (e.g., "04M" = level 4, Main tier)
-    level = std::stoi(token.substr(0, 2));
+    // Guard against short tokens to avoid out-of-range substr
+    if (token.length() >= 2) {
+      level = SafeParseInt(token.substr(0, 2), 10);
+    }
   }
-  if (std::getline(ss, token, '.')) bit_depth = std::stoi(token);
+  if (std::getline(ss, token, '.')) bit_depth = SafeParseInt(token, 10);
 
   return CodecInfo{AV_CODEC_ID_AV1, profile, level, bit_depth};
 }
 
 // Parse AAC codec string: mp4a.40.X
 std::optional<CodecInfo> ParseAAC(const std::string& params) {
-  if (params.empty() || params.substr(0, 2) != "40") {
+  // Guard against short params before substr
+  if (params.length() < 2 || params.substr(0, 2) != "40") {
     return std::nullopt;  // Not AAC
   }
 
   int profile = -1;
   if (params.length() >= 4 && params[2] == '.') {
-    profile = std::stoi(params.substr(3));
+    // Use SafeParseInt to avoid exceptions on invalid input
+    profile = SafeParseInt(params.substr(3), 10);
   }
 
   return CodecInfo{AV_CODEC_ID_AAC, profile, -1, -1};
@@ -174,8 +215,8 @@ std::optional<CodecInfo> ParseCodecString(const std::string& codec_string) {
     return CodecInfo{AV_CODEC_ID_PCM_ALAW, -1, -1, -1};
   }
 
-  // PCM formats
-  if (codec_string.substr(0, 4) == "pcm-") {
+  // PCM formats - guard against short strings
+  if (codec_string.length() >= 4 && codec_string.substr(0, 4) == "pcm-") {
     return ParsePCM(codec_string.substr(4));
   }
 

@@ -40,20 +40,21 @@ VideoEncoder::~VideoEncoder() {
 }
 
 void VideoEncoder::Release() {
-  // RAII cleanup - codecCtx_ is automatically freed
-  // Clear the encode queue
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    while (!encodeQueue_.empty()) {
-      encodeQueue_.pop();
-    }
+  // Thread-safe close: transition to Closed state FIRST
+  // This prevents any other operation from starting while we clean up.
+  // (Matches VideoDecoder::Release() pattern)
+  state_.close();
+
+  // Lock to safely clear resources
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Clear the encode queue (RAII handles frame cleanup)
+  while (!encodeQueue_.empty()) {
+    encodeQueue_.pop();
   }
   encodeQueueSize_.store(0, std::memory_order_release);
 
-  // Transition to closed state
-  state_.close();
-
-  // codecCtx_ is freed automatically by RAII destructor
+  // Release codec context (RAII handles avcodec_free_context)
   codecCtx_.reset();
 }
 
