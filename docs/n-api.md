@@ -21,7 +21,9 @@ Node-API (formerly N-API) is an API for building native addons that is independe
 ## Core Data Types
 
 ### `napi_status`
+
 Integral status code with values including:
+
 - `napi_ok`
 - `napi_invalid_arg`
 - `napi_object_expected`
@@ -31,12 +33,15 @@ Integral status code with values including:
 - And others for specific error conditions
 
 ### `napi_env`
+
 Represents a context for VM-specific state. Must be passed to all Node-API calls.
 
 ### `napi_value`
+
 Opaque pointer representing a JavaScript value.
 
 ### `node_api_basic_env`
+
 A restricted variant of `napi_env` for use in synchronous finalizers with limited API access.
 
 ## Building Native Addons
@@ -44,6 +49,7 @@ A restricted variant of `napi_env` for use in synchronous finalizers with limite
 ### Build Tools
 
 **node-gyp**: Python-based build system (most common)
+
 ```bash
 # Installation comes with npm
 ```
@@ -58,13 +64,13 @@ A restricted variant of `napi_env` for use in synchronous finalizers with limite
 
 ## Node-API Version Matrix
 
-| Version | Supported In |
-|---------|---|
-| 10 | v22.14.0+, 23.6.0+ |
-| 9 | v18.17.0+, 20.3.0+, 21.0.0+ |
-| 8 | v12.22.0+, v14.17.0+, v15.12.0+, 16.0.0+ |
-| 7 | v10.23.0+, v12.19.0+, v14.12.0+, 15.0.0+ |
-| 6 | v10.20.0+, v12.17.0+, 14.0.0+ |
+| Version | Supported In                             |
+| ------- | ---------------------------------------- |
+| 10      | v22.14.0+, 23.6.0+                       |
+| 9       | v18.17.0+, 20.3.0+, 21.0.0+              |
+| 8       | v12.22.0+, v14.17.0+, v15.12.0+, 16.0.0+ |
+| 7       | v10.23.0+, v12.19.0+, v14.12.0+, 15.0.0+ |
+| 6       | v10.20.0+, v12.17.0+, 14.0.0+            |
 
 ## Usage
 
@@ -131,6 +137,7 @@ napi_get_instance_data(env, &data);
 ### Handle Scopes
 
 **Regular Scope:**
+
 ```c
 napi_handle_scope scope;
 napi_open_handle_scope(env, &scope);
@@ -139,6 +146,7 @@ napi_close_handle_scope(env, scope);
 ```
 
 **Escapable Scope (for returning values):**
+
 ```c
 napi_escapable_handle_scope scope;
 napi_open_escapable_handle_scope(env, &scope);
@@ -161,12 +169,14 @@ napi_reference_unref(env, ref, &new_refcount);
 ## Cleanup Hooks
 
 ### Environment Cleanup
+
 ```c
 napi_add_env_cleanup_hook(env, cleanup_fn, data);
 napi_remove_env_cleanup_hook(env, cleanup_fn, data);
 ```
 
 ### Asynchronous Cleanup
+
 ```c
 napi_async_cleanup_hook_handle handle;
 napi_add_async_cleanup_hook(env, async_cleanup_fn, data, &handle);
@@ -364,6 +374,7 @@ The following APIs do NOT provide ABI stability and should be avoided:
 ### Recommended Approach
 
 Use only Node-API headers:
+
 ```c
 #include <node_api.h>       // Provides ABI stability
 ```

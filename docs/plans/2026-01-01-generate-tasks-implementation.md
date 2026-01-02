@@ -15,6 +15,7 @@
 ### Task 1: Add ts-morph Dependency
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Install ts-morph**
@@ -43,6 +44,7 @@ git commit -m "chore: add ts-morph for TypeScript AST parsing"
 ### Task 2: Define JSON Schema Types
 
 **Files:**
+
 - Create: `scripts/types/task-schema.ts`
 
 **Step 1: Write the type definitions**
@@ -151,6 +153,7 @@ git commit -m "feat(tasks): add JSON schema types for task files"
 ### Task 3: Implement Spec Markdown Parser
 
 **Files:**
+
 - Create: `scripts/parsers/spec-markdown-parser.ts`
 - Test: `scripts/parsers/spec-markdown-parser.test.ts`
 
@@ -177,7 +180,9 @@ describe('parseSpecMarkdown', () => {
     const result = parseSpecMarkdown(markdown);
 
     expect(result.methods.get('configure')).toBeDefined();
-    expect(result.methods.get('configure')?.signature).toBe('void configure(VideoDecoderConfig* config)');
+    expect(result.methods.get('configure')?.signature).toBe(
+      'void configure(VideoDecoderConfig* config)'
+    );
     expect(result.methods.get('configure')?.algorithmSteps).toHaveLength(3);
     expect(result.methods.get('configure')?.algorithmSteps[0]).toContain('TypeError');
   });
@@ -273,7 +278,8 @@ export function parseSpecMarkdown(content: string): SpecParseResult {
   }
 
   // Extract methods from ### headers
-  const methodRegex = /### (\w+)\n\n(?:\*\*Static Method\*\*\n\n)?\*\*Signature:\*\* `([^`]+)`\n\n\*\*Algorithm:\*\*\n\n([\s\S]*?)(?=\n### |\n## |\Z)/g;
+  const methodRegex =
+    /### (\w+)\n\n(?:\*\*Static Method\*\*\n\n)?\*\*Signature:\*\* `([^`]+)`\n\n\*\*Algorithm:\*\*\n\n([\s\S]*?)(?=\n### |\n## |\Z)/g;
   let match;
   while ((match = methodRegex.exec(content)) !== null) {
     const name = match[1];
@@ -326,6 +332,7 @@ git commit -m "feat(tasks): add spec markdown parser for algorithm extraction"
 ### Task 4: Implement TypeScript AST Parser
 
 **Files:**
+
 - Create: `scripts/parsers/ts-ast-parser.ts`
 - Test: `scripts/parsers/ts-ast-parser.test.ts`
 
@@ -543,6 +550,7 @@ git commit -m "feat(tasks): add TypeScript AST parser using ts-morph"
 ### Task 5: Implement C++ Symbol Parser
 
 **Files:**
+
 - Create: `scripts/parsers/cpp-symbol-parser.ts`
 - Test: `scripts/parsers/cpp-symbol-parser.test.ts`
 
@@ -669,7 +677,10 @@ export async function parseCppHeader(filePath: string): Promise<CppHeaderParseRe
   return result;
 }
 
-export async function parseCppImpl(filePath: string, className: string): Promise<CppImplParseResult> {
+export async function parseCppImpl(
+  filePath: string,
+  className: string
+): Promise<CppImplParseResult> {
   const content = await fs.readFile(filePath, 'utf-8');
   const lines = content.split('\n');
 
@@ -710,9 +721,8 @@ export async function parseCppImpl(filePath: string, className: string): Promise
       braceCount -= (line.match(/\}/g) || []).length;
 
       if (braceCount === 0 && line.includes('}')) {
-        const location = currentMethod === 'constructor'
-          ? result.constructor
-          : result.methods.get(currentMethod);
+        const location =
+          currentMethod === 'constructor' ? result.constructor : result.methods.get(currentMethod);
         if (location) {
           location.endLine = lineNum;
         }
@@ -747,6 +757,7 @@ git commit -m "feat(tasks): add C++ symbol parser using regex"
 ### Task 6: Implement Symbol Matcher
 
 **Files:**
+
 - Create: `scripts/matchers/symbol-matcher.ts`
 - Test: `scripts/matchers/symbol-matcher.test.ts`
 
@@ -801,8 +812,9 @@ describe('matchIdlToCode', () => {
       staticMethods: new Map(),
     };
 
-    expect(() => matchIdlToCode('VideoDecoder', idlMember, cppHeader, cppImpl, tsClass))
-      .toThrow(MissingSymbolError);
+    expect(() => matchIdlToCode('VideoDecoder', idlMember, cppHeader, cppImpl, tsClass)).toThrow(
+      MissingSymbolError
+    );
   });
 });
 ```
@@ -834,7 +846,9 @@ export class MissingSymbolError extends Error {
     public expectedIn: string,
     public expectedSymbol: string
   ) {
-    super(`Missing symbol: ${interfaceName}.${memberName} (${memberType}) - expected ${expectedSymbol} in ${expectedIn}`);
+    super(
+      `Missing symbol: ${interfaceName}.${memberName} (${memberType}) - expected ${expectedSymbol} in ${expectedIn}`
+    );
     this.name = 'MissingSymbolError';
   }
 }
@@ -884,8 +898,11 @@ export function matchIdlToCode(
     const headerLoc = cppHeader.methods.get(cppGetterName);
     if (!headerLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.cppHeader, cppGetterName
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.cppHeader,
+        cppGetterName
       );
     }
     codeLinks.declaration = { file: filePrefix.cppHeader, line: headerLoc.line };
@@ -894,8 +911,11 @@ export function matchIdlToCode(
     const implLoc = cppImpl.methods.get(cppGetterName);
     if (!implLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.cppImpl, `${interfaceName}::${cppGetterName}`
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.cppImpl,
+        `${interfaceName}::${cppGetterName}`
       );
     }
     codeLinks.implementation = {
@@ -908,8 +928,11 @@ export function matchIdlToCode(
     const tsLoc = tsClass.getters.get(idlMember.name);
     if (!tsLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, 'attribute',
-        filePrefix.tsWrapper, `get ${idlMember.name}()`
+        interfaceName,
+        idlMember.name,
+        'attribute',
+        filePrefix.tsWrapper,
+        `get ${idlMember.name}()`
       );
     }
     codeLinks.tsBinding = {
@@ -926,8 +949,11 @@ export function matchIdlToCode(
     const headerLoc = methodsMap.get(cppMethodName);
     if (!headerLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.cppHeader, cppMethodName
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.cppHeader,
+        cppMethodName
       );
     }
     codeLinks.declaration = { file: filePrefix.cppHeader, line: headerLoc.line };
@@ -936,8 +962,11 @@ export function matchIdlToCode(
     const implLoc = cppImpl.methods.get(cppMethodName);
     if (!implLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.cppImpl, `${interfaceName}::${cppMethodName}`
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.cppImpl,
+        `${interfaceName}::${cppMethodName}`
       );
     }
     codeLinks.implementation = {
@@ -951,8 +980,11 @@ export function matchIdlToCode(
     const tsLoc = tsMap.get(idlMember.name);
     if (!tsLoc) {
       throw new MissingSymbolError(
-        interfaceName, idlMember.name, isStatic ? 'static-method' : 'method',
-        filePrefix.tsWrapper, `${isStatic ? 'static ' : ''}${idlMember.name}()`
+        interfaceName,
+        idlMember.name,
+        isStatic ? 'static-method' : 'method',
+        filePrefix.tsWrapper,
+        `${isStatic ? 'static ' : ''}${idlMember.name}()`
       );
     }
     codeLinks.tsBinding = {
@@ -1010,6 +1042,7 @@ git commit -m "feat(tasks): add symbol matcher for IDL-to-code mapping"
 ### Task 7: Rewrite generate-tasks.ts Main Entry
 
 **Files:**
+
 - Modify: `scripts/generate-tasks.ts`
 
 **Step 1: Write integration test**
@@ -1105,7 +1138,14 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as webidl2 from 'webidl2';
 
-import type { TaskFile, TypesFile, Feature, Step, DictionaryDef, EnumDef } from './types/task-schema.js';
+import type {
+  TaskFile,
+  TypesFile,
+  Feature,
+  Step,
+  DictionaryDef,
+  EnumDef,
+} from './types/task-schema.js';
 import { parseSpecFile } from './parsers/spec-markdown-parser.js';
 import { parseTsFile, parseTsTestFile } from './parsers/ts-ast-parser.js';
 import { parseCppHeader, parseCppImpl } from './parsers/cpp-symbol-parser.js';
@@ -1136,12 +1176,14 @@ function parseIdlType(idlType: webidl2.IDLTypeDescription | null): string {
 }
 
 function getExtendedAttributes(node: webidl2.InterfaceType): string[] {
-  return node.extAttrs?.map(attr => {
-    if (attr.rhs) {
-      return `${attr.name}=${attr.rhs.value}`;
-    }
-    return attr.name;
-  }) || [];
+  return (
+    node.extAttrs?.map((attr) => {
+      if (attr.rhs) {
+        return `${attr.name}=${attr.rhs.value}`;
+      }
+      return attr.name;
+    }) || []
+  );
 }
 
 function getIdlLineRange(content: string, nodeName: string): string {
@@ -1152,7 +1194,10 @@ function getIdlLineRange(content: string, nodeName: string): string {
       let braceCount = 0;
       let started = false;
       for (let j = i; j < lines.length; j++) {
-        if (lines[j].includes('{')) { braceCount++; started = true; }
+        if (lines[j].includes('{')) {
+          braceCount++;
+          started = true;
+        }
         if (lines[j].includes('}')) braceCount--;
         if (started && braceCount === 0) {
           return `spec/context/_webcodecs.idl#L${i + 1}-L${j + 1}`;
@@ -1221,7 +1266,7 @@ async function generateInterfaceTask(
 
     if (member.type === 'attribute') {
       const attrName = member.name;
-      const specAttr = specData?.attributes.find(a => a.name === attrName);
+      const specAttr = specData?.attributes.find((a) => a.name === attrName);
 
       feature = {
         id: `${interfaceName}.${attrName}`,
@@ -1239,11 +1284,15 @@ async function generateInterfaceTask(
             description: `C++: Implement Get${capitalize(attrName)}() returning ${parseIdlType(member.idlType)}`,
             passes: false,
           },
-          ...(member.readonly ? [] : [{
-            id: `${interfaceName}.${attrName}.cpp-setter`,
-            description: `C++: Implement Set${capitalize(attrName)}()`,
-            passes: false,
-          }]),
+          ...(member.readonly
+            ? []
+            : [
+                {
+                  id: `${interfaceName}.${attrName}.cpp-setter`,
+                  description: `C++: Implement Set${capitalize(attrName)}()`,
+                  passes: false,
+                },
+              ]),
           {
             id: `${interfaceName}.${attrName}.ts-binding`,
             description: `TS: Wire getter${member.readonly ? '' : ' and setter'} to native`,
@@ -1264,7 +1313,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'attribute', name: attrName, readonly: member.readonly },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -1277,13 +1329,14 @@ async function generateInterfaceTask(
       const methodName = member.name;
       const isStatic = member.special === 'static';
       const specMethod = specData?.methods.get(methodName);
-      const params = member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`);
+      const params = member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`);
 
       feature = {
         id: `${interfaceName}.${methodName}`,
         category: isStatic ? 'static-method' : 'method',
         name: `${methodName}(${params.join(', ')})`,
-        description: specMethod?.algorithmSteps[0] || `${isStatic ? 'Static method' : 'Method'} ${methodName}`,
+        description:
+          specMethod?.algorithmSteps[0] || `${isStatic ? 'Static method' : 'Method'} ${methodName}`,
         returnType: parseIdlType(member.idlType),
         codeLinks: {},
         algorithmRef: `spec/context/${interfaceName}.md#${methodName.toLowerCase()}`,
@@ -1294,11 +1347,15 @@ async function generateInterfaceTask(
             description: 'C++: Implement method logic per W3C spec algorithm',
             passes: false,
           },
-          ...(parseIdlType(member.idlType).includes('Promise') ? [{
-            id: `${interfaceName}.${methodName}.cpp-async`,
-            description: 'C++: Use AsyncWorker for non-blocking execution',
-            passes: false,
-          }] : []),
+          ...(parseIdlType(member.idlType).includes('Promise')
+            ? [
+                {
+                  id: `${interfaceName}.${methodName}.cpp-async`,
+                  description: 'C++: Use AsyncWorker for non-blocking execution',
+                  passes: false,
+                },
+              ]
+            : []),
           {
             id: `${interfaceName}.${methodName}.cpp-errors`,
             description: 'C++: Handle error cases with proper DOMException types',
@@ -1329,7 +1386,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'operation', name: methodName, special: member.special },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -1339,7 +1399,7 @@ async function generateInterfaceTask(
         }
       }
     } else if (member.type === 'constructor') {
-      const params = member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`);
+      const params = member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`);
 
       feature = {
         id: `${interfaceName}.constructor`,
@@ -1348,7 +1408,9 @@ async function generateInterfaceTask(
         description: `Create ${interfaceName} instance`,
         codeLinks: {},
         algorithmRef: `spec/context/${interfaceName}.md#constructor`,
-        algorithmSteps: specData?.methods.get('constructor')?.algorithmSteps || ['Initialize internal slots'],
+        algorithmSteps: specData?.methods.get('constructor')?.algorithmSteps || [
+          'Initialize internal slots',
+        ],
         steps: [
           {
             id: `${interfaceName}.constructor.cpp-impl`,
@@ -1380,7 +1442,10 @@ async function generateInterfaceTask(
           const match = matchIdlToCode(
             interfaceName,
             { type: 'constructor', name: 'constructor' },
-            cppHeader, cppImpl, tsClass, files
+            cppHeader,
+            cppImpl,
+            tsClass,
+            files
           );
           feature.codeLinks = match.codeLinks;
         } catch (e) {
@@ -1400,7 +1465,9 @@ async function generateInterfaceTask(
   if (errors.length > 0) {
     console.warn(`\nWarning: Missing symbols for ${interfaceName}:`);
     for (const err of errors) {
-      console.warn(`  - ${err.memberName} (${err.memberType}): expected ${err.expectedSymbol} in ${err.expectedIn}`);
+      console.warn(
+        `  - ${err.memberName} (${err.memberType}): expected ${err.expectedSymbol} in ${err.expectedIn}`
+      );
     }
   }
 
@@ -1411,7 +1478,7 @@ async function generateInterfaceTask(
     type: 'interface',
     source: {
       idl: getIdlLineRange(idlContent, interfaceName),
-      spec: await fileExists(specPath) ? `spec/context/${interfaceName}.md` : undefined,
+      spec: (await fileExists(specPath)) ? `spec/context/${interfaceName}.md` : undefined,
     },
     inheritance,
     extendedAttributes: getExtendedAttributes(node),
@@ -1429,7 +1496,7 @@ function generateTypesFile(ast: webidl2.IDLRootType[], idlContent: string): Type
       dictionaries.push({
         name: node.name,
         source: { idl: `spec/context/_webcodecs.idl` },
-        fields: node.members.map(m => ({
+        fields: node.members.map((m) => ({
           name: m.name,
           type: parseIdlType(m.idlType),
           required: m.required,
@@ -1440,7 +1507,7 @@ function generateTypesFile(ast: webidl2.IDLRootType[], idlContent: string): Type
       enums.push({
         name: node.name,
         source: { idl: `spec/context/_webcodecs.idl` },
-        values: node.values.map(v => v.value),
+        values: node.values.map((v) => v.value),
       });
     }
   }
@@ -1475,9 +1542,13 @@ export async function main(): Promise<void> {
   const typesFile = generateTypesFile(ast, idlContent);
   const typesPath = path.join(OUTPUT_DIR, 'types.json');
   await fs.writeFile(typesPath, JSON.stringify(typesFile, null, 2));
-  console.log(`Generated: ${typesPath} (${typesFile.dictionaries.length} dictionaries, ${typesFile.enums.length} enums)`);
+  console.log(
+    `Generated: ${typesPath} (${typesFile.dictionaries.length} dictionaries, ${typesFile.enums.length} enums)`
+  );
 
-  console.log(`\nDone! Generated ${interfaceCount} interface files with ${featureCount} total features.`);
+  console.log(
+    `\nDone! Generated ${interfaceCount} interface files with ${featureCount} total features.`
+  );
 }
 
 // Run if executed directly
@@ -1511,6 +1582,7 @@ git commit -m "feat(tasks): rewrite generator to produce JSON with code links"
 ### Task 8: Update package.json Scripts
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Update scripts**
@@ -1556,6 +1628,7 @@ git commit -m "feat(tasks): update scripts and generate initial task JSON files"
 ### Task 9: Delete Old Markdown Task Files
 
 **Files:**
+
 - Delete: `docs/tasks/*.md`
 
 **Step 1: Remove old markdown files**
@@ -1584,6 +1657,7 @@ git commit -m "chore(tasks): remove deprecated markdown task files"
 ### Task 10: Code Review
 
 **Files:**
+
 - All modified files
 
 **Step 1: Run all tests**
@@ -1607,6 +1681,7 @@ cat docs/tasks/VideoDecoder.json | jq '.features[0]'
 ```
 
 Verify:
+
 - `codeLinks` has `declaration`, `implementation`, `tsBinding`
 - `line` numbers are positive integers
 - `passes` is `false`
@@ -1615,10 +1690,10 @@ Verify:
 
 ## Parallel Group Summary
 
-| Task Group | Tasks | Can Run Parallel |
-|------------|-------|------------------|
-| Group 1 | 1, 2 | No (sequential setup) |
-| Group 2 | 3, 4, 5 | Yes (independent parsers) |
-| Group 3 | 6 | No (depends on parsers) |
-| Group 4 | 7 | No (depends on matcher) |
-| Group 5 | 8, 9, 10 | No (sequential cleanup) |
+| Task Group | Tasks    | Can Run Parallel          |
+| ---------- | -------- | ------------------------- |
+| Group 1    | 1, 2     | No (sequential setup)     |
+| Group 2    | 3, 4, 5  | Yes (independent parsers) |
+| Group 3    | 6        | No (depends on parsers)   |
+| Group 4    | 7        | No (depends on matcher)   |
+| Group 5    | 8, 9, 10 | No (sequential cleanup)   |

@@ -58,11 +58,11 @@ interface TaskFile {
   interface: string;
   type: 'interface';
   source: {
-    idl: string;        // "spec/context/_webcodecs.idl#L606-L620"
-    spec: string;       // "spec/context/VideoDecoder.md"
+    idl: string; // "spec/context/_webcodecs.idl#L606-L620"
+    spec: string; // "spec/context/VideoDecoder.md"
   };
-  inheritance?: string;   // "EventTarget"
-  extendedAttributes: string[];  // ["Exposed=(Window,DedicatedWorker)", "SecureContext"]
+  inheritance?: string; // "EventTarget"
+  extendedAttributes: string[]; // ["Exposed=(Window,DedicatedWorker)", "SecureContext"]
   files: {
     cppHeader: string;
     cppImpl: string;
@@ -73,10 +73,10 @@ interface TaskFile {
 }
 
 interface Feature {
-  id: string;           // "VideoDecoder.configure"
+  id: string; // "VideoDecoder.configure"
   category: 'constructor' | 'attribute' | 'method' | 'static-method' | 'getter' | 'iterable';
-  name: string;         // "configure(VideoDecoderConfig config)"
-  description: string;  // From spec
+  name: string; // "configure(VideoDecoderConfig config)"
+  description: string; // From spec
   returnType?: string;
   readonly?: boolean;
   codeLinks: {
@@ -85,16 +85,16 @@ interface Feature {
     tsBinding: CodeLink;
     test?: CodeLink;
   };
-  algorithmRef: string;     // "spec/context/VideoDecoder.md#configure"
+  algorithmRef: string; // "spec/context/VideoDecoder.md#configure"
   algorithmSteps: string[]; // Extracted from spec markdown
   steps: Step[];
-  passes: boolean;          // Always false initially
+  passes: boolean; // Always false initially
 }
 
 interface Step {
-  id: string;           // "VideoDecoder.configure.validate-config"
+  id: string; // "VideoDecoder.configure.validate-config"
   description: string;
-  codeRef: CodeLink;    // Points to implementation line range
+  codeRef: CodeLink; // Points to implementation line range
   passes: boolean;
 }
 
@@ -148,10 +148,7 @@ interface EnumDef {
     "spec": "spec/context/VideoDecoder.md"
   },
   "inheritance": "EventTarget",
-  "extendedAttributes": [
-    "Exposed=(Window,DedicatedWorker)",
-    "SecureContext"
-  ],
+  "extendedAttributes": ["Exposed=(Window,DedicatedWorker)", "SecureContext"],
   "files": {
     "cppHeader": "src/VideoDecoder.h",
     "cppImpl": "src/VideoDecoder.cpp",
@@ -170,9 +167,7 @@ interface EnumDef {
         "tsBinding": { "file": "lib/VideoDecoder.ts", "line": 42, "endLine": 45 }
       },
       "algorithmRef": "spec/context/VideoDecoder.md#constructor",
-      "algorithmSteps": [
-        "Initialize internal slots"
-      ],
+      "algorithmSteps": ["Initialize internal slots"],
       "steps": [
         {
           "id": "VideoDecoder.constructor.validate-init",
@@ -368,14 +363,14 @@ interface EnumDef {
 
 ## Symbol Matching Rules
 
-| IDL Member | C++ Header Symbol | C++ Impl Symbol | TS Symbol |
-|------------|-------------------|-----------------|-----------|
-| `attribute state` (readonly) | `GetState` | `VideoDecoder::GetState` | `get state()` |
-| `attribute ondequeue` | `GetOndequeue`, `SetOndequeue` | Both | `get/set ondequeue` |
-| `operation configure` | `Configure` | `VideoDecoder::Configure` | `configure()` |
-| `static isConfigSupported` | `IsConfigSupported` | `VideoDecoder::IsConfigSupported` | `static isConfigSupported()` |
-| `constructor` | class constructor | `ClassName::ClassName` | `constructor()` |
-| `getter (unsigned long)` | `operator[]` or `Get` | Implementation | `[index: number]` |
+| IDL Member                   | C++ Header Symbol              | C++ Impl Symbol                   | TS Symbol                    |
+| ---------------------------- | ------------------------------ | --------------------------------- | ---------------------------- |
+| `attribute state` (readonly) | `GetState`                     | `VideoDecoder::GetState`          | `get state()`                |
+| `attribute ondequeue`        | `GetOndequeue`, `SetOndequeue` | Both                              | `get/set ondequeue`          |
+| `operation configure`        | `Configure`                    | `VideoDecoder::Configure`         | `configure()`                |
+| `static isConfigSupported`   | `IsConfigSupported`            | `VideoDecoder::IsConfigSupported` | `static isConfigSupported()` |
+| `constructor`                | class constructor              | `ClassName::ClassName`            | `constructor()`              |
+| `getter (unsigned long)`     | `operator[]` or `Get`          | Implementation                    | `[index: number]`            |
 
 ## Dependencies
 
@@ -392,41 +387,49 @@ interface EnumDef {
 ## Implementation Steps
 
 ### Task 1: Add Dependencies
+
 - Install tree-sitter, tree-sitter-cpp, ts-morph
 - Verify C++ parsing works with sample header
 
 ### Task 2: Implement C++ AST Parser
+
 - Create `parseCppFile(path)` returning symbol map
 - Handle class declarations, method declarations
 - Extract line numbers for each symbol
 
 ### Task 3: Implement TypeScript AST Parser
+
 - Create `parseTsFile(path)` returning symbol map
 - Handle class, methods, getters/setters, static methods
 - Parse test files for describe/it blocks
 
 ### Task 4: Implement Spec Markdown Parser
+
 - Create `parseSpecMarkdown(path)` returning algorithms
 - Extract method signatures and algorithm steps
 - Handle ## Methods, ### method_name, **Algorithm:** sections
 
 ### Task 5: Implement Symbol Matcher
+
 - Create `matchSymbols(idl, cppSymbols, tsSymbols)`
 - Map IDL members to code locations
 - FAIL with detailed error if symbol not found
 
 ### Task 6: Generate JSON Output
+
 - Create interface JSON files
 - Create types.json for dictionaries/enums
 - All `passes: false` initially
 
 ### Task 7: Update package.json
+
 - Add `npm run tasks` script
 - Update `npm run pipeline` to include tasks step
 
 ## Validation
 
 Generator MUST fail if:
+
 - Any IDL interface method has no C++ declaration
 - Any IDL attribute has no corresponding getter
 - Any interface has no test file

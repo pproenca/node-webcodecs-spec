@@ -12,19 +12,20 @@
 
 ## Task Groups
 
-| Task Group | Tasks | Rationale |
-|------------|-------|-----------|
-| Group 1 | 1, 2 | Independent: vitest config and codec registry have no overlap |
-| Group 2 | 3 | Depends on vitest config from Task 1 |
-| Group 3 | 4 | Independent script, no file overlap |
-| Group 4 | 5 | Independent CI workflow |
-| Group 5 | 6 | Final code review |
+| Task Group | Tasks | Rationale                                                     |
+| ---------- | ----- | ------------------------------------------------------------- |
+| Group 1    | 1, 2  | Independent: vitest config and codec registry have no overlap |
+| Group 2    | 3     | Depends on vitest config from Task 1                          |
+| Group 3    | 4     | Independent script, no file overlap                           |
+| Group 4    | 5     | Independent CI workflow                                       |
+| Group 5    | 6     | Final code review                                             |
 
 ---
 
 ### Task 1: Create vitest.config.ts with Path Alias
 
 **Files:**
+
 - Create: `vitest.config.ts`
 - Modify: `tsconfig.json` (add paths)
 - Modify: `package.json` (add test script if missing)
@@ -89,6 +90,7 @@ git commit -m "build(vitest): add vitest config with @pproenca/node-webcodecs al
 ### Task 2: Create Codec Registry (C++)
 
 **Files:**
+
 - Create: `src/shared/codec_registry.h`
 - Create: `src/shared/codec_registry.cpp`
 - Modify: `binding.gyp` (add new source file)
@@ -428,6 +430,7 @@ git commit -m "feat(codec): add codec registry for W3C string to FFmpeg ID mappi
 ### Task 3: Create Test Suite Structure
 
 **Files:**
+
 - Create: `test/setup.ts`
 - Create: `test/codec-registry.test.ts`
 - Create: `test/video-decoder.test.ts`
@@ -603,12 +606,13 @@ git commit -m "test: add test suite structure with vitest and initial tests"
 ### Task 4: Create Task Generator Script
 
 **Files:**
+
 - Create: `scripts/generate-tasks.ts`
 - Create: `docs/tasks/.gitkeep`
 
 **Step 1: Create task generator script** (5 min)
 
-```typescript
+````typescript
 // scripts/generate-tasks.ts
 /**
  * Task Generator - Parses WebIDL and generates Markdown task files.
@@ -640,7 +644,7 @@ function parseIdlType(idlType: webidl2.IDLTypeDescription | null): string {
     return idlType.idlType;
   }
   if (Array.isArray(idlType.idlType)) {
-    return idlType.idlType.map(t => parseIdlType(t as webidl2.IDLTypeDescription)).join(' | ');
+    return idlType.idlType.map((t) => parseIdlType(t as webidl2.IDLTypeDescription)).join(' | ');
   }
   return 'unknown';
 }
@@ -660,14 +664,14 @@ function extractTasks(member: webidl2.IDLInterfaceMemberType): TaskItem | null {
         type: member.special === 'static' ? 'static-method' : 'method',
         name: member.name,
         returnType: parseIdlType(member.idlType),
-        params: member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`),
+        params: member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`),
       };
     case 'constructor':
       return {
         type: 'constructor',
         name: 'constructor',
         returnType: 'instance',
-        params: member.arguments.map(arg => `${arg.name}: ${parseIdlType(arg.idlType)}`),
+        params: member.arguments.map((arg) => `${arg.name}: ${parseIdlType(arg.idlType)}`),
       };
     default:
       return null;
@@ -697,7 +701,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   ];
 
   // Constructor
-  const constructor = tasks.find(t => t.type === 'constructor');
+  const constructor = tasks.find((t) => t.type === 'constructor');
   if (constructor) {
     lines.push(`### Constructor`);
     lines.push('');
@@ -711,7 +715,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Attributes
-  const attributes = tasks.filter(t => t.type === 'attribute');
+  const attributes = tasks.filter((t) => t.type === 'attribute');
   if (attributes.length > 0) {
     lines.push(`### Attributes`);
     lines.push('');
@@ -719,7 +723,9 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
       const prefix = attr.readonly ? '(readonly)' : '(read/write)';
       lines.push(`#### \`${attr.name}\` ${prefix}`);
       lines.push('');
-      lines.push(`- [ ] C++: Implement \`Get${capitalize(attr.name)}()\` returning \`${attr.returnType}\``);
+      lines.push(
+        `- [ ] C++: Implement \`Get${capitalize(attr.name)}()\` returning \`${attr.returnType}\``
+      );
       if (!attr.readonly) {
         lines.push(`- [ ] C++: Implement \`Set${capitalize(attr.name)}()\``);
       }
@@ -730,7 +736,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Methods
-  const methods = tasks.filter(t => t.type === 'method');
+  const methods = tasks.filter((t) => t.type === 'method');
   if (methods.length > 0) {
     lines.push(`### Methods`);
     lines.push('');
@@ -751,7 +757,7 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Static Methods
-  const staticMethods = tasks.filter(t => t.type === 'static-method');
+  const staticMethods = tasks.filter((t) => t.type === 'static-method');
   if (staticMethods.length > 0) {
     lines.push(`### Static Methods`);
     lines.push('');
@@ -768,7 +774,9 @@ function generateTaskMarkdown(interfaceName: string, tasks: TaskItem[]): string 
   }
 
   // Memory Management (if applicable)
-  if (['VideoFrame', 'AudioData', 'EncodedVideoChunk', 'EncodedAudioChunk'].includes(interfaceName)) {
+  if (
+    ['VideoFrame', 'AudioData', 'EncodedVideoChunk', 'EncodedAudioChunk'].includes(interfaceName)
+  ) {
     lines.push(`### Memory Management`);
     lines.push('');
     lines.push(`- [ ] Implement \`close()\` to free native resources immediately`);
@@ -834,7 +842,7 @@ async function main() {
 }
 
 main().catch(console.error);
-```
+````
 
 **Step 2: Add script to package.json** (1 min)
 
@@ -871,6 +879,7 @@ git commit -m "feat(scripts): add task generator for IDL-to-markdown conversion"
 ### Task 5: Create GitHub Actions CI Workflow
 
 **Files:**
+
 - Create: `.github/workflows/build.yml`
 - Modify: `package.json` (add node-pre-gyp config)
 
@@ -1069,14 +1078,14 @@ git commit -m "chore: complete PRD missing pieces implementation"
 
 ## Summary
 
-| Task | Component | Files Created/Modified |
-|------|-----------|----------------------|
-| 1 | Vitest Config | `vitest.config.ts`, `tsconfig.json` |
-| 2 | Codec Registry | `src/shared/codec_registry.{h,cpp}`, `binding.gyp` |
-| 3 | Test Suite | `test/setup.ts`, `test/*.test.ts`, `test/fixtures/` |
-| 4 | Task Generator | `scripts/generate-tasks.ts`, `docs/tasks/` |
-| 5 | GitHub Actions | `.github/workflows/build.yml`, `package.json` |
-| 6 | Code Review | Final verification |
+| Task | Component      | Files Created/Modified                              |
+| ---- | -------------- | --------------------------------------------------- |
+| 1    | Vitest Config  | `vitest.config.ts`, `tsconfig.json`                 |
+| 2    | Codec Registry | `src/shared/codec_registry.{h,cpp}`, `binding.gyp`  |
+| 3    | Test Suite     | `test/setup.ts`, `test/*.test.ts`, `test/fixtures/` |
+| 4    | Task Generator | `scripts/generate-tasks.ts`, `docs/tasks/`          |
+| 5    | GitHub Actions | `.github/workflows/build.yml`, `package.json`       |
+| 6    | Code Review    | Final verification                                  |
 
 **Total Commits:** 6
 **Estimated Time:** 45-60 minutes

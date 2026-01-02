@@ -5,6 +5,7 @@
 This document defines the foundational build configuration and C++ entry point for a Node.js native addon implementing the WebCodecs API backed by FFmpeg.
 
 **Architecture:** 3-Layer Model
+
 ```
 TypeScript Public API → N-API Bridge (C++) → FFmpeg (libav*)
 ```
@@ -16,11 +17,13 @@ TypeScript Public API → N-API Bridge (C++) → FFmpeg (libav*)
 **Decision:** Environment variable `FFMPEG_ROOT`
 
 **Rationale:**
+
 - Simple CI/CD integration (no command-line parsing)
 - Works across all build systems (GitHub Actions, Jenkins, local)
 - Clear error message if unset
 
 **Usage:**
+
 ```bash
 FFMPEG_ROOT=/usr/local/ffmpeg npm install
 ```
@@ -40,6 +43,7 @@ Link order matters for static linking: avformat → avcodec → swscale → avut
 ### WebCodecs Class Stubs
 
 Initial exports (all stubs for compile verification):
+
 - `VideoDecoder` - Decodes EncodedVideoChunk → VideoFrame
 - `VideoEncoder` - Encodes VideoFrame → EncodedVideoChunk
 - `VideoFrame` - Raw frame container with buffer ownership
@@ -50,15 +54,18 @@ Initial exports (all stubs for compile verification):
 **Pattern:** `Napi::TypedThreadSafeFunction` with RAII via Finalizer
 
 **Why TypedThreadSafeFunction:**
+
 - Compile-time type checking for callback data
 - Cleaner API than untyped ThreadSafeFunction
 
 **RAII Strategy:**
+
 - Use finalizer callback for resource cleanup (joins worker threads)
 - `AsyncDecodeContext` struct owns both TSFN and AVCodecContext
 - Destructor releases TSFN and frees FFmpeg context
 
 **Non-blocking decode flow:**
+
 ```
 JS: decoder.decode(chunk)
   → C++: Queue chunk, return immediately
@@ -76,11 +83,11 @@ JS: decoder.decode(chunk)
 
 ### OS-Specific Configuration
 
-| OS | Library Extension | Additional Frameworks/Libs |
-|----|------------------|---------------------------|
-| macOS | `.a` | CoreFoundation, CoreMedia, VideoToolbox, Security, bz2, z, iconv |
-| Linux | `.a` | pthread, dl, z, lzma |
-| Windows | `.lib` | - |
+| OS      | Library Extension | Additional Frameworks/Libs                                       |
+| ------- | ----------------- | ---------------------------------------------------------------- |
+| macOS   | `.a`              | CoreFoundation, CoreMedia, VideoToolbox, Security, bz2, z, iconv |
+| Linux   | `.a`              | pthread, dl, z, lzma                                             |
+| Windows | `.lib`            | -                                                                |
 
 ### Compiler Settings
 

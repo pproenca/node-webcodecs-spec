@@ -64,17 +64,17 @@ Creates GitHub issues from the WebCodecs spec TOC.
 
 **H2 Sections → Issues:**
 
-| Section | Issue Title |
-|---------|-------------|
-| 2 | Codec Processing Model |
-| 3 | AudioDecoder Interface |
-| 4 | VideoDecoder Interface |
-| 5 | AudioEncoder Interface |
-| 6 | VideoEncoder Interface |
-| 7 | Configurations |
-| 8 | Encoded Media Interfaces |
-| 9 | Raw Media Interfaces |
-| 10 | Image Decoding |
+| Section | Issue Title              |
+| ------- | ------------------------ |
+| 2       | Codec Processing Model   |
+| 3       | AudioDecoder Interface   |
+| 4       | VideoDecoder Interface   |
+| 5       | AudioEncoder Interface   |
+| 6       | VideoEncoder Interface   |
+| 7       | Configurations           |
+| 8       | Encoded Media Interfaces |
+| 9       | Raw Media Interfaces     |
+| 10      | Image Decoding           |
 
 **Issue Body:** The rendered markdown content from that H2 section (includes all H3/H4 subsections).
 

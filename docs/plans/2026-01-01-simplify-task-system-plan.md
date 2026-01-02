@@ -15,6 +15,7 @@
 ### Task 1: Delete spec context markdown files
 
 **Files:**
+
 - Delete: `spec/context/AudioDecoder.md`
 - Delete: `spec/context/VideoDecoder.md`
 - Delete: `spec/context/AudioEncoder.md`
@@ -53,6 +54,7 @@ git add -A && git commit -m "chore: remove generated spec context markdown files
 ### Task 2: Delete JSON task files
 
 **Files:**
+
 - Delete: `docs/tasks/*.json` (all 14 files)
 
 **Step 1: Delete all JSON task files** (30 sec)
@@ -80,6 +82,7 @@ git add -A && git commit -m "chore: remove JSON task files"
 ### Task 3: Delete task generation scripts
 
 **Files:**
+
 - Delete: `scripts/generate-tasks.ts`
 - Delete: `scripts/generate-tasks.test.ts`
 - Delete: `scripts/parsers/` (entire directory)
@@ -137,6 +140,7 @@ git add -A && git commit -m "chore: remove task generation infrastructure"
 ### Task 4: Update package.json scripts
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Read current package.json** (30 sec)
@@ -146,14 +150,17 @@ Verify current scripts section contains `generate:tasks`, `tasks`, `pipeline`.
 **Step 2: Update package.json** (2 min)
 
 Remove these scripts:
+
 - `"generate:tasks": "tsx scripts/generate-tasks.ts"`
 - `"tasks": "npm run generate:tasks"`
 - `"pipeline": "npm run scaffold && npm run generate:tasks"`
 
 Add new script:
+
 - `"issues": "tsx scripts/generate-issues.ts"`
 
 Keep unchanged:
+
 - `"scaffold": "tsx scripts/scaffold-project.ts"`
 
 **Step 3: Verify package.json is valid** (30 sec)
@@ -175,6 +182,7 @@ git add package.json && git commit -m "chore: update npm scripts for new issue s
 ### Task 5: Update .gitignore for cache directory
 
 **Files:**
+
 - Modify: `.gitignore`
 
 **Step 1: Check current .gitignore** (30 sec)
@@ -200,11 +208,12 @@ git add .gitignore && git commit -m "chore: update gitignore for cache" || echo 
 ### Task 6: Create generate-issues.ts script
 
 **Files:**
+
 - Create: `scripts/generate-issues.ts`
 
 **Step 1: Write the script skeleton** (5 min)
 
-```typescript
+````typescript
 /**
  * Generate GitHub Issues from WebCodecs Spec
  *
@@ -383,7 +392,7 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-```
+````
 
 **Step 2: Verify TypeScript compiles** (30 sec)
 
@@ -404,6 +413,7 @@ git add scripts/generate-issues.ts && git commit -m "feat: add generate-issues s
 ### Task 7: Test the script (dry run)
 
 **Files:**
+
 - None (testing only)
 
 **Step 1: Run script prerequisites check** (1 min)
@@ -438,11 +448,13 @@ Expected: 8-10 issues with titles like "2. Codec Processing Model", "3. AudioDec
 ### Task 8: Remove unused devDependencies
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Check which deps were only used by generate-tasks** (1 min)
 
 The deleted scripts used:
+
 - `ts-morph` - used by ts-ast-parser.ts (DELETE candidate)
 - `webidl2` - still used by scaffold-project.ts (KEEP)
 - `jsdom` - still used by scaffold-project.ts and new script (KEEP)
@@ -480,6 +492,7 @@ git diff HEAD~8..HEAD --stat
 ```
 
 Verify:
+
 - All markdown context files deleted
 - All JSON task files deleted
 - All parser/matcher scripts deleted
@@ -491,9 +504,9 @@ Verify:
 
 ## Parallel Groups Summary
 
-| Task Group | Tasks | Rationale |
-|------------|-------|-----------|
-| Group 1 | 1, 2, 3 | Independent deletions, no file overlap |
-| Group 2 | 4, 5 | Sequential - both modify config files |
-| Group 3 | 6, 7 | Sequential - create then test |
-| Group 4 | 8, 9 | Sequential - cleanup then review |
+| Task Group | Tasks   | Rationale                              |
+| ---------- | ------- | -------------------------------------- |
+| Group 1    | 1, 2, 3 | Independent deletions, no file overlap |
+| Group 2    | 4, 5    | Sequential - both modify config files  |
+| Group 3    | 6, 7    | Sequential - create then test          |
+| Group 4    | 8, 9    | Sequential - cleanup then review       |

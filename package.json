@@ -28,10 +28,10 @@
     "test:native:asan": "cd test/cpp && cmake -B build -DENABLE_ASAN=ON && cmake --build build && ./build/webcodecs_tests",
     "test:native:ubsan": "cd test/cpp && cmake -B build -DENABLE_UBSAN=ON && cmake --build build && ./build/webcodecs_tests",
     "lint": "npm run lint:ts && npm run lint:cpp",
-    "lint:ts": "prettier --check lib scripts test --ignore-unknown",
+    "lint:ts": "prettier --check docs lib scripts test --ignore-unknown",
     "lint:cpp": "cpplint --recursive --exclude=test/cpp/build src test/cpp",
     "format": "npm run format:ts && npm run format:cpp",
-    "format:ts": "prettier --write lib scripts test --ignore-unknown",
+    "format:ts": "prettier --write docs lib scripts test --ignore-unknown",
     "format:cpp": "find src test/cpp -path test/cpp/build -prune -o \\( -name '*.cpp' -o -name '*.h' \\) -print | xargs clang-format -i",
     "scaffold": "tsx scripts/scaffold-project.ts",
     "specs": "tsx scripts/generate-specs.ts"

@@ -5,6 +5,7 @@
 **Goal:** Fix the spec context markdown generation to produce properly formatted reference documents by using Bikeshed API to pre-render the W3C spec before parsing.
 
 **Architecture:** Pragmatic approach - modify scaffold-project.ts to:
+
 1. Fetch raw Bikeshed source from W3C repo
 2. Submit to Bikeshed API (https://api.csswg.org/bikeshed/) to get rendered HTML
 3. Parse rendered HTML (cross-references already resolved)
@@ -25,6 +26,7 @@
 ## Solution Overview
 
 The Bikeshed API at `https://api.csswg.org/bikeshed/` accepts raw `.src.html` content and returns fully rendered HTML with:
+
 - Cross-references resolved to actual text/links
 - Proper HTML structure for algorithm steps
 - All Bikeshed markup processed
@@ -36,6 +38,7 @@ We'll use this rendered HTML instead of the raw source for parsing.
 ### Task 1: Add Bikeshed API Build Function
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts:130-145`
 
 **Step 1: Write failing test for Bikeshed API function** (2-5 min)
@@ -100,6 +103,7 @@ git commit -m "feat(scaffold): add buildWithBikeshed API function"
 ### Task 2: Integrate Bikeshed Build into Main Flow
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts:131-160` (main function)
 
 **Step 1: Update the main function to use Bikeshed API** (5 min)
@@ -115,7 +119,9 @@ if (!response.ok) {
   throw new Error(`Failed to fetch spec: ${response.status} ${response.statusText}`);
 }
 const rawBikeshedSource = await response.text();
-console.log(`[Scaffold] Fetched raw Bikeshed source (${(rawBikeshedSource.length / 1024).toFixed(1)} KB)`);
+console.log(
+  `[Scaffold] Fetched raw Bikeshed source (${(rawBikeshedSource.length / 1024).toFixed(1)} KB)`
+);
 
 // 2. Build with Bikeshed API
 console.log('[Scaffold] Building spec with Bikeshed API...');
@@ -149,6 +155,7 @@ git commit -m "feat(scaffold): integrate Bikeshed API build step"
 ### Task 3: Fix Algorithm Step Parsing
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts:1106-1177` (parseBikeshed function)
 
 **Step 1: Update the algorithm extraction to handle rendered HTML** (5 min)
@@ -190,34 +197,35 @@ function parseBikeshed(html: string): {
 Improve the algorithm extraction to find `<dd>` content with proper structure:
 
 ```typescript
-  // 2. Extract Algorithms - look for method definitions
-  const algorithmMap = new Map<string, string[]>();
+// 2. Extract Algorithms - look for method definitions
+const algorithmMap = new Map<string, string[]>();
 
-  // In rendered Bikeshed, methods are in <dt>/<dd> pairs with data-dfn-for attribute
-  const definitions = doc.querySelectorAll('dfn[data-dfn-for]');
+// In rendered Bikeshed, methods are in <dt>/<dd> pairs with data-dfn-for attribute
+const definitions = doc.querySelectorAll('dfn[data-dfn-for]');
 
-  definitions.forEach((dfn) => {
-    const forAttr = dfn.getAttribute('data-dfn-for');
-    const dfnType = dfn.getAttribute('data-dfn-type');
+definitions.forEach((dfn) => {
+  const forAttr = dfn.getAttribute('data-dfn-for');
+  const dfnType = dfn.getAttribute('data-dfn-type');
 
-    if (forAttr && (dfnType === 'method' || dfnType === 'constructor')) {
-      const methodName = dfnType === 'constructor' ? 'constructor' : dfn.textContent?.split('(')[0].trim() || '';
-      const key = `${forAttr}.${methodName}`;
+  if (forAttr && (dfnType === 'method' || dfnType === 'constructor')) {
+    const methodName =
+      dfnType === 'constructor' ? 'constructor' : dfn.textContent?.split('(')[0].trim() || '';
+    const key = `${forAttr}.${methodName}`;
 
-      // Find the containing <dt> and get the next <dd>
-      const dt = dfn.closest('dt');
-      const dd = dt?.nextElementSibling;
+    // Find the containing <dt> and get the next <dd>
+    const dt = dfn.closest('dt');
+    const dd = dt?.nextElementSibling;
 
-      if (dd && dd.tagName === 'DD') {
-        const md = turndown.turndown(dd.innerHTML);
-        const steps = md
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean);
-        algorithmMap.set(key, steps);
-      }
+    if (dd && dd.tagName === 'DD') {
+      const md = turndown.turndown(dd.innerHTML);
+      const steps = md
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      algorithmMap.set(key, steps);
     }
-  });
+  }
+});
 ```
 
 **Step 3: Test the parsing locally** (1 min)
@@ -238,6 +246,7 @@ git commit -m "fix(scaffold): improve algorithm step parsing for rendered Bikesh
 ### Task 4: Add Table of Contents to Markdown Output
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts:365-400` (generateMarkdownContext function)
 
 **Step 1: Update generateMarkdownContext to include TOC** (5 min)
@@ -290,13 +299,15 @@ ${m.isStatic ? '**Static Method**\n\n' : ''}**Signature:** \`${m.signature}\`
 
 **Algorithm:**
 
-${m.steps.map((s, i) => {
-  // Check if step already has a number prefix
-  if (/^\d+\./.test(s)) {
-    return s;
-  }
-  return `${i + 1}. ${s}`;
-}).join('\n')}
+${m.steps
+  .map((s, i) => {
+    // Check if step already has a number prefix
+    if (/^\d+\./.test(s)) {
+      return s;
+    }
+    return `${i + 1}. ${s}`;
+  })
+  .join('\n')}
 `
   )
   .join('\n')}
@@ -322,6 +333,7 @@ git commit -m "feat(scaffold): add table of contents to spec context markdown"
 ### Task 5: Handle Empty Sections and Fallbacks
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts:287-361` (buildInterfaceContext function)
 
 **Step 1: Improve fallback handling for missing algorithm steps** (5 min)
@@ -353,8 +365,9 @@ function buildInterfaceContext(
       if (!steps || steps.length === 0 || steps[0] === 'See spec/context file.') {
         // Try alternate key formats
         steps = algoMap.get(`${iface.name}.${opName}()`) ||
-                algoMap.get(opName) ||
-                [`Implementation follows W3C WebCodecs ${iface.name}.${opName}() specification.`];
+          algoMap.get(opName) || [
+            `Implementation follows W3C WebCodecs ${iface.name}.${opName}() specification.`,
+          ];
       }
 
       methods.push({
@@ -375,7 +388,8 @@ function buildInterfaceContext(
   // Filter out methods section if empty
   return {
     name: iface.name,
-    desc: descMap.get(iface.name) || `${iface.name} interface from the W3C WebCodecs specification.`,
+    desc:
+      descMap.get(iface.name) || `${iface.name} interface from the W3C WebCodecs specification.`,
     methods,
     attributes,
     hasConstructor,
@@ -401,6 +415,7 @@ git commit -m "fix(scaffold): improve fallback handling for missing algorithm st
 ### Task 6: Clean Up Bikeshed Markup Remnants
 
 **Files:**
+
 - Modify: `scripts/scaffold-project.ts` (add cleanBikeshedMarkup helper)
 
 **Step 1: Add cleanup function for any remaining Bikeshed markup** (5 min)
@@ -414,22 +429,24 @@ Add after the `buildWithBikeshed` function:
  * @returns Cleaned text with markup converted to plain text
  */
 function cleanBikeshedMarkup(text: string): string {
-  return text
-    // [=term=] -> term
-    .replace(/\[=([^\]]+)=\]/g, '$1')
-    // {{Type}} -> Type
-    .replace(/\{\{([^}]+)\}\}/g, '$1')
-    // |variable| -> variable
-    .replace(/\|([^|]+)\|/g, '$1')
-    // [[internal slot]] -> [internal slot]
-    .replace(/\[\[([^\]]+)\]\]/g, '[$1]')
-    // `"value"` -> "value"
-    .replace(/`"([^"]+)"`/g, '"$1"')
-    // Clean up escaped brackets
-    .replace(/\\?\[=/g, '')
-    .replace(/=\\?\]/g, '')
-    .replace(/\\\[/g, '[')
-    .replace(/\\\]/g, ']');
+  return (
+    text
+      // [=term=] -> term
+      .replace(/\[=([^\]]+)=\]/g, '$1')
+      // {{Type}} -> Type
+      .replace(/\{\{([^}]+)\}\}/g, '$1')
+      // |variable| -> variable
+      .replace(/\|([^|]+)\|/g, '$1')
+      // [[internal slot]] -> [internal slot]
+      .replace(/\[\[([^\]]+)\]\]/g, '[$1]')
+      // `"value"` -> "value"
+      .replace(/`"([^"]+)"`/g, '"$1"')
+      // Clean up escaped brackets
+      .replace(/\\?\[=/g, '')
+      .replace(/=\\?\]/g, '')
+      .replace(/\\\[/g, '[')
+      .replace(/\\\]/g, ']')
+  );
 }
 ```
 
@@ -471,6 +488,7 @@ git commit -m "fix(scaffold): clean remaining Bikeshed markup from output"
 ### Task 7: Run Full Generation and Verify
 
 **Files:**
+
 - Verify: `spec/context/*.md`
 
 **Step 1: Run full scaffold with force regeneration** (2 min)
@@ -508,10 +526,12 @@ git commit -m "docs: regenerate spec context with improved formatting"
 ### Task 8: Code Review
 
 **Files:**
+
 - Review: `scripts/scaffold-project.ts`
 - Review: `spec/context/*.md`
 
 Review the implementation for:
+
 1. Error handling for Bikeshed API failures
 2. Proper TypeScript types
 3. Clean algorithm step formatting
@@ -522,11 +542,11 @@ Review the implementation for:
 
 ## Parallel Task Groups
 
-| Task Group | Tasks | Rationale |
-|------------|-------|-----------|
-| Group 1 | 1, 2 | Core Bikeshed API integration, sequential dependency |
-| Group 2 | 3, 4, 5, 6 | Independent parsing/formatting improvements |
-| Group 3 | 7, 8 | Verification and review, depends on Group 1+2 |
+| Task Group | Tasks      | Rationale                                            |
+| ---------- | ---------- | ---------------------------------------------------- |
+| Group 1    | 1, 2       | Core Bikeshed API integration, sequential dependency |
+| Group 2    | 3, 4, 5, 6 | Independent parsing/formatting improvements          |
+| Group 3    | 7, 8       | Verification and review, depends on Group 1+2        |
 
 ---
 
