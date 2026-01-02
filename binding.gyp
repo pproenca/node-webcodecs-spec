@@ -6,6 +6,7 @@
         "src/addon.cpp",
         "src/shared/codec_registry.cpp",
         "src/image_decoder.cpp",
+        "src/image_decoder_worker.cpp",
         "src/image_track_list.cpp",
         "src/image_track.cpp",
         "src/audio_decoder.cpp",

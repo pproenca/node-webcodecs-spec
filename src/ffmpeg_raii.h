@@ -244,6 +244,17 @@ using AVDictionaryPtr = std::unique_ptr<AVDictionary, AVDictionaryDeleter>;
  */
 [[nodiscard]] inline AVFilterGraphPtr MakeFilterGraph() { return AVFilterGraphPtr(avfilter_graph_alloc()); }
 
+/**
+ * Wraps an already-opened AVFormatContext in RAII.
+ * Use after avformat_open_input() succeeds.
+ *
+ * NOTE: avformat_open_input() frees the context on failure, so only call
+ * this wrapper after confirming success.
+ */
+[[nodiscard]] inline AVFormatContextPtr MakeAvFormatContext(AVFormatContext* ctx) {
+  return AVFormatContextPtr(ctx);
+}
+
 // =============================================================================
 // THREAD-SAFE ASYNC DECODE CONTEXT
 // =============================================================================

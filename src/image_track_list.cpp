@@ -37,28 +37,14 @@ ImageTrackList::~ImageTrackList() {
 }
 
 Napi::Object ImageTrackList::Create(Napi::Env env, ImageDecoder* decoder) {
-  fprintf(stderr, "ImageTrackList::Create - start\n");
-  fflush(stderr);
-
   // Verify constructor is initialized
-  fprintf(stderr, "ImageTrackList::Create - checking constructor\n");
-  fflush(stderr);
   if (constructor_.IsEmpty()) {
-    fprintf(stderr, "ImageTrackList::Create - constructor is empty!\n");
-    fflush(stderr);
     Napi::Error::New(env, "ImageTrackList constructor not initialized").ThrowAsJavaScriptException();
     return Napi::Object();
   }
 
-  fprintf(stderr, "ImageTrackList::Create - calling constructor_.New\n");
-  fflush(stderr);
   Napi::Object obj = constructor_.New({});
-  fprintf(stderr, "ImageTrackList::Create - constructor_.New returned\n");
-  fflush(stderr);
-
   if (obj.IsEmpty()) {
-    fprintf(stderr, "ImageTrackList::Create - obj is empty\n");
-    fflush(stderr);
     return Napi::Object();
   }
 
@@ -66,8 +52,6 @@ Napi::Object ImageTrackList::Create(Napi::Env env, ImageDecoder* decoder) {
   if (list) {
     list->decoder_ = decoder;
   }
-  fprintf(stderr, "ImageTrackList::Create - done\n");
-  fflush(stderr);
   return obj;
 }
 

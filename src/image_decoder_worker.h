@@ -56,36 +56,202 @@ struct ImageDecodeResult {
  * - Reset: Abort pending decodes
  * - Close: Release resources
  */
-// INCREMENTALLY ADDING MEMBERS TO FIND CRASH CAUSE
 class ImageDecoderWorker {
  public:
-  // Original callback types
-  using TrackInfoCallback = std::function<void(const std::vector<ImageTrackInfo>&, int32_t)>;
-  using DecodeResultCallback = std::function<void(uint32_t, ImageDecodeResult)>;
-  using ErrorCallback = std::function<void(uint32_t, int, const std::string&)>;
+  // Callback types for communicating results back to ImageDecoder
+  using TrackInfoCallback =
+      std::function<void(const std::vector<ImageTrackInfo>&, int32_t)>;
+  using DecodeResultCallback =
+      std::function<void(uint32_t, ImageDecodeResult)>;
+  using ErrorCallback =
+      std::function<void(uint32_t, int, const std::string&)>;
   using CompletedCallback = std::function<void()>;
 
-  ImageDecoderWorker() = default;
-  ~ImageDecoderWorker() = default;
+  /**
+   * Construct worker with reference to message queue.
+   * Does NOT start the worker thread - call Start() explicitly.
+   */
+  explicit ImageDecoderWorker(ImageControlQueue& queue);
+  ~ImageDecoderWorker();
 
-  // Stubs
-  bool Start() { return true; }
-  void Stop() {}
-  bool IsRunning() const { return false; }
-  bool ShouldExit() const { return true; }
+  // Non-copyable, non-movable (owns thread)
+  ImageDecoderWorker(const ImageDecoderWorker&) = delete;
+  ImageDecoderWorker& operator=(const ImageDecoderWorker&) = delete;
+  ImageDecoderWorker(ImageDecoderWorker&&) = delete;
+  ImageDecoderWorker& operator=(ImageDecoderWorker&&) = delete;
 
-  // Callback setters - now with proper types
-  void SetTrackInfoCallback(TrackInfoCallback cb) { track_info_callback_ = std::move(cb); }
-  void SetDecodeResultCallback(DecodeResultCallback cb) { decode_result_callback_ = std::move(cb); }
-  void SetErrorCallback(ErrorCallback cb) { error_callback_ = std::move(cb); }
-  void SetCompletedCallback(CompletedCallback cb) { completed_callback_ = std::move(cb); }
+  // =========================================================================
+  // LIFECYCLE
+  // =========================================================================
+
+  /**
+   * Start the worker thread.
+   * Safe to call multiple times (idempotent).
+   */
+  bool Start();
+
+  /**
+   * Stop the worker thread.
+   * Signals shutdown, waits for thread to exit, then joins.
+   */
+  void Stop();
+
+  /**
+   * Check if worker is currently running.
+   */
+  [[nodiscard]] bool IsRunning() const;
+
+  /**
+   * Check if worker should exit (for use in long operations).
+   */
+  [[nodiscard]] bool ShouldExit() const;
+
+  // =========================================================================
+  // CALLBACKS (set by ImageDecoder)
+  // =========================================================================
+
+  void SetTrackInfoCallback(TrackInfoCallback cb) {
+    track_info_callback_ = std::move(cb);
+  }
+
+  void SetDecodeResultCallback(DecodeResultCallback cb) {
+    decode_result_callback_ = std::move(cb);
+  }
+
+  void SetErrorCallback(ErrorCallback cb) {
+    error_callback_ = std::move(cb);
+  }
+
+  void SetCompletedCallback(CompletedCallback cb) {
+    completed_callback_ = std::move(cb);
+  }
 
  private:
-  // Callbacks - this is what we're testing
+  /**
+   * Main worker loop. Dequeues and processes messages.
+   */
+  void WorkerLoop();
+
+  // =========================================================================
+  // MESSAGE HANDLERS
+  // =========================================================================
+
+  /**
+   * Handle Configure message.
+   * Opens format context from memory, parses tracks, opens codec.
+   */
+  bool OnConfigure(const ImageConfigureMessage& msg);
+
+  /**
+   * Handle Decode message.
+   * Seeks to and decodes the specified frame.
+   */
+  void OnDecode(const ImageDecodeMessage& msg);
+
+  /**
+   * Handle Reset message.
+   * Flushes codec buffers and resets seek position.
+   */
+  void OnReset();
+
+  /**
+   * Handle Close message.
+   * Releases all FFmpeg resources.
+   */
+  void OnClose();
+
+  /**
+   * Handle UpdateTrack message.
+   * Changes the selected stream for decoding.
+   */
+  void OnUpdateTrack(const ImageUpdateTrackMessage& msg);
+
+  // =========================================================================
+  // HELPERS
+  // =========================================================================
+
+  /**
+   * Signal track info to ImageDecoder.
+   */
+  void OutputTrackInfo(const std::vector<ImageTrackInfo>& tracks,
+                       int32_t selected_index);
+
+  /**
+   * Signal decoded frame to ImageDecoder.
+   */
+  void OutputDecodeResult(uint32_t promise_id, ImageDecodeResult result);
+
+  /**
+   * Signal error to ImageDecoder.
+   */
+  void OutputError(uint32_t promise_id, int error_code,
+                   const std::string& message);
+
+  /**
+   * Signal that all data has been read (completed).
+   */
+  void OutputCompleted();
+
+  /**
+   * Seek to a specific frame index.
+   * Returns true if successful.
+   */
+  bool SeekToFrame(uint32_t frame_index);
+
+  /**
+   * Decode the next frame from the current position.
+   */
+  raii::AVFramePtr DecodeNextFrame(int64_t* timestamp, int64_t* duration);
+
+  // Message queue reference (owned by ImageDecoder)
+  ImageControlQueue& queue_;
+
+  // Worker thread
+  std::thread worker_thread_;
+  std::mutex lifecycle_mutex_;
+  std::atomic<bool> running_{false};
+  std::atomic<bool> should_exit_{false};
+
+  // Callbacks to ImageDecoder
   TrackInfoCallback track_info_callback_;
   DecodeResultCallback decode_result_callback_;
   ErrorCallback error_callback_;
   CompletedCallback completed_callback_;
+
+  // =========================================================================
+  // FFMPEG RESOURCES (owned by worker thread)
+  // =========================================================================
+
+  // Custom I/O context for reading from memory
+  // Using unique_ptr with custom deleter since we allocate buffer and opaque
+  struct CustomIODeleter {
+    void operator()(AVIOContext* ctx) const noexcept;
+  };
+  using CustomAVIOContextPtr = std::unique_ptr<AVIOContext, CustomIODeleter>;
+  CustomAVIOContextPtr io_ctx_;
+
+  // Format context (demuxer)
+  raii::AVFormatContextPtr fmt_ctx_;
+
+  // Codec context (decoder)
+  raii::AVCodecContextPtr codec_ctx_;
+
+  // Image data buffer (copied from configure message)
+  std::vector<uint8_t> image_data_;
+  size_t read_position_ = 0;
+
+  // Track information
+  std::vector<ImageTrackInfo> tracks_;
+  int32_t selected_stream_index_ = -1;
+
+  // Frame tracking for animated images
+  uint32_t current_frame_index_ = 0;
+  uint32_t total_frame_count_ = 1;
+
+  // Configuration
+  std::string type_;
+  std::optional<uint32_t> desired_width_;
+  std::optional<uint32_t> desired_height_;
 };
 
 }  // namespace webcodecs

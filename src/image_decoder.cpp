@@ -60,8 +60,6 @@ Napi::Object ImageDecoder::Init(Napi::Env env, Napi::Object exports) {
 ImageDecoder::ImageDecoder(const Napi::CallbackInfo& info)
     : Napi::ObjectWrap<ImageDecoder>(info) {
   Napi::Env env = info.Env();
-  fprintf(stderr, "ImageDecoder::ImageDecoder - start\n");
-  fflush(stderr);
 
   // [SPEC 10.2.3] Constructor Algorithm
   // 1. If init.data is not provided, throw TypeError
@@ -78,9 +76,6 @@ ImageDecoder::ImageDecoder(const Napi::CallbackInfo& info)
     return;  // Exception already thrown
   }
 
-  fprintf(stderr, "ImageDecoder::ImageDecoder - validated\n");
-  fflush(stderr);
-
   // Extract type
   type_ = init.Get("type").As<Napi::String>().Utf8Value();
 
@@ -89,39 +84,22 @@ ImageDecoder::ImageDecoder(const Napi::CallbackInfo& info)
   completed_promise_ref_ =
       Napi::Reference<Napi::Promise>::New(completed_deferred_->Promise(), 1);
 
-  fprintf(stderr, "ImageDecoder::ImageDecoder - creating ImageTrackList\n");
-  fflush(stderr);
-
   // Create ImageTrackList
   Napi::Object track_list = ImageTrackList::Create(env, this);
-  fprintf(stderr, "ImageDecoder::ImageDecoder - ImageTrackList created\n");
-  fflush(stderr);
-
-  fprintf(stderr, "ImageDecoder::ImageDecoder - creating tracks_ref_\n");
-  fflush(stderr);
   tracks_ref_ = Napi::Reference<Napi::Object>::New(track_list, 1);
 
-  fprintf(stderr, "ImageDecoder::ImageDecoder - initializing TSFNs\n");
-  fflush(stderr);
   // Initialize TSFNs
   InitializeTSFNs(env);
-  fprintf(stderr, "ImageDecoder::ImageDecoder - TSFNs initialized\n");
-  fflush(stderr);
 
-  fprintf(stderr, "ImageDecoder::ImageDecoder - trying to include ImageDecoderWorker\n");
-  fflush(stderr);
+  // Create worker with queue reference and set up callbacks
+  worker_ = std::make_unique<ImageDecoderWorker>(queue_);
+  SetupWorkerCallbacks();
 
-  fprintf(stderr, "ImageDecoder::ImageDecoder - queue_ address: %p\n", (void*)&queue_);
-  fflush(stderr);
-  fprintf(stderr, "ImageDecoder::ImageDecoder - this address: %p\n", (void*)this);
-  fflush(stderr);
-
-  // Try creating worker without any fprintf
-  fprintf(stderr, "ImageDecoder::ImageDecoder - creating worker (no fprintf in worker)\n");
-  fflush(stderr);
-  worker_ = std::make_unique<ImageDecoderWorker>();  // Default constructor
-  fprintf(stderr, "ImageDecoder::ImageDecoder - worker created successfully\n");
-  fflush(stderr);
+  // Start the worker thread
+  if (!worker_->Start()) {
+    Napi::Error::New(env, "Failed to start worker thread").ThrowAsJavaScriptException();
+    return;
+  }
 
   // Extract data and enqueue configure message
   Napi::Value data_value = init.Get("data");
