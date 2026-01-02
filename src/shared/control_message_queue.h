@@ -57,10 +57,20 @@ class ControlMessageQueue {
   };
 
   /**
-   * Decode/Encode message - queued work item.
+   * Decode message - queued work item for decoders.
+   * Contains encoded packet to decode.
    */
   struct DecodeMessage {
     PacketType packet;
+  };
+
+  /**
+   * Encode message - queued work item for encoders.
+   * Contains frame to encode with optional keyframe flag.
+   */
+  struct EncodeMessage {
+    FrameType frame;
+    bool key_frame = false;
   };
 
   /**
@@ -81,7 +91,7 @@ class ControlMessageQueue {
    */
   struct CloseMessage {};
 
-  using Message = std::variant<ConfigureMessage, DecodeMessage, FlushMessage, ResetMessage, CloseMessage>;
+  using Message = std::variant<ConfigureMessage, DecodeMessage, EncodeMessage, FlushMessage, ResetMessage, CloseMessage>;
 
   // =========================================================================
   // CONSTRUCTORS / DESTRUCTOR
@@ -198,6 +208,27 @@ class ControlMessageQueue {
       auto& msg = queue_.front();
       if (auto* decode = std::get_if<DecodeMessage>(&msg)) {
         dropped.push_back(std::move(decode->packet));
+      }
+      queue_.pop();
+    }
+
+    return dropped;
+  }
+
+  /**
+   * Clear all pending encode messages (for encoder reset).
+   * Returns any frames that were dropped so they can be properly unreferenced.
+   *
+   * @return Vector of frames that were dropped
+   */
+  std::vector<FrameType> ClearFrames() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<FrameType> dropped;
+
+    while (!queue_.empty()) {
+      auto& msg = queue_.front();
+      if (auto* encode = std::get_if<EncodeMessage>(&msg)) {
+        dropped.push_back(std::move(encode->frame));
       }
       queue_.pop();
     }

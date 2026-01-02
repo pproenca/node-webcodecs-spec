@@ -440,8 +440,11 @@ TEST_F(ControlMessageQueueTest, MessageVisitorPattern) {
 
     std::visit(MessageVisitor{
                    [&](TestQueue::ConfigureMessage&) { configure_count++; },
-                   [&](TestQueue::DecodeMessage&) { decode_count++; }, [&](TestQueue::FlushMessage&) { flush_count++; },
-                   [&](TestQueue::ResetMessage&) { reset_count++; }, [&](TestQueue::CloseMessage&) { close_count++; }},
+                   [&](TestQueue::DecodeMessage&) { decode_count++; },
+                   [&](TestQueue::EncodeMessage&) { /* encoder message - not used in this test */ },
+                   [&](TestQueue::FlushMessage&) { flush_count++; },
+                   [&](TestQueue::ResetMessage&) { reset_count++; },
+                   [&](TestQueue::CloseMessage&) { close_count++; }},
                *msg);
   }
 

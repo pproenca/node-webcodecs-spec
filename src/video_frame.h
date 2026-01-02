@@ -36,8 +36,10 @@ class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
   // Get the underlying AVFrame (for internal use by decoder/encoder)
   AVFrame* GetAVFrame() const { return frame_.get(); }
 
- private:
+  // Public for InstanceOf checks in encoder
   static Napi::FunctionReference constructor;
+
+ private:
 
   // --- FFmpeg Resource (RAII managed) ---
   // Uses av_frame_ref for cloning, av_frame_unref on release

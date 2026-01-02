@@ -78,6 +78,7 @@ class CodecWorker {
  public:
   using ConfigureMessage = typename MessageQueue::ConfigureMessage;
   using DecodeMessage = typename MessageQueue::DecodeMessage;
+  using EncodeMessage = typename MessageQueue::EncodeMessage;
   using FlushMessage = typename MessageQueue::FlushMessage;
   using ResetMessage = typename MessageQueue::ResetMessage;
   using CloseMessage = typename MessageQueue::CloseMessage;
@@ -222,7 +223,7 @@ class CodecWorker {
   virtual bool OnConfigure(const ConfigureMessage& msg) = 0;
 
   /**
-   * Handle Decode message.
+   * Handle Decode message (for decoders).
    * Called on worker thread.
    *
    * Subclass should:
@@ -233,7 +234,27 @@ class CodecWorker {
    *
    * @param msg Decode message with packet
    */
-  virtual void OnDecode(const DecodeMessage& msg) = 0;
+  virtual void OnDecode(const DecodeMessage& msg) {
+    // Default: no-op for encoders
+    (void)msg;
+  }
+
+  /**
+   * Handle Encode message (for encoders).
+   * Called on worker thread.
+   *
+   * Subclass should:
+   * - avcodec_send_frame
+   * - Loop avcodec_receive_packet until EAGAIN
+   * - For each packet, output via callback
+   * - Handle errors appropriately
+   *
+   * @param msg Encode message with frame and keyFrame flag
+   */
+  virtual void OnEncode(const EncodeMessage& msg) {
+    // Default: no-op for decoders
+    (void)msg;
+  }
 
   /**
    * Handle Flush message.
@@ -349,6 +370,9 @@ class CodecWorker {
               },
               [this](DecodeMessage& m) {
                 OnDecode(m);
+              },
+              [this](EncodeMessage& m) {
+                OnEncode(m);
               },
               [this](FlushMessage& m) {
                 OnFlush(m);
