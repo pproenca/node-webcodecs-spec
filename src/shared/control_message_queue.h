@@ -108,7 +108,7 @@ class ControlMessageQueue {
    * @param msg The message to enqueue
    * @return true if message was enqueued, false if queue is closed
    */
-  [[nodiscard]] bool enqueue(Message msg) {
+  [[nodiscard]] bool Enqueue(Message msg) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (closed_) {
       return false;
@@ -129,7 +129,7 @@ class ControlMessageQueue {
    *
    * @return The next message, or std::nullopt if queue is closed and empty
    */
-  [[nodiscard]] std::optional<Message> dequeue() {
+  [[nodiscard]] std::optional<Message> Dequeue() {
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this] { return !queue_.empty() || closed_; });
 
@@ -149,7 +149,7 @@ class ControlMessageQueue {
    * @param timeout Maximum time to wait
    * @return The next message, or std::nullopt on timeout or if closed
    */
-  [[nodiscard]] std::optional<Message> dequeue_for(std::chrono::milliseconds timeout) {
+  [[nodiscard]] std::optional<Message> DequeueFor(std::chrono::milliseconds timeout) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (!cv_.wait_for(lock, timeout, [this] { return !queue_.empty() || closed_; })) {
       return std::nullopt;  // Timeout
@@ -169,7 +169,7 @@ class ControlMessageQueue {
    *
    * @return The next message, or std::nullopt if queue is empty
    */
-  [[nodiscard]] std::optional<Message> try_dequeue() {
+  [[nodiscard]] std::optional<Message> TryDequeue() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (queue_.empty()) {
       return std::nullopt;
@@ -242,7 +242,7 @@ class ControlMessageQueue {
   /**
    * Check if the queue is closed.
    */
-  [[nodiscard]] bool is_closed() const {
+  [[nodiscard]] bool IsClosed() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return closed_;
   }
@@ -250,12 +250,12 @@ class ControlMessageQueue {
   /**
    * Check if queue is blocked (for configure).
    */
-  [[nodiscard]] bool is_blocked() const { return blocked_.load(std::memory_order_acquire); }
+  [[nodiscard]] bool IsBlocked() const { return blocked_.load(std::memory_order_acquire); }
 
   /**
    * Set blocked state (during configure).
    */
-  void set_blocked(bool blocked) { blocked_.store(blocked, std::memory_order_release); }
+  void SetBlocked(bool blocked) { blocked_.store(blocked, std::memory_order_release); }
 
  private:
   mutable std::mutex mutex_;

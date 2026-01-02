@@ -46,8 +46,8 @@ class PacketPoolTest : public ::testing::Test {
  protected:
   void SetUp() override {
     GlobalPacketPool::instance().clear();
-    GlobalPacketPool::instance().reset_stats();
-    GlobalPacketPool::instance().set_max_pool_size(64);
+    GlobalPacketPool::instance().ResetStats();
+    GlobalPacketPool::instance().SetMaxPoolSize(64);
   }
 
   void TearDown() override { GlobalPacketPool::instance().clear(); }
@@ -191,7 +191,7 @@ TEST_F(PacketPoolTest, HitRateCalculation) {
 
 TEST_F(PacketPoolTest, ResetStats) {
   auto packet = GlobalPacketPool::instance().acquire_with_buffer(100);
-  GlobalPacketPool::instance().reset_stats();
+  GlobalPacketPool::instance().ResetStats();
 
   auto& stats = GlobalPacketPool::instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 0);
@@ -205,7 +205,7 @@ TEST_F(PacketPoolTest, ResetStats) {
 // =============================================================================
 
 TEST_F(PacketPoolTest, MaxPoolSizeEnforced) {
-  GlobalPacketPool::instance().set_max_pool_size(3);
+  GlobalPacketPool::instance().SetMaxPoolSize(3);
 
   // Acquire 5 packets simultaneously, then return them all
   {

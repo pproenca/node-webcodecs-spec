@@ -57,19 +57,19 @@ class TestSafeThreadSafeFunction {
 
   TestSafeThreadSafeFunction() = default;
 
-  ~TestSafeThreadSafeFunction() { release(); }
+  ~TestSafeThreadSafeFunction() { Release(); }
 
   TestSafeThreadSafeFunction(const TestSafeThreadSafeFunction&) = delete;
   TestSafeThreadSafeFunction& operator=(const TestSafeThreadSafeFunction&) = delete;
 
-  void init(MockTSFN tsfn) {
+  void Init(MockTSFN tsfn) {
     std::lock_guard<std::mutex> lock(mutex_);
     tsfn_ = std::move(tsfn);
     released_ = false;
     initialized_ = true;
   }
 
-  [[nodiscard]] bool call(DataType* data) {
+  [[nodiscard]] bool Call(DataType* data) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_ || released_) {
       return false;
@@ -78,7 +78,7 @@ class TestSafeThreadSafeFunction {
     return status == napi_ok;
   }
 
-  [[nodiscard]] bool blocking_call(DataType* data) {
+  [[nodiscard]] bool BlockingCall(DataType* data) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_ || released_) {
       return false;
@@ -87,7 +87,7 @@ class TestSafeThreadSafeFunction {
     return status == napi_ok;
   }
 
-  void release() {
+  void Release() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_ && !released_) {
       tsfn_.Release();
@@ -95,12 +95,12 @@ class TestSafeThreadSafeFunction {
     }
   }
 
-  [[nodiscard]] bool is_released() const {
+  [[nodiscard]] bool IsReleased() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return released_;
   }
 
-  [[nodiscard]] bool is_active() const {
+  [[nodiscard]] bool IsActive() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return initialized_ && !released_;
   }
@@ -139,7 +139,7 @@ class SafeTSFNTest : public ::testing::Test {
     auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(
         context_.get(),
         [](TestContext* ctx, TestData*) { ctx->callback_count.fetch_add(1, std::memory_order_relaxed); });
-    tsfn_->init(std::move(mock));
+    tsfn_->Init(std::move(mock));
   }
 
   std::unique_ptr<TestContext> context_;
@@ -151,39 +151,39 @@ class SafeTSFNTest : public ::testing::Test {
 // =============================================================================
 
 TEST_F(SafeTSFNTest, InitialStateIsNotActive) {
-  EXPECT_FALSE(tsfn_->is_active());
-  EXPECT_TRUE(tsfn_->is_released());
+  EXPECT_FALSE(tsfn_->IsActive());
+  EXPECT_TRUE(tsfn_->IsReleased());
 }
 
 TEST_F(SafeTSFNTest, InitMakesActive) {
   InitTSFN();
-  EXPECT_TRUE(tsfn_->is_active());
-  EXPECT_FALSE(tsfn_->is_released());
+  EXPECT_TRUE(tsfn_->IsActive());
+  EXPECT_FALSE(tsfn_->IsReleased());
 }
 
 TEST_F(SafeTSFNTest, ReleaseDeactivates) {
   InitTSFN();
-  EXPECT_TRUE(tsfn_->is_active());
+  EXPECT_TRUE(tsfn_->IsActive());
 
-  tsfn_->release();
+  tsfn_->Release();
 
-  EXPECT_FALSE(tsfn_->is_active());
-  EXPECT_TRUE(tsfn_->is_released());
+  EXPECT_FALSE(tsfn_->IsActive());
+  EXPECT_TRUE(tsfn_->IsReleased());
 }
 
 TEST_F(SafeTSFNTest, DoubleReleaseIsSafe) {
   InitTSFN();
-  tsfn_->release();
-  tsfn_->release();  // Should not crash or throw
-  EXPECT_TRUE(tsfn_->is_released());
+  tsfn_->Release();
+  tsfn_->Release();  // Should not crash or throw
+  EXPECT_TRUE(tsfn_->IsReleased());
 }
 
 TEST_F(SafeTSFNTest, DestructorReleasesAutomatically) {
   {
     TestSafeThreadSafeFunction<TestContext, TestData> local_tsfn;
     auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
-    local_tsfn.init(std::move(mock));
-    EXPECT_TRUE(local_tsfn.is_active());
+    local_tsfn.Init(std::move(mock));
+    EXPECT_TRUE(local_tsfn.IsActive());
   }
   // Destructor should have released without issue
 }
@@ -194,28 +194,28 @@ TEST_F(SafeTSFNTest, DestructorReleasesAutomatically) {
 
 TEST_F(SafeTSFNTest, CallFailsBeforeInit) {
   TestData data{42};
-  EXPECT_FALSE(tsfn_->call(&data));
+  EXPECT_FALSE(tsfn_->Call(&data));
 }
 
 TEST_F(SafeTSFNTest, CallSucceedsAfterInit) {
   InitTSFN();
   TestData data{42};
-  EXPECT_TRUE(tsfn_->call(&data));
+  EXPECT_TRUE(tsfn_->Call(&data));
   EXPECT_EQ(tsfn_->call_count(), 1);
 }
 
 TEST_F(SafeTSFNTest, CallFailsAfterRelease) {
   InitTSFN();
-  tsfn_->release();
+  tsfn_->Release();
 
   TestData data{42};
-  EXPECT_FALSE(tsfn_->call(&data));
+  EXPECT_FALSE(tsfn_->Call(&data));
 }
 
 TEST_F(SafeTSFNTest, BlockingCallBehavior) {
   InitTSFN();
   TestData data{42};
-  EXPECT_TRUE(tsfn_->blocking_call(&data));
+  EXPECT_TRUE(tsfn_->BlockingCall(&data));
   EXPECT_EQ(tsfn_->call_count(), 1);
 }
 
@@ -224,7 +224,7 @@ TEST_F(SafeTSFNTest, MultipleCalls) {
 
   for (int i = 0; i < 10; ++i) {
     TestData data{i};
-    EXPECT_TRUE(tsfn_->call(&data));
+    EXPECT_TRUE(tsfn_->Call(&data));
   }
 
   EXPECT_EQ(tsfn_->call_count(), 10);
@@ -247,7 +247,7 @@ TEST_F(SafeTSFNTest, ConcurrentCalls) {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kCallsPerThread; ++i) {
         TestData data{i};
-        tsfn_->call(&data);
+        tsfn_->Call(&data);
       }
     });
   }
@@ -273,7 +273,7 @@ TEST_F(SafeTSFNTest, ConcurrentCallAndRelease) {
       start_latch.arrive_and_wait();
       for (int i = 0; i < 100; ++i) {
         TestData data{i};
-        if (tsfn_->call(&data)) {
+        if (tsfn_->Call(&data)) {
           successful_calls.fetch_add(1, std::memory_order_relaxed);
         } else {
           failed_calls.fetch_add(1, std::memory_order_relaxed);
@@ -285,7 +285,7 @@ TEST_F(SafeTSFNTest, ConcurrentCallAndRelease) {
   std::thread releaser([this, &start_latch]() {
     start_latch.arrive_and_wait();
     std::this_thread::sleep_for(1ms);  // Let some calls through
-    tsfn_->release();
+    tsfn_->Release();
   });
 
   for (auto& t : callers) {
@@ -296,7 +296,7 @@ TEST_F(SafeTSFNTest, ConcurrentCallAndRelease) {
   // Some calls should succeed, some should fail after release
   EXPECT_GT(successful_calls.load(), 0);
   // Not asserting on failed_calls - timing dependent
-  EXPECT_TRUE(tsfn_->is_released());
+  EXPECT_TRUE(tsfn_->IsReleased());
 }
 
 TEST_F(SafeTSFNTest, ConcurrentRelease) {
@@ -309,7 +309,7 @@ TEST_F(SafeTSFNTest, ConcurrentRelease) {
   for (int t = 0; t < kReleasers; ++t) {
     releasers.emplace_back([this, &start_latch]() {
       start_latch.arrive_and_wait();
-      tsfn_->release();
+      tsfn_->Release();
     });
   }
 
@@ -318,7 +318,7 @@ TEST_F(SafeTSFNTest, ConcurrentRelease) {
   }
 
   // All releases should have completed without error
-  EXPECT_TRUE(tsfn_->is_released());
+  EXPECT_TRUE(tsfn_->IsReleased());
 }
 
 // =============================================================================
@@ -327,15 +327,15 @@ TEST_F(SafeTSFNTest, ConcurrentRelease) {
 
 TEST_F(SafeTSFNTest, NullDataCall) {
   InitTSFN();
-  EXPECT_TRUE(tsfn_->call(nullptr));  // Should handle null data
+  EXPECT_TRUE(tsfn_->Call(nullptr));  // Should handle null data
 }
 
 TEST_F(SafeTSFNTest, CallAfterDestruction) {
   // Ensure no use-after-free when calling on destroyed TSFN
   auto local_tsfn = std::make_unique<TestSafeThreadSafeFunction<TestContext, TestData>>();
   auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
-  local_tsfn->init(std::move(mock));
-  local_tsfn->release();
+  local_tsfn->Init(std::move(mock));
+  local_tsfn->Release();
   local_tsfn.reset();  // Destroy
 
   // Cannot test calling after destruction as that would be UB
@@ -344,16 +344,16 @@ TEST_F(SafeTSFNTest, CallAfterDestruction) {
 
 TEST_F(SafeTSFNTest, ReinitAfterRelease) {
   InitTSFN();
-  tsfn_->release();
-  EXPECT_TRUE(tsfn_->is_released());
+  tsfn_->Release();
+  EXPECT_TRUE(tsfn_->IsReleased());
 
   // Reinitialize with new mock
   auto mock = MockTypedThreadSafeFunction<TestContext, TestData>::New(context_.get(), [](TestContext*, TestData*) {});
-  tsfn_->init(std::move(mock));
+  tsfn_->Init(std::move(mock));
 
-  EXPECT_TRUE(tsfn_->is_active());
+  EXPECT_TRUE(tsfn_->IsActive());
   TestData data{42};
-  EXPECT_TRUE(tsfn_->call(&data));
+  EXPECT_TRUE(tsfn_->Call(&data));
 }
 
 // =============================================================================
@@ -370,8 +370,8 @@ TEST_F(SafeTSFNTest, StateConsistencyUnderContention) {
   // Thread that continuously checks state consistency
   std::thread checker([this, &stop, &state_checks]() {
     while (!stop.load(std::memory_order_acquire)) {
-      bool active = tsfn_->is_active();
-      bool released = tsfn_->is_released();
+      bool active = tsfn_->IsActive();
+      bool released = tsfn_->IsReleased();
       // active and released should be mutually exclusive
       EXPECT_NE(active, released);
       state_checks.fetch_add(1, std::memory_order_relaxed);
@@ -382,7 +382,7 @@ TEST_F(SafeTSFNTest, StateConsistencyUnderContention) {
   std::thread caller([this]() {
     for (int i = 0; i < 500; ++i) {
       TestData data{i};
-      tsfn_->call(&data);
+      tsfn_->Call(&data);
       std::this_thread::yield();
     }
   });

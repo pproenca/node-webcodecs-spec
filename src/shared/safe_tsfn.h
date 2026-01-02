@@ -5,25 +5,25 @@
  * Provides a safe wrapper around Napi::TypedThreadSafeFunction that prevents:
  * - Calling after Release() (undefined behavior)
  * - Double Release() calls
- * - Race conditions between call and release
+ * - Race conditions between Call and Release
  *
  * Thread Safety:
- * - call() can be called from any thread
- * - release() can be called from any thread
+ * - Call() can be called from any thread
+ * - Release() can be called from any thread
  * - All operations are mutex-protected
  *
  * Usage:
  *   SafeThreadSafeFunction<Context, DataType> tsfn;
- *   tsfn.init(napi_tsfn);
+ *   tsfn.Init(napi_tsfn);
  *
  *   // From worker thread:
- *   if (!tsfn.call(data)) {
+ *   if (!tsfn.Call(data)) {
  *     // TSFN was released, clean up data yourself
  *     delete data;
  *   }
  *
  *   // From any thread:
- *   tsfn.release();  // Idempotent
+ *   tsfn.Release();  // Idempotent
  */
 
 #include <napi.h>
@@ -53,7 +53,7 @@ class SafeThreadSafeFunction {
 
   SafeThreadSafeFunction() = default;
 
-  ~SafeThreadSafeFunction() { release(); }
+  ~SafeThreadSafeFunction() { Release(); }
 
   // Non-copyable, non-movable (wraps non-copyable TSFN)
   SafeThreadSafeFunction(const SafeThreadSafeFunction&) = delete;
@@ -67,7 +67,7 @@ class SafeThreadSafeFunction {
    *
    * @param tsfn The TypedThreadSafeFunction to wrap
    */
-  void init(TSFN tsfn) {
+  void Init(TSFN tsfn) {
     std::lock_guard<std::mutex> lock(mutex_);
     tsfn_ = std::move(tsfn);
     released_ = false;
@@ -82,7 +82,7 @@ class SafeThreadSafeFunction {
    * @param mode Blocking or non-blocking call (default: non-blocking)
    * @return true if call succeeded, false if TSFN was released or not initialized
    */
-  [[nodiscard]] bool call(DataType* data, napi_threadsafe_function_call_mode mode = napi_tsfn_nonblocking) {
+  [[nodiscard]] bool Call(DataType* data, napi_threadsafe_function_call_mode mode = napi_tsfn_nonblocking) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!initialized_ || released_) {
@@ -101,7 +101,7 @@ class SafeThreadSafeFunction {
    * @param data Pointer to data to pass to the callback
    * @return true if call succeeded, false if TSFN was released or not initialized
    */
-  [[nodiscard]] bool blocking_call(DataType* data) {
+  [[nodiscard]] bool BlockingCall(DataType* data) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!initialized_ || released_) {
@@ -117,7 +117,7 @@ class SafeThreadSafeFunction {
    * Idempotent - safe to call multiple times.
    * After this call, all future call() operations will return false.
    */
-  void release() {
+  void Release() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_ && !released_) {
       tsfn_.Release();
@@ -128,7 +128,7 @@ class SafeThreadSafeFunction {
   /**
    * Check if the TSFN has been released.
    */
-  [[nodiscard]] bool is_released() const {
+  [[nodiscard]] bool IsReleased() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return released_;
   }
@@ -136,7 +136,7 @@ class SafeThreadSafeFunction {
   /**
    * Check if the TSFN is initialized and not released.
    */
-  [[nodiscard]] bool is_active() const {
+  [[nodiscard]] bool IsActive() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return initialized_ && !released_;
   }
@@ -145,7 +145,7 @@ class SafeThreadSafeFunction {
    * Acquire a reference to prevent GC collection.
    * Must be balanced with a later release or unref.
    */
-  void acquire() {
+  void Acquire() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_ && !released_) {
       tsfn_.Acquire();
@@ -155,7 +155,7 @@ class SafeThreadSafeFunction {
   /**
    * Release a reference without fully releasing the TSFN.
    */
-  void unref() {
+  void Unref() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_ && !released_) {
       tsfn_.Unref();
@@ -177,9 +177,9 @@ class SafeThreadSafeFunction {
 template <typename Context, typename DataType>
 class ScopedTSFNRef {
  public:
-  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType>& tsfn) : tsfn_(tsfn) { tsfn_.acquire(); }
+  explicit ScopedTSFNRef(SafeThreadSafeFunction<Context, DataType>& tsfn) : tsfn_(tsfn) { tsfn_.Acquire(); }
 
-  ~ScopedTSFNRef() { tsfn_.unref(); }
+  ~ScopedTSFNRef() { tsfn_.Unref(); }
 
   // Non-copyable, non-movable
   ScopedTSFNRef(const ScopedTSFNRef&) = delete;
@@ -211,7 +211,7 @@ SafeThreadSafeFunction<Context, DataType> make_safe_tsfn(Napi::Env env, const ch
       context, [](Napi::Env, void*, Context*) {},  // Destructor callback
       callJs);
 
-  safe_tsfn.init(std::move(tsfn));
+  safe_tsfn.Init(std::move(tsfn));
   return safe_tsfn;
 }
 

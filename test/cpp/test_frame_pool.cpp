@@ -43,8 +43,8 @@ class FramePoolTest : public ::testing::Test {
   void SetUp() override {
     // Reset pool state before each test
     GlobalFramePool::instance().clear();
-    GlobalFramePool::instance().reset_stats();
-    GlobalFramePool::instance().set_max_pool_size(32);
+    GlobalFramePool::instance().ResetStats();
+    GlobalFramePool::instance().SetMaxPoolSize(32);
   }
 
   void TearDown() override { GlobalFramePool::instance().clear(); }
@@ -205,7 +205,7 @@ TEST_F(FramePoolTest, HitRateCalculation) {
 
 TEST_F(FramePoolTest, ResetStats) {
   auto frame = GlobalFramePool::instance().acquire(1920, 1080, AV_PIX_FMT_YUV420P);
-  GlobalFramePool::instance().reset_stats();
+  GlobalFramePool::instance().ResetStats();
 
   auto& stats = GlobalFramePool::instance().stats();
   EXPECT_EQ(stats.total_allocated.load(), 0);
@@ -218,7 +218,7 @@ TEST_F(FramePoolTest, ResetStats) {
 // =============================================================================
 
 TEST_F(FramePoolTest, MaxPoolSizeEnforced) {
-  GlobalFramePool::instance().set_max_pool_size(3);
+  GlobalFramePool::instance().SetMaxPoolSize(3);
 
   // Acquire 5 frames simultaneously, then return them all
   {

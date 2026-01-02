@@ -124,7 +124,7 @@ class GlobalFramePool {
 
     void operator()(AVFrame* frame) const noexcept {
       if (pool && frame) {
-        pool->return_frame(frame, key);
+        pool->ReturnFrame(frame, key);
       } else if (frame) {
         // Pool was destroyed, just free the frame
         av_frame_free(&frame);
@@ -156,7 +156,7 @@ class GlobalFramePool {
    * Frames beyond this limit are freed instead of pooled.
    * Default: 32 frames per dimension.
    */
-  void set_max_pool_size(size_t max_size) {
+  void SetMaxPoolSize(size_t max_size) {
     std::lock_guard<std::mutex> lock(mutex_);
     max_pool_size_ = max_size;
   }
@@ -166,7 +166,7 @@ class GlobalFramePool {
    * Pre-allocates this many frames when a new dimension is first seen.
    * Default: 4 frames.
    */
-  void set_initial_pool_size(size_t initial_size) {
+  void SetInitialPoolSize(size_t initial_size) {
     std::lock_guard<std::mutex> lock(mutex_);
     initial_pool_size_ = initial_size;
   }
@@ -262,7 +262,7 @@ class GlobalFramePool {
   /**
    * Reset statistics counters.
    */
-  void reset_stats() { stats_.reset(); }
+  void ResetStats() { stats_.reset(); }
 
   /**
    * Get number of dimension pools.
@@ -329,7 +329,7 @@ class GlobalFramePool {
   GlobalFramePool(const GlobalFramePool&) = delete;
   GlobalFramePool& operator=(const GlobalFramePool&) = delete;
 
-  void return_frame(AVFrame* frame, const FramePoolKey& key) {
+  void ReturnFrame(AVFrame* frame, const FramePoolKey& key) {
     if (!frame) return;
 
     // Unreference any data

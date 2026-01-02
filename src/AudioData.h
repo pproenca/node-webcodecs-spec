@@ -30,7 +30,7 @@ class AudioData : public Napi::ObjectWrap<AudioData> {
   const AVFrame* frame() const { return frame_.get(); }
 
   // Check if closed
-  bool is_closed() const { return closed_; }
+  bool IsClosed() const { return closed_; }
 
  private:
   static Napi::FunctionReference constructor;

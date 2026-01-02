@@ -63,34 +63,34 @@ class ControlMessageQueueTest : public ::testing::Test {
 TEST_F(ControlMessageQueueTest, InitialStateIsEmpty) {
   EXPECT_TRUE(queue_->empty());
   EXPECT_EQ(queue_->size(), 0);
-  EXPECT_FALSE(queue_->is_closed());
-  EXPECT_FALSE(queue_->is_blocked());
+  EXPECT_FALSE(queue_->IsClosed());
+  EXPECT_FALSE(queue_->IsBlocked());
 }
 
 TEST_F(ControlMessageQueueTest, EnqueueIncrementsSize) {
   TestQueue::DecodeMessage msg{std::make_unique<int>(42)};
-  EXPECT_TRUE(queue_->enqueue(std::move(msg)));
+  EXPECT_TRUE(queue_->Enqueue(std::move(msg)));
   EXPECT_EQ(queue_->size(), 1);
   EXPECT_FALSE(queue_->empty());
 }
 
 TEST_F(ControlMessageQueueTest, DequeueDecrementsSize) {
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
   EXPECT_EQ(queue_->size(), 2);
 
-  auto msg = queue_->try_dequeue();
+  auto msg = queue_->TryDequeue();
   ASSERT_TRUE(msg.has_value());
   EXPECT_EQ(queue_->size(), 1);
 }
 
 TEST_F(ControlMessageQueueTest, FIFOOrdering) {
   for (int i = 0; i < 5; ++i) {
-    queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
+    queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
   }
 
   for (int i = 0; i < 5; ++i) {
-    auto msg = queue_->try_dequeue();
+    auto msg = queue_->TryDequeue();
     ASSERT_TRUE(msg.has_value());
     auto* decode = std::get_if<TestQueue::DecodeMessage>(&*msg);
     ASSERT_NE(decode, nullptr);
@@ -109,8 +109,8 @@ TEST_F(ControlMessageQueueTest, ConfigureMessage) {
     return true;
   }};
 
-  EXPECT_TRUE(queue_->enqueue(std::move(msg)));
-  auto dequeued = queue_->try_dequeue();
+  EXPECT_TRUE(queue_->Enqueue(std::move(msg)));
+  auto dequeued = queue_->TryDequeue();
   ASSERT_TRUE(dequeued.has_value());
 
   auto* configure = std::get_if<TestQueue::ConfigureMessage>(&*dequeued);
@@ -121,9 +121,9 @@ TEST_F(ControlMessageQueueTest, ConfigureMessage) {
 
 TEST_F(ControlMessageQueueTest, FlushMessage) {
   TestQueue::FlushMessage msg{123};
-  EXPECT_TRUE(queue_->enqueue(std::move(msg)));
+  EXPECT_TRUE(queue_->Enqueue(std::move(msg)));
 
-  auto dequeued = queue_->try_dequeue();
+  auto dequeued = queue_->TryDequeue();
   ASSERT_TRUE(dequeued.has_value());
 
   auto* flush = std::get_if<TestQueue::FlushMessage>(&*dequeued);
@@ -132,17 +132,17 @@ TEST_F(ControlMessageQueueTest, FlushMessage) {
 }
 
 TEST_F(ControlMessageQueueTest, ResetMessage) {
-  EXPECT_TRUE(queue_->enqueue(TestQueue::ResetMessage{}));
+  EXPECT_TRUE(queue_->Enqueue(TestQueue::ResetMessage{}));
 
-  auto dequeued = queue_->try_dequeue();
+  auto dequeued = queue_->TryDequeue();
   ASSERT_TRUE(dequeued.has_value());
   EXPECT_NE(std::get_if<TestQueue::ResetMessage>(&*dequeued), nullptr);
 }
 
 TEST_F(ControlMessageQueueTest, CloseMessage) {
-  EXPECT_TRUE(queue_->enqueue(TestQueue::CloseMessage{}));
+  EXPECT_TRUE(queue_->Enqueue(TestQueue::CloseMessage{}));
 
-  auto dequeued = queue_->try_dequeue();
+  auto dequeued = queue_->TryDequeue();
   ASSERT_TRUE(dequeued.has_value());
   EXPECT_NE(std::get_if<TestQueue::CloseMessage>(&*dequeued), nullptr);
 }
@@ -153,30 +153,30 @@ TEST_F(ControlMessageQueueTest, CloseMessage) {
 
 TEST_F(ControlMessageQueueTest, EnqueueFailsAfterShutdown) {
   queue_->shutdown();
-  EXPECT_TRUE(queue_->is_closed());
-  EXPECT_FALSE(queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)}));
+  EXPECT_TRUE(queue_->IsClosed());
+  EXPECT_FALSE(queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)}));
 }
 
 TEST_F(ControlMessageQueueTest, TryDequeueReturnsNulloptWhenEmpty) {
-  auto msg = queue_->try_dequeue();
+  auto msg = queue_->TryDequeue();
   EXPECT_FALSE(msg.has_value());
 }
 
 TEST_F(ControlMessageQueueTest, DequeueReturnsNulloptAfterShutdownWhenEmpty) {
   queue_->shutdown();
-  auto msg = queue_->try_dequeue();
+  auto msg = queue_->TryDequeue();
   EXPECT_FALSE(msg.has_value());
 }
 
 TEST_F(ControlMessageQueueTest, DequeueReturnsPendingMessagesAfterShutdown) {
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
   queue_->shutdown();
 
   // Should still be able to drain pending messages
-  auto msg1 = queue_->try_dequeue();
-  auto msg2 = queue_->try_dequeue();
-  auto msg3 = queue_->try_dequeue();
+  auto msg1 = queue_->TryDequeue();
+  auto msg2 = queue_->TryDequeue();
+  auto msg3 = queue_->TryDequeue();
 
   EXPECT_TRUE(msg1.has_value());
   EXPECT_TRUE(msg2.has_value());
@@ -188,10 +188,10 @@ TEST_F(ControlMessageQueueTest, DequeueReturnsPendingMessagesAfterShutdown) {
 // =============================================================================
 
 TEST_F(ControlMessageQueueTest, ClearReturnsDroppedPackets) {
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(3)});
-  queue_->enqueue(TestQueue::FlushMessage{99});  // Non-decode message
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(2)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(3)});
+  queue_->Enqueue(TestQueue::FlushMessage{99});  // Non-decode message
 
   auto dropped = queue_->clear();
   EXPECT_EQ(dropped.size(), 3);  // Only DecodeMessages have packets
@@ -199,7 +199,7 @@ TEST_F(ControlMessageQueueTest, ClearReturnsDroppedPackets) {
 }
 
 TEST_F(ControlMessageQueueTest, ClearPreservesPacketOwnership) {
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)});
   auto dropped = queue_->clear();
 
   ASSERT_EQ(dropped.size(), 1);
@@ -211,11 +211,11 @@ TEST_F(ControlMessageQueueTest, ClearPreservesPacketOwnership) {
 // =============================================================================
 
 TEST_F(ControlMessageQueueTest, BlockedStateCanBeSet) {
-  EXPECT_FALSE(queue_->is_blocked());
-  queue_->set_blocked(true);
-  EXPECT_TRUE(queue_->is_blocked());
-  queue_->set_blocked(false);
-  EXPECT_FALSE(queue_->is_blocked());
+  EXPECT_FALSE(queue_->IsBlocked());
+  queue_->SetBlocked(true);
+  EXPECT_TRUE(queue_->IsBlocked());
+  queue_->SetBlocked(false);
+  EXPECT_FALSE(queue_->IsBlocked());
 }
 
 // =============================================================================
@@ -225,7 +225,7 @@ TEST_F(ControlMessageQueueTest, BlockedStateCanBeSet) {
 TEST_F(ControlMessageQueueTest, DequeueBlocksUntilMessageAvailable) {
   std::atomic<bool> dequeued{false};
   std::thread consumer([this, &dequeued]() {
-    auto msg = queue_->dequeue();
+    auto msg = queue_->Dequeue();
     dequeued.store(true, std::memory_order_release);
     EXPECT_TRUE(msg.has_value());
   });
@@ -235,7 +235,7 @@ TEST_F(ControlMessageQueueTest, DequeueBlocksUntilMessageAvailable) {
   EXPECT_FALSE(dequeued.load(std::memory_order_acquire));
 
   // Enqueue message to unblock
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
   consumer.join();
 
   EXPECT_TRUE(dequeued.load(std::memory_order_acquire));
@@ -244,7 +244,7 @@ TEST_F(ControlMessageQueueTest, DequeueBlocksUntilMessageAvailable) {
 TEST_F(ControlMessageQueueTest, ShutdownUnblocksDequeue) {
   std::atomic<bool> unblocked{false};
   std::thread consumer([this, &unblocked]() {
-    auto msg = queue_->dequeue();
+    auto msg = queue_->Dequeue();
     unblocked.store(true, std::memory_order_release);
     EXPECT_FALSE(msg.has_value());  // nullopt due to shutdown
   });
@@ -258,7 +258,7 @@ TEST_F(ControlMessageQueueTest, ShutdownUnblocksDequeue) {
 
 TEST_F(ControlMessageQueueTest, DequeueForTimesOut) {
   auto start = std::chrono::steady_clock::now();
-  auto msg = queue_->dequeue_for(50ms);
+  auto msg = queue_->DequeueFor(50ms);
   auto elapsed = std::chrono::steady_clock::now() - start;
 
   EXPECT_FALSE(msg.has_value());
@@ -267,10 +267,10 @@ TEST_F(ControlMessageQueueTest, DequeueForTimesOut) {
 }
 
 TEST_F(ControlMessageQueueTest, DequeueForReturnsImmediatelyIfMessageAvailable) {
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(1)});
 
   auto start = std::chrono::steady_clock::now();
-  auto msg = queue_->dequeue_for(1000ms);
+  auto msg = queue_->DequeueFor(1000ms);
   auto elapsed = std::chrono::steady_clock::now() - start;
 
   EXPECT_TRUE(msg.has_value());
@@ -292,7 +292,7 @@ TEST_F(ControlMessageQueueTest, ConcurrentEnqueue) {
     producers.emplace_back([this, t, &start_latch]() {
       start_latch.arrive_and_wait();
       for (int i = 0; i < kMessagesPerThread; ++i) {
-        queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(t * kMessagesPerThread + i)});
+        queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(t * kMessagesPerThread + i)});
       }
     });
   }
@@ -311,7 +311,7 @@ TEST_F(ControlMessageQueueTest, ConcurrentEnqueueDequeue) {
 
   std::thread producer([this, &produced]() {
     for (int i = 0; i < kMessages; ++i) {
-      queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
+      queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
       produced.fetch_add(1, std::memory_order_relaxed);
     }
     queue_->shutdown();
@@ -319,7 +319,7 @@ TEST_F(ControlMessageQueueTest, ConcurrentEnqueueDequeue) {
 
   std::thread consumer([this, &consumed]() {
     while (true) {
-      auto msg = queue_->dequeue();
+      auto msg = queue_->Dequeue();
       if (!msg.has_value()) break;
       consumed.fetch_add(1, std::memory_order_relaxed);
     }
@@ -338,16 +338,16 @@ TEST_F(ControlMessageQueueTest, MultipleConsumers) {
   std::atomic<int> consumed{0};
 
   for (int i = 0; i < kMessages; ++i) {
-    queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
+    queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
   }
 
   std::vector<std::thread> consumers;
   for (int c = 0; c < kConsumers; ++c) {
     consumers.emplace_back([this, &consumed]() {
       while (true) {
-        auto msg = queue_->dequeue_for(50ms);
+        auto msg = queue_->DequeueFor(50ms);
         if (!msg.has_value()) {
-          if (queue_->is_closed() && queue_->empty()) break;
+          if (queue_->IsClosed() && queue_->empty()) break;
           continue;
         }
         consumed.fetch_add(1, std::memory_order_relaxed);
@@ -376,7 +376,7 @@ TEST_F(ControlMessageQueueTest, ShutdownDuringBlockedDequeue) {
 
   std::thread consumer([this, &consumer_finished, &consumer_started]() {
     consumer_started.store(true, std::memory_order_release);
-    auto msg = queue_->dequeue();
+    auto msg = queue_->Dequeue();
     consumer_finished.store(true, std::memory_order_release);
     EXPECT_FALSE(msg.has_value());
   });
@@ -398,7 +398,7 @@ TEST_F(ControlMessageQueueTest, ClearDuringEnqueue) {
 
   std::thread enqueuer([this, &enqueuer_started]() {
     for (int i = 0; i < 100; ++i) {
-      (void)queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
+      (void)queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(i)});
       if (i == 10) enqueuer_started.store(true, std::memory_order_release);
     }
   });
@@ -422,11 +422,11 @@ TEST_F(ControlMessageQueueTest, ClearDuringEnqueue) {
 // =============================================================================
 
 TEST_F(ControlMessageQueueTest, MessageVisitorPattern) {
-  queue_->enqueue(TestQueue::ConfigureMessage{[]() { return true; }});
-  queue_->enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)});
-  queue_->enqueue(TestQueue::FlushMessage{1});
-  queue_->enqueue(TestQueue::ResetMessage{});
-  queue_->enqueue(TestQueue::CloseMessage{});
+  queue_->Enqueue(TestQueue::ConfigureMessage{[]() { return true; }});
+  queue_->Enqueue(TestQueue::DecodeMessage{std::make_unique<int>(42)});
+  queue_->Enqueue(TestQueue::FlushMessage{1});
+  queue_->Enqueue(TestQueue::ResetMessage{});
+  queue_->Enqueue(TestQueue::CloseMessage{});
 
   int configure_count = 0;
   int decode_count = 0;
@@ -435,7 +435,7 @@ TEST_F(ControlMessageQueueTest, MessageVisitorPattern) {
   int close_count = 0;
 
   for (int i = 0; i < 5; ++i) {
-    auto msg = queue_->try_dequeue();
+    auto msg = queue_->TryDequeue();
     ASSERT_TRUE(msg.has_value());
 
     std::visit(MessageVisitor{

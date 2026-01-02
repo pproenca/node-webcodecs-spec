@@ -81,7 +81,7 @@ class GlobalPacketPool {
 
     void operator()(AVPacket* packet) const noexcept {
       if (pool && packet) {
-        pool->return_packet(packet);
+        pool->ReturnPacket(packet);
       } else if (packet) {
         av_packet_free(&packet);
       }
@@ -103,7 +103,7 @@ class GlobalPacketPool {
   // CONFIGURATION
   // ---------------------------------------------------------------------------
 
-  void set_max_pool_size(size_t max_size) {
+  void SetMaxPoolSize(size_t max_size) {
     std::lock_guard<std::mutex> lock(mutex_);
     max_pool_size_ = max_size;
   }
@@ -194,7 +194,7 @@ class GlobalPacketPool {
 
   [[nodiscard]] const PacketPoolStats& stats() const { return stats_; }
 
-  void reset_stats() { stats_.reset(); }
+  void ResetStats() { stats_.reset(); }
 
   [[nodiscard]] size_t pooled_count() const {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -232,7 +232,7 @@ class GlobalPacketPool {
   GlobalPacketPool(const GlobalPacketPool&) = delete;
   GlobalPacketPool& operator=(const GlobalPacketPool&) = delete;
 
-  void return_packet(AVPacket* packet) {
+  void ReturnPacket(AVPacket* packet) {
     if (!packet) return;
 
     av_packet_unref(packet);
