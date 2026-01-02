@@ -1,33 +1,77 @@
 /**
- * Generate Issue Markdown Files from WebCodecs Spec
+ * Generate Spec Markdown Files from WebCodecs Spec
  *
  * Fetches pre-rendered WebCodecs spec from W3C, extracts H2 sections,
- * generates local .md files in docs/issues/.
+ * generates local .md files in docs/specs/.
+ *
+ * Also fetches codec registry specs for FFmpeg implementation mapping.
  *
  * Usage:
- *   npm run issues           # Generate .md files locally
- *   npm run issues -- --push # Also create GitHub issues from .md files
- *
- * Prerequisites (for --push only):
- *   - gh CLI installed and authenticated
+ *   npm run specs           # Generate .md files locally
  */
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(currentDir, '..');
 const CACHE_DIR = path.join(ROOT_DIR, '.spec-cache');
-const OUTPUT_DIR = path.join(ROOT_DIR, 'docs', 'issues');
+const OUTPUT_DIR = path.join(ROOT_DIR, 'docs', 'specs');
+const CODECS_OUTPUT_DIR = path.join(OUTPUT_DIR, 'codecs');
 const SPEC_URL = 'https://www.w3.org/TR/webcodecs/';
 const SPEC_CACHE_FILE = path.join(CACHE_DIR, 'webcodecs.html');
 
-// GitHub issue body limit is 65536, use 60000 to be safe with formatting
-const MAX_ISSUE_LENGTH = 60000;
+// Max length for spec file content (generous limit for local files)
+const MAX_SPEC_LENGTH = 60000;
+
+// Codec registry specs - separate W3C documents with FFmpeg-critical info
+const CODEC_REGISTRY_SPECS = [
+  {
+    slug: '00-codec-registry',
+    url: 'https://www.w3.org/TR/webcodecs-codec-registry/',
+    title: 'Codec Registry',
+  },
+  {
+    slug: 'avc',
+    url: 'https://www.w3.org/TR/webcodecs-avc-codec-registration/',
+    title: 'AVC (H.264)',
+  },
+  {
+    slug: 'hevc',
+    url: 'https://www.w3.org/TR/webcodecs-hevc-codec-registration/',
+    title: 'HEVC (H.265)',
+  },
+  { slug: 'vp9', url: 'https://www.w3.org/TR/webcodecs-vp9-codec-registration/', title: 'VP9' },
+  { slug: 'vp8', url: 'https://www.w3.org/TR/webcodecs-vp8-codec-registration/', title: 'VP8' },
+  { slug: 'av1', url: 'https://www.w3.org/TR/webcodecs-av1-codec-registration/', title: 'AV1' },
+  { slug: 'opus', url: 'https://www.w3.org/TR/webcodecs-opus-codec-registration/', title: 'Opus' },
+  { slug: 'aac', url: 'https://www.w3.org/TR/webcodecs-aac-codec-registration/', title: 'AAC' },
+  { slug: 'flac', url: 'https://www.w3.org/TR/webcodecs-flac-codec-registration/', title: 'FLAC' },
+  { slug: 'mp3', url: 'https://www.w3.org/TR/webcodecs-mp3-codec-registration/', title: 'MP3' },
+  {
+    slug: 'pcm',
+    url: 'https://www.w3.org/TR/webcodecs-pcm-codec-registration/',
+    title: 'Linear PCM',
+  },
+  {
+    slug: 'ulaw',
+    url: 'https://www.w3.org/TR/webcodecs-ulaw-codec-registration/',
+    title: 'u-law PCM',
+  },
+  {
+    slug: 'alaw',
+    url: 'https://www.w3.org/TR/webcodecs-alaw-codec-registration/',
+    title: 'A-law PCM',
+  },
+  {
+    slug: 'vorbis',
+    url: 'https://www.w3.org/TR/webcodecs-vorbis-codec-registration/',
+    title: 'Vorbis',
+  },
+];
 
 interface Section {
   number: string;
@@ -35,7 +79,7 @@ interface Section {
   content: string;
 }
 
-interface IssueFile {
+interface SpecFile {
   filename: string;
   title: string;
   body: string;
@@ -71,6 +115,33 @@ async function fetchSpec(): Promise<string> {
   return html;
 }
 
+async function fetchCodecSpec(spec: (typeof CODEC_REGISTRY_SPECS)[0]): Promise<string> {
+  const cacheFile = path.join(CACHE_DIR, `${spec.slug}.html`);
+
+  // Check cache
+  try {
+    const stats = await fs.stat(cacheFile);
+    const ageMs = Date.now() - stats.mtimeMs;
+    const oneHour = 60 * 60 * 1000;
+
+    if (ageMs < oneHour) {
+      return await fs.readFile(cacheFile, 'utf-8');
+    }
+  } catch {
+    // Cache doesn't exist
+  }
+
+  console.log(`  Fetching ${spec.title}...`);
+  const response = await fetch(spec.url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${spec.url}: ${response.status}`);
+  }
+
+  const html = await response.text();
+  await fs.writeFile(cacheFile, html);
+  return html;
+}
+
 function extractH2Sections(html: string): Section[] {
   const dom = new JSDOM(html);
   const doc = dom.window.document;
@@ -79,8 +150,8 @@ function extractH2Sections(html: string): Section[] {
   // Find all H2 elements that are section headings
   const h2Elements = Array.from(doc.querySelectorAll('h2.heading[id]'));
 
-  // Skip non-API sections (definitions, acknowledgements, etc.)
-  const skipSections = ['1', '11', '12', '13', '14', '15'];
+  // Skip only security/privacy/acknowledgements - keep definitions, resource reclamation, best practices
+  const skipSections = ['12', '13', '15'];
 
   for (let i = 0; i < h2Elements.length; i++) {
     const h2 = h2Elements[i];
@@ -111,7 +182,24 @@ function extractH2Sections(html: string): Section[] {
   return sections;
 }
 
-function htmlToMarkdown(html: string): string {
+function extractCodecSpecContent(html: string): string {
+  const dom = new JSDOM(html);
+  const doc = dom.window.document;
+
+  // Get the main content section
+  const mainContent = doc.querySelector('section#main') || doc.querySelector('body');
+  if (!mainContent) {
+    return '';
+  }
+
+  // Remove navigation, header, footer elements
+  const elementsToRemove = mainContent.querySelectorAll('nav, header, footer, .head, #toc');
+  elementsToRemove.forEach((el) => el.remove());
+
+  return mainContent.innerHTML;
+}
+
+function createTurndownService(specUrl: string): TurndownService {
   const turndown = new TurndownService({
     headingStyle: 'atx',
     codeBlockStyle: 'fenced',
@@ -127,6 +215,24 @@ function htmlToMarkdown(html: string): string {
     },
   });
 
+  // Fix internal links - convert to absolute URLs
+  turndown.addRule('specLinks', {
+    filter: (node) => {
+      if (node.nodeName !== 'A') return false;
+      const href = (node as HTMLAnchorElement).getAttribute('href');
+      return href !== null && href.startsWith('#');
+    },
+    replacement: (content, node) => {
+      const href = (node as HTMLAnchorElement).getAttribute('href');
+      return `[${content}](${specUrl}${href})`;
+    },
+  });
+
+  return turndown;
+}
+
+function htmlToMarkdown(html: string, specUrl: string = SPEC_URL): string {
+  const turndown = createTurndownService(specUrl);
   return turndown.turndown(html);
 }
 
@@ -173,8 +279,8 @@ function splitContentIntoParts(markdown: string, maxLength: number): string[] {
   return parts;
 }
 
-function generateIssueFiles(sections: Section[]): IssueFile[] {
-  const files: IssueFile[] = [];
+function generateSpecFiles(sections: Section[]): SpecFile[] {
+  const files: SpecFile[] = [];
 
   for (const section of sections) {
     const markdown = htmlToMarkdown(section.content);
@@ -183,7 +289,7 @@ function generateIssueFiles(sections: Section[]): IssueFile[] {
     const header = `> Section ${section.number} from [W3C WebCodecs Specification](${SPEC_URL})\n\n`;
 
     // Split content if too large
-    const parts = splitContentIntoParts(markdown, MAX_ISSUE_LENGTH - header.length - 200);
+    const parts = splitContentIntoParts(markdown, MAX_SPEC_LENGTH - header.length - 200);
 
     if (parts.length === 1) {
       // Single file
@@ -210,14 +316,16 @@ function generateIssueFiles(sections: Section[]): IssueFile[] {
   return files;
 }
 
-async function writeIssueFiles(files: IssueFile[]): Promise<void> {
+async function writeSpecFiles(files: SpecFile[]): Promise<void> {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
-  // Clear existing files
+  // Clear existing .md files (but not subdirectories)
   const existingFiles = await fs.readdir(OUTPUT_DIR).catch(() => []);
   for (const file of existingFiles) {
-    if (file.endsWith('.md')) {
-      await fs.unlink(path.join(OUTPUT_DIR, file));
+    const filePath = path.join(OUTPUT_DIR, file);
+    const stat = await fs.stat(filePath);
+    if (stat.isFile() && file.endsWith('.md')) {
+      await fs.unlink(filePath);
     }
   }
 
@@ -230,83 +338,53 @@ async function writeIssueFiles(files: IssueFile[]): Promise<void> {
   }
 }
 
-async function issueExists(title: string): Promise<boolean> {
-  try {
-    const result = execSync(`gh issue list --search "${title}" --json title`, {
-      encoding: 'utf-8',
-    });
-    const issues = JSON.parse(result);
-    return issues.some((issue: { title: string }) => issue.title === title);
-  } catch {
-    return false;
-  }
-}
+async function fetchAndWriteCodecSpecs(): Promise<void> {
+  await fs.mkdir(CODECS_OUTPUT_DIR, { recursive: true });
 
-async function pushIssuesToGitHub(files: IssueFile[]): Promise<void> {
-  // Ensure gh CLI is authenticated
-  try {
-    execSync('gh auth status', { stdio: 'pipe' });
-  } catch {
-    console.error('Error: gh CLI not authenticated. Run: gh auth login');
-    process.exit(1);
-  }
-
-  // Ensure label exists
-  try {
-    execSync('gh label create spec-section --description "WebCodecs spec section" --color 0366d6', {
-      stdio: 'pipe',
-    });
-    console.log('Created label: spec-section');
-  } catch {
-    // Label already exists
-  }
-
-  for (const file of files) {
-    if (await issueExists(file.title)) {
-      console.log(`  Skipping "${file.title}" - already exists`);
-      continue;
+  // Clear existing codec files
+  const existingFiles = await fs.readdir(CODECS_OUTPUT_DIR).catch(() => []);
+  for (const file of existingFiles) {
+    if (file.endsWith('.md')) {
+      await fs.unlink(path.join(CODECS_OUTPUT_DIR, file));
     }
+  }
 
-    const tmpFile = path.join(CACHE_DIR, 'issue-body.md');
-    await fs.writeFile(tmpFile, file.body);
+  console.log('\nFetching codec registry specs...');
 
-    console.log(`  Creating: ${file.title}`);
+  for (const spec of CODEC_REGISTRY_SPECS) {
     try {
-      execSync(
-        `gh issue create --title "${file.title}" --body-file "${tmpFile}" --label "spec-section"`,
-        {
-          stdio: 'inherit',
-        }
-      );
-    } catch (err) {
-      console.error(`  Failed to create issue: ${file.title}`);
-    }
+      const html = await fetchCodecSpec(spec);
+      const content = extractCodecSpecContent(html);
+      const markdown = htmlToMarkdown(content, spec.url);
 
-    await fs.unlink(tmpFile);
+      const header = `> From [${spec.title} Registration](${spec.url})\n\n`;
+      const body = header + markdown;
+
+      const filePath = path.join(CODECS_OUTPUT_DIR, `${spec.slug}.md`);
+      const fileContent = `---\ntitle: "${spec.title}"\n---\n\n${body}`;
+      await fs.writeFile(filePath, fileContent);
+      console.log(`  Created: codecs/${spec.slug}.md`);
+    } catch (err) {
+      console.error(`  Failed to fetch ${spec.title}: ${err}`);
+    }
   }
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const shouldPush = args.includes('--push');
-
+  // Fetch and process main WebCodecs spec
   const html = await fetchSpec();
   const sections = extractH2Sections(html);
 
   console.log(`Found ${sections.length} spec sections`);
 
-  const files = generateIssueFiles(sections);
-  console.log(`Generated ${files.length} issue files`);
+  const files = generateSpecFiles(sections);
+  console.log(`Generated ${files.length} spec files`);
 
   console.log(`\nWriting to ${OUTPUT_DIR}/`);
-  await writeIssueFiles(files);
+  await writeSpecFiles(files);
 
-  if (shouldPush) {
-    console.log('\nPushing to GitHub...');
-    await pushIssuesToGitHub(files);
-  } else {
-    console.log(`\nTo create GitHub issues, run: npm run issues -- --push`);
-  }
+  // Fetch codec registry specs
+  await fetchAndWriteCodecSpecs();
 
   console.log('\nDone!');
 }
