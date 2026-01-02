@@ -1,0 +1,101 @@
+# Task: u-law PCM Codec Implementation
+
+> **Created:** 2026-01-02
+> **Spec:** [docs/specs/codecs/ulaw.md](../../specs/codecs/ulaw.md)
+> **Branch:** feat/codec-ulaw
+
+## Success Criteria
+- [ ] All tests pass (`npm test`)
+- [ ] Type check passes (`npm run typecheck`)
+- [ ] Linting clean (`npm run lint`)
+- [ ] All checklist items below marked complete
+- [ ] PR description created
+
+---
+
+## Phase 1: Investigation (NO CODING)
+- [ ] Read u-law spec (ITU-T G.711)
+- [ ] Document FFmpeg u-law support in NOTES.md
+- [ ] Identify telephony use cases
+- [ ] List dependencies and constraints
+- [ ] Update plan.md with findings
+
+## Phase 2: Planning
+- [ ] Create detailed implementation plan
+- [ ] Define u-law handling
+- [ ] Identify parallelizable work units
+- [ ] Get human approval on plan
+- [ ] Create task packets for subagents (if applicable)
+
+## Phase 3: Implementation
+
+### 3.1 Codec String
+- [ ] Write failing tests for ulaw codec string
+- [ ] Confirm tests fail (RED)
+- [ ] Implement codec string: `"ulaw"`
+- [ ] Confirm tests pass (GREEN)
+- [ ] Refactor if needed (BLUE)
+- [ ] Write artifact summary
+
+### 3.2 EncodedAudioChunk data
+- [ ] Write failing tests for chunk format
+- [ ] Confirm tests fail (RED)
+- [ ] Implement chunk handling:
+  - Raw u-law encoded samples
+  - 8-bit samples, 8kHz sample rate typical
+  - Chunk type always "key"
+- [ ] Confirm tests pass (GREEN)
+- [ ] Refactor if needed (BLUE)
+- [ ] Write artifact summary
+
+### 3.3 u-law Decoder
+- [ ] Write failing tests for u-law decoding
+- [ ] Confirm tests fail (RED)
+- [ ] Implement decoder:
+  - FFmpeg pcm_mulaw decoder
+  - 8-bit u-law to 16-bit PCM
+  - Handle sample rate/channels from config
+- [ ] Confirm tests pass (GREEN)
+- [ ] Refactor if needed (BLUE)
+- [ ] Write artifact summary
+
+### 3.4 u-law Encoder
+- [ ] Write failing tests for u-law encoding
+- [ ] Confirm tests fail (RED)
+- [ ] Implement encoder:
+  - FFmpeg pcm_mulaw encoder
+  - 16-bit PCM to 8-bit u-law
+  - Single channel, 8kHz typical
+- [ ] Confirm tests pass (GREEN)
+- [ ] Refactor if needed (BLUE)
+- [ ] Write artifact summary
+
+## Phase 4: Integration
+- [ ] Verify all components work together
+- [ ] Run full test suite
+- [ ] Test with telephony audio
+- [ ] Update documentation
+
+## Phase 5: Verification
+- [ ] Code review checklist complete
+- [ ] No hardcoded test values
+- [ ] Edge cases handled
+- [ ] Error handling complete
+- [ ] Types are strict (no `any`)
+
+## Phase 6: Finalize
+- [ ] All success criteria met
+- [ ] PR description written
+- [ ] Ready for human review
+
+---
+
+## Blockers
+<!-- Add any blockers encountered -->
+
+## Notes
+- FFmpeg codec: AV_CODEC_ID_PCM_MULAW
+- Standard telephony codec (ITU-T G.711)
+- 8-bit samples, typically 8kHz mono
+- No description needed in config
+- Common in North America/Japan telephony

@@ -1,0 +1,61 @@
+# Session Progress
+
+## Current State
+- **Last completed:** [LAST_COMPLETED_ITEM]
+- **Next task:** [NEXT_TASK]
+- **Blockers:** [NONE | BLOCKER_DESCRIPTION]
+- **Context usage:** [ESTIMATED_PERCENTAGE]%
+
+## Active Branch
+- **Branch:** [BRANCH_NAME]
+- **Base commit:** [COMMIT_HASH]
+- **Last commit:** [COMMIT_HASH] - [COMMIT_MSG]
+
+## Key Decisions Made
+<!-- Decisions that affect implementation direction -->
+1. [DECISION] - Rationale: [WHY] - See commit [HASH]
+2. [DECISION] - Rationale: [WHY] - See commit [HASH]
+
+## Files Modified This Session
+- [FILE_PATH] - [WHAT_CHANGED]
+- [FILE_PATH] - [WHAT_CHANGED]
+
+## Files Created This Session
+- [FILE_PATH] - [PURPOSE]
+- [FILE_PATH] - [PURPOSE]
+
+## Test Status
+- **Unit tests:** [PASSING/FAILING] ([X]/[Y] tests)
+- **Integration tests:** [PASSING/FAILING/NOT_RUN]
+- **Type check:** [PASSING/FAILING]
+- **Lint:** [PASSING/FAILING]
+
+## Dependencies Discovered
+<!-- External dependencies or internal modules needed -->
+- [MODULE/PACKAGE] - [WHY_NEEDED]
+
+## Interface Contracts Established
+<!-- Interfaces agreed upon for cross-component work -->
+```typescript
+// [INTERFACE_NAME]
+// [BRIEF_DESCRIPTION]
+```
+
+## Open Questions
+<!-- Questions that need human input or further investigation -->
+1. [QUESTION]
+2. [QUESTION]
+
+## Notes for Next Session
+<!-- Critical context for resuming work -->
+- [NOTE]
+- [NOTE]
+
+## Rollback Point
+<!-- If things go wrong, revert to this state -->
+- **Safe commit:** [COMMIT_HASH]
+- **Reason:** [WHAT_WAS_STABLE]
+
+---
+**Last updated:** [TIMESTAMP]
+**Session duration:** [APPROXIMATE_TURNS]
