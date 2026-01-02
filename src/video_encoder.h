@@ -35,7 +35,7 @@ class VideoEncoder : public Napi::ObjectWrap<VideoEncoder> {
   static Napi::FunctionReference constructor;
 
   // --- FFmpeg Resources (RAII managed) ---
-  raii::AVCodecContextPtr codecCtx_;
+  raii::AVCodecContextPtr codec_ctx_;
 
   // --- Thread-Safe State ---
   raii::AtomicCodecState state_;
@@ -44,13 +44,13 @@ class VideoEncoder : public Napi::ObjectWrap<VideoEncoder> {
   mutable std::mutex mutex_;
 
   // --- Encode Queue ---
-  std::queue<raii::AVFramePtr> encodeQueue_;
-  std::atomic<uint32_t> encodeQueueSize_{0};
+  std::queue<raii::AVFramePtr> encode_queue_;
+  std::atomic<uint32_t> encode_queue_size_{0};
 
   // --- Callbacks ---
-  Napi::FunctionReference outputCallback_;
-  Napi::FunctionReference errorCallback_;
-  Napi::FunctionReference ondequeueCallback_;
+  Napi::FunctionReference output_callback_;
+  Napi::FunctionReference error_callback_;
+  Napi::FunctionReference ondequeue_callback_;
 
   // Attributes
   Napi::Value GetState(const Napi::CallbackInfo& info);

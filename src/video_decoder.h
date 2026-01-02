@@ -35,7 +35,7 @@ class VideoDecoder : public Napi::ObjectWrap<VideoDecoder> {
   static Napi::FunctionReference constructor;
 
   // --- FFmpeg Resources (RAII managed) ---
-  raii::AVCodecContextPtr codecCtx_;
+  raii::AVCodecContextPtr codec_ctx_;
 
   // --- Thread-Safe State ---
   raii::AtomicCodecState state_;
@@ -44,16 +44,16 @@ class VideoDecoder : public Napi::ObjectWrap<VideoDecoder> {
   mutable std::mutex mutex_;
 
   // --- Decode Queue ---
-  std::queue<raii::AVPacketPtr> decodeQueue_;
-  std::atomic<uint32_t> decodeQueueSize_{0};
+  std::queue<raii::AVPacketPtr> decode_queue_;
+  std::atomic<uint32_t> decode_queue_size_{0};
 
   // --- Key Chunk Tracking ---
-  std::atomic<bool> keyChunkRequired_{true};
+  std::atomic<bool> key_chunk_required_{true};
 
   // --- Callbacks ---
-  Napi::FunctionReference outputCallback_;
-  Napi::FunctionReference errorCallback_;
-  Napi::FunctionReference ondequeueCallback_;
+  Napi::FunctionReference output_callback_;
+  Napi::FunctionReference error_callback_;
+  Napi::FunctionReference ondequeue_callback_;
 
   // Attributes
   Napi::Value GetState(const Napi::CallbackInfo& info);

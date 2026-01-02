@@ -200,8 +200,8 @@ class ScopedTSFNRef {
  * @return Initialized SafeThreadSafeFunction, or throws on error
  */
 template <typename Context, typename DataType, typename CallbackType>
-SafeThreadSafeFunction<Context, DataType> make_safe_tsfn(Napi::Env env, const char* name, Napi::Function callback,
-                                                         Context* context, CallbackType callJs) {
+SafeThreadSafeFunction<Context, DataType> MakeSafeTsfn(Napi::Env env, const char* name, Napi::Function callback,
+                                                       Context* context, CallbackType callJs) {
   SafeThreadSafeFunction<Context, DataType> safe_tsfn;
 
   auto tsfn = Napi::TypedThreadSafeFunction<Context, DataType>::New(

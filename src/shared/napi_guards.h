@@ -30,29 +30,29 @@ namespace napi_guards {
  * Each WebCodecs class gets a unique tag to prevent type confusion attacks.
  *
  * Usage:
- *   napi_type_tag_object(env, jsObject, &VIDEO_FRAME_TAG);
+ *   napi_type_tag_object(env, jsObject, &kVideoFrameTag);
  *   // Later:
  *   bool matches;
- *   napi_check_object_type_tag(env, jsObject, &VIDEO_FRAME_TAG, &matches);
+ *   napi_check_object_type_tag(env, jsObject, &kVideoFrameTag, &matches);
  */
 // "WEBCODEC" "VIDEOFRA"
-constexpr napi_type_tag VIDEO_FRAME_TAG = {0x574542434F444543ULL, 0x564944454F465241ULL};
+constexpr napi_type_tag kVideoFrameTag = {0x574542434F444543ULL, 0x564944454F465241ULL};
 // "WEBCODEC" "AUDIODAT"
-constexpr napi_type_tag AUDIO_DATA_TAG = {0x574542434F444543ULL, 0x415544494F444154ULL};
+constexpr napi_type_tag kAudioDataTag = {0x574542434F444543ULL, 0x415544494F444154ULL};
 // "WEBCODEC" "ENVVIDC"
-constexpr napi_type_tag ENCODED_VIDEO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E5656494443ULL};
+constexpr napi_type_tag kEncodedVideoChunkTag = {0x574542434F444543ULL, 0x454E5656494443ULL};
 // "WEBCODEC" "ENAUDIC"
-constexpr napi_type_tag ENCODED_AUDIO_CHUNK_TAG = {0x574542434F444543ULL, 0x454E4155444943ULL};
+constexpr napi_type_tag kEncodedAudioChunkTag = {0x574542434F444543ULL, 0x454E4155444943ULL};
 // "WEBCODEC" "VIDDECOD"
-constexpr napi_type_tag VIDEO_DECODER_TAG = {0x574542434F444543ULL, 0x5649444445434F44ULL};
+constexpr napi_type_tag kVideoDecoderTag = {0x574542434F444543ULL, 0x5649444445434F44ULL};
 // "WEBCODEC" "VIDENCODE"
-constexpr napi_type_tag VIDEO_ENCODER_TAG = {0x574542434F444543ULL, 0x564944454E434F44ULL};
+constexpr napi_type_tag kVideoEncoderTag = {0x574542434F444543ULL, 0x564944454E434F44ULL};
 // "WEBCODEC" "AUDDECOD"
-constexpr napi_type_tag AUDIO_DECODER_TAG = {0x574542434F444543ULL, 0x4155444445434F44ULL};
+constexpr napi_type_tag kAudioDecoderTag = {0x574542434F444543ULL, 0x4155444445434F44ULL};
 // "WEBCODEC" "AUDENCODE"
-constexpr napi_type_tag AUDIO_ENCODER_TAG = {0x574542434F444543ULL, 0x415544454E434F44ULL};
+constexpr napi_type_tag kAudioEncoderTag = {0x574542434F444543ULL, 0x415544454E434F44ULL};
 // "WEBCODEC" "IMGDECOD"
-constexpr napi_type_tag IMAGE_DECODER_TAG = {0x574542434F444543ULL, 0x494D474445434F44ULL};
+constexpr napi_type_tag kImageDecoderTag = {0x574542434F444543ULL, 0x494D474445434F44ULL};
 
 // =============================================================================
 // HANDLE SCOPE GUARDS

@@ -46,23 +46,23 @@ void AudioDecoder::Release() {
   std::lock_guard<std::mutex> lock(mutex_);
 
   // Clear decode queue (RAII handles packet cleanup)
-  while (!decodeQueue_.empty()) {
-    decodeQueue_.pop();
+  while (!decode_queue_.empty()) {
+    decode_queue_.pop();
   }
-  decodeQueueSize_.store(0, std::memory_order_release);
+  decode_queue_size_.store(0, std::memory_order_release);
 
   // Release codec context (RAII handles avcodec_free_context)
-  codecCtx_.reset();
+  codec_ctx_.reset();
 
   // Release JS callbacks
-  if (!outputCallback_.IsEmpty()) {
-    outputCallback_.Reset();
+  if (!output_callback_.IsEmpty()) {
+    output_callback_.Reset();
   }
-  if (!errorCallback_.IsEmpty()) {
-    errorCallback_.Reset();
+  if (!error_callback_.IsEmpty()) {
+    error_callback_.Reset();
   }
-  if (!ondequeueCallback_.IsEmpty()) {
-    ondequeueCallback_.Reset();
+  if (!ondequeue_callback_.IsEmpty()) {
+    ondequeue_callback_.Reset();
   }
 }
 

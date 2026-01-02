@@ -60,8 +60,8 @@ VideoDecoder::VideoDecoder(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Vi
   }
 
   // Store callbacks for later use
-  outputCallback_ = Napi::Persistent(init.Get("output").As<Napi::Function>());
-  errorCallback_ = Napi::Persistent(init.Get("error").As<Napi::Function>());
+  output_callback_ = Napi::Persistent(init.Get("output").As<Napi::Function>());
+  error_callback_ = Napi::Persistent(init.Get("error").As<Napi::Function>());
 }
 
 VideoDecoder::~VideoDecoder() { Release(); }
@@ -74,23 +74,23 @@ void VideoDecoder::Release() {
   std::lock_guard<std::mutex> lock(mutex_);
 
   // Clear decode queue (RAII handles packet cleanup)
-  while (!decodeQueue_.empty()) {
-    decodeQueue_.pop();
+  while (!decode_queue_.empty()) {
+    decode_queue_.pop();
   }
-  decodeQueueSize_.store(0, std::memory_order_release);
+  decode_queue_size_.store(0, std::memory_order_release);
 
   // Release codec context (RAII handles avcodec_free_context)
-  codecCtx_.reset();
+  codec_ctx_.reset();
 
   // Release JS callbacks
-  if (!outputCallback_.IsEmpty()) {
-    outputCallback_.Reset();
+  if (!output_callback_.IsEmpty()) {
+    output_callback_.Reset();
   }
-  if (!errorCallback_.IsEmpty()) {
-    errorCallback_.Reset();
+  if (!error_callback_.IsEmpty()) {
+    error_callback_.Reset();
   }
-  if (!ondequeueCallback_.IsEmpty()) {
-    ondequeueCallback_.Reset();
+  if (!ondequeue_callback_.IsEmpty()) {
+    ondequeue_callback_.Reset();
   }
 }
 
@@ -101,21 +101,21 @@ Napi::Value VideoDecoder::GetState(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value VideoDecoder::GetDecodeQueueSize(const Napi::CallbackInfo& info) {
-  return Napi::Number::New(info.Env(), static_cast<double>(decodeQueueSize_.load(std::memory_order_acquire)));
+  return Napi::Number::New(info.Env(), static_cast<double>(decode_queue_size_.load(std::memory_order_acquire)));
 }
 
 Napi::Value VideoDecoder::GetOndequeue(const Napi::CallbackInfo& info) {
-  if (ondequeueCallback_.IsEmpty()) {
+  if (ondequeue_callback_.IsEmpty()) {
     return info.Env().Null();
   }
-  return ondequeueCallback_.Value();
+  return ondequeue_callback_.Value();
 }
 
 void VideoDecoder::SetOndequeue(const Napi::CallbackInfo& info, const Napi::Value& value) {
   if (value.IsNull() || value.IsUndefined()) {
-    ondequeueCallback_.Reset();
+    ondequeue_callback_.Reset();
   } else if (value.IsFunction()) {
-    ondequeueCallback_ = Napi::Persistent(value.As<Napi::Function>());
+    ondequeue_callback_ = Napi::Persistent(value.As<Napi::Function>());
   }
 }
 
@@ -165,18 +165,18 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   }
 
   // Allocate codec context (RAII)
-  codecCtx_ = raii::MakeAvCodecContext(decoder);
-  if (!codecCtx_) {
+  codec_ctx_ = raii::MakeAvCodecContext(decoder);
+  if (!codec_ctx_) {
     errors::ThrowEncodingError(env, "Failed to allocate codec context");
     return env.Undefined();
   }
 
   // Set codec parameters from config
   if (config.Has("codedWidth") && config.Get("codedWidth").IsNumber()) {
-    codecCtx_->width = config.Get("codedWidth").As<Napi::Number>().Int32Value();
+    codec_ctx_->width = config.Get("codedWidth").As<Napi::Number>().Int32Value();
   }
   if (config.Has("codedHeight") && config.Get("codedHeight").IsNumber()) {
-    codecCtx_->height = config.Get("codedHeight").As<Napi::Number>().Int32Value();
+    codec_ctx_->height = config.Get("codedHeight").As<Napi::Number>().Int32Value();
   }
 
   // Handle description (extradata) if provided - e.g., for H.264 avcC
@@ -186,22 +186,22 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
     size_t size = 0;
 
     if (buffer_utils::ExtractBufferData(desc, &data, &size) && data && size > 0) {
-      codecCtx_->extradata = static_cast<uint8_t*>(av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
-      if (codecCtx_->extradata) {
-        std::memcpy(codecCtx_->extradata, data, size);
-        codecCtx_->extradata_size = static_cast<int>(size);
+      codec_ctx_->extradata = static_cast<uint8_t*>(av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
+      if (codec_ctx_->extradata) {
+        std::memcpy(codec_ctx_->extradata, data, size);
+        codec_ctx_->extradata_size = static_cast<int>(size);
       }
     }
   }
 
   // Set threading model
-  codecCtx_->thread_count = 0;  // Auto-detect
-  codecCtx_->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+  codec_ctx_->thread_count = 0;  // Auto-detect
+  codec_ctx_->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
 
   // Open codec
-  int ret = avcodec_open2(codecCtx_.get(), decoder, nullptr);
+  int ret = avcodec_open2(codec_ctx_.get(), decoder, nullptr);
   if (ret < 0) {
-    codecCtx_.reset();
+    codec_ctx_.reset();
     errors::ThrowEncodingError(env, ret, "Failed to open decoder");
     return env.Undefined();
   }
@@ -209,7 +209,7 @@ Napi::Value VideoDecoder::Configure(const Napi::CallbackInfo& info) {
   // [SPEC] 3. Set state to "configured"
   // [SPEC] 4. Set key chunk required to true
   state_.transition(raii::AtomicCodecState::State::Unconfigured, raii::AtomicCodecState::State::Configured);
-  keyChunkRequired_.store(true, std::memory_order_release);
+  key_chunk_required_.store(true, std::memory_order_release);
 
   return env.Undefined();
 }
@@ -238,12 +238,12 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] 2. If key chunk required is true, check for key frame
-  if (keyChunkRequired_.load(std::memory_order_acquire)) {
+  if (key_chunk_required_.load(std::memory_order_acquire)) {
     if (chunk_type != "key") {
       errors::ThrowDataError(env, "A key frame is required");
       return env.Undefined();
     }
-    keyChunkRequired_.store(false, std::memory_order_release);
+    key_chunk_required_.store(false, std::memory_order_release);
   }
 
   // Get chunk data - support both EncodedVideoChunk wrapper and plain objects
@@ -275,12 +275,12 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] 3. Increment decodeQueueSize
-  decodeQueueSize_.fetch_add(1, std::memory_order_relaxed);
+  decode_queue_size_.fetch_add(1, std::memory_order_relaxed);
 
   // Create AVPacket from data
   raii::AVPacketPtr packet = buffer_utils::CreatePacketFromBuffer(data, size);
   if (!packet) {
-    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
     errors::ThrowEncodingError(env, "Failed to create packet");
     return env.Undefined();
   }
@@ -297,16 +297,16 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   // Lock for codec operations
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (!codecCtx_) {
-    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+  if (!codec_ctx_) {
+    decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
     errors::ThrowInvalidStateError(env, "Decoder not configured");
     return env.Undefined();
   }
 
   // Send packet to decoder
-  int ret = avcodec_send_packet(codecCtx_.get(), packet.get());
+  int ret = avcodec_send_packet(codec_ctx_.get(), packet.get());
   if (ret < 0 && ret != AVERROR(EAGAIN)) {
-    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
     errors::ThrowEncodingError(env, ret, "Failed to send packet to decoder");
     return env.Undefined();
   }
@@ -314,27 +314,27 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   // Receive all available frames
   raii::AVFramePtr frame = raii::MakeAvFrame();
   if (!frame) {
-    decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+    decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
     errors::ThrowEncodingError(env, "Failed to allocate frame");
     return env.Undefined();
   }
 
   while (true) {
-    ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
+    ret = avcodec_receive_frame(codec_ctx_.get(), frame.get());
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
       break;  // Need more input or end of stream
     }
     if (ret < 0) {
-      decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+      decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
       errors::ThrowEncodingError(env, ret, "Error receiving frame");
       return env.Undefined();
     }
 
     // Output the frame via callback
-    if (!outputCallback_.IsEmpty()) {
+    if (!output_callback_.IsEmpty()) {
       Napi::Object jsFrame = VideoFrame::CreateFromAVFrame(env, frame.get());
       if (!jsFrame.IsEmpty()) {
-        outputCallback_.Call({jsFrame});
+        output_callback_.Call({jsFrame});
       }
     }
 
@@ -343,11 +343,11 @@ Napi::Value VideoDecoder::Decode(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] Decrement decodeQueueSize and schedule dequeue event
-  decodeQueueSize_.fetch_sub(1, std::memory_order_relaxed);
+  decode_queue_size_.fetch_sub(1, std::memory_order_relaxed);
 
   // Call ondequeue if set
-  if (!ondequeueCallback_.IsEmpty()) {
-    ondequeueCallback_.Call({});
+  if (!ondequeue_callback_.IsEmpty()) {
+    ondequeue_callback_.Call({});
   }
 
   return env.Undefined();
@@ -367,7 +367,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   }
 
   // [SPEC] 2. Set key chunk required to true
-  keyChunkRequired_.store(true, std::memory_order_release);
+  key_chunk_required_.store(true, std::memory_order_release);
 
   // [SPEC] 3. Create promise
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -375,13 +375,13 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   // Lock for codec operations
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (!codecCtx_) {
+  if (!codec_ctx_) {
     deferred.Resolve(env.Undefined());
     return deferred.Promise();
   }
 
   // Drain the decoder by sending a null packet
-  int ret = avcodec_send_packet(codecCtx_.get(), nullptr);
+  int ret = avcodec_send_packet(codec_ctx_.get(), nullptr);
   if (ret < 0 && ret != AVERROR_EOF) {
     Napi::Error error = Napi::Error::New(env, "EncodingError: Failed to flush decoder");
     error.Set("name", Napi::String::New(env, "EncodingError"));
@@ -399,7 +399,7 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
   }
 
   while (true) {
-    ret = avcodec_receive_frame(codecCtx_.get(), frame.get());
+    ret = avcodec_receive_frame(codec_ctx_.get(), frame.get());
     if (ret == AVERROR_EOF) {
       break;  // All frames drained
     }
@@ -414,10 +414,10 @@ Napi::Value VideoDecoder::Flush(const Napi::CallbackInfo& info) {
     }
 
     // Output the frame via callback
-    if (!outputCallback_.IsEmpty()) {
+    if (!output_callback_.IsEmpty()) {
       Napi::Object jsFrame = VideoFrame::CreateFromAVFrame(env, frame.get());
       if (!jsFrame.IsEmpty()) {
-        outputCallback_.Call({jsFrame});
+        output_callback_.Call({jsFrame});
       }
     }
 
@@ -443,22 +443,22 @@ Napi::Value VideoDecoder::Reset(const Napi::CallbackInfo& info) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   // Clear decode queue
-  while (!decodeQueue_.empty()) {
-    decodeQueue_.pop();
+  while (!decode_queue_.empty()) {
+    decode_queue_.pop();
   }
-  decodeQueueSize_.store(0, std::memory_order_release);
+  decode_queue_size_.store(0, std::memory_order_release);
 
   // Flush the codec buffers (discard all pending frames)
-  if (codecCtx_) {
-    avcodec_flush_buffers(codecCtx_.get());
+  if (codec_ctx_) {
+    avcodec_flush_buffers(codec_ctx_.get());
   }
 
   // Reset key chunk requirement
-  keyChunkRequired_.store(true, std::memory_order_release);
+  key_chunk_required_.store(true, std::memory_order_release);
 
   // Transition back to unconfigured state
   // Release codec context so configure() must be called again
-  codecCtx_.reset();
+  codec_ctx_.reset();
 
   // Transition state to unconfigured
   state_.transition(raii::AtomicCodecState::State::Configured, raii::AtomicCodecState::State::Unconfigured);
