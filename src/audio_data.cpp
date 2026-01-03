@@ -402,8 +402,7 @@ Napi::Value AudioData::CopyTo(const Napi::CallbackInfo& info) {
 
   if (is_planar) {
     // For planar formats, data is in frame_->data[channel][sample]
-    // We need to interleave it
-    int plane_size = frame_->nb_samples * bytes_per_sample;
+    // We need to interleave it for copyTo output
     uint8_t* dest = dest_data;
 
     for (int sample = 0; sample < frame_->nb_samples; sample++) {
