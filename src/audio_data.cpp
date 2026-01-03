@@ -12,20 +12,37 @@ Napi::FunctionReference AudioData::constructor;
 static std::string AvFormatToWebCodecs(AVSampleFormat fmt) {
   switch (fmt) {
     case AV_SAMPLE_FMT_U8:
-    case AV_SAMPLE_FMT_U8P:
       return "u8";
+    case AV_SAMPLE_FMT_U8P:
+      return "u8-planar";
     case AV_SAMPLE_FMT_S16:
-    case AV_SAMPLE_FMT_S16P:
       return "s16";
+    case AV_SAMPLE_FMT_S16P:
+      return "s16-planar";
     case AV_SAMPLE_FMT_S32:
-    case AV_SAMPLE_FMT_S32P:
       return "s32";
+    case AV_SAMPLE_FMT_S32P:
+      return "s32-planar";
     case AV_SAMPLE_FMT_FLT:
-    case AV_SAMPLE_FMT_FLTP:
       return "f32";
+    case AV_SAMPLE_FMT_FLTP:
+      return "f32-planar";
     default:
       return "f32";  // Default to float
   }
+}
+
+// Helper: Map WebCodecs AudioSampleFormat to FFmpeg sample format
+static AVSampleFormat WebCodecsToAvFormat(const std::string& format) {
+  if (format == "u8") return AV_SAMPLE_FMT_U8;
+  if (format == "u8-planar") return AV_SAMPLE_FMT_U8P;
+  if (format == "s16") return AV_SAMPLE_FMT_S16;
+  if (format == "s16-planar") return AV_SAMPLE_FMT_S16P;
+  if (format == "s32") return AV_SAMPLE_FMT_S32;
+  if (format == "s32-planar") return AV_SAMPLE_FMT_S32P;
+  if (format == "f32") return AV_SAMPLE_FMT_FLT;
+  if (format == "f32-planar") return AV_SAMPLE_FMT_FLTP;
+  return AV_SAMPLE_FMT_NONE;
 }
 
 // Helper: Get bytes per sample for a format
@@ -58,16 +75,164 @@ Napi::Object AudioData::Init(Napi::Env env, Napi::Object exports) {
 AudioData::AudioData(const Napi::CallbackInfo& info) : Napi::ObjectWrap<AudioData>(info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Constructor Algorithm
-  // The constructor can receive an AudioDataInit object to create from raw data
-  // For now, we only support creation via CreateFromFrame factory
+  // [SPEC 9.2.2] AudioData Constructor Algorithm
+  // Receives an AudioDataInit object to create from raw audio data
 
   if (info.Length() < 1) {
     // Default construction - will be populated by CreateFromFrame
     return;
   }
 
-  // TODO(impl): Implement full constructor with AudioDataInit
+  if (!info[0].IsObject()) {
+    errors::ThrowTypeError(env, "AudioDataInit is required");
+    return;
+  }
+
+  Napi::Object init = info[0].As<Napi::Object>();
+
+  // [SPEC] Step 1: Validate AudioDataInit
+  // Required: format
+  if (!init.Has("format") || !init.Get("format").IsString()) {
+    errors::ThrowTypeError(env, "format is required and must be a string");
+    return;
+  }
+  std::string format_str = init.Get("format").As<Napi::String>().Utf8Value();
+
+  // Validate format string
+  AVSampleFormat av_fmt = WebCodecsToAvFormat(format_str);
+  if (av_fmt == AV_SAMPLE_FMT_NONE) {
+    errors::ThrowTypeError(env, "Invalid AudioSampleFormat: " + format_str);
+    return;
+  }
+
+  // Required: sampleRate (must be > 0)
+  if (!init.Has("sampleRate") || !init.Get("sampleRate").IsNumber()) {
+    errors::ThrowTypeError(env, "sampleRate is required and must be a number");
+    return;
+  }
+  int sample_rate = init.Get("sampleRate").As<Napi::Number>().Int32Value();
+  if (sample_rate <= 0) {
+    errors::ThrowTypeError(env, "sampleRate must be greater than 0");
+    return;
+  }
+
+  // Required: numberOfFrames (must be > 0)
+  if (!init.Has("numberOfFrames") || !init.Get("numberOfFrames").IsNumber()) {
+    errors::ThrowTypeError(env, "numberOfFrames is required and must be a number");
+    return;
+  }
+  int num_frames = init.Get("numberOfFrames").As<Napi::Number>().Int32Value();
+  if (num_frames <= 0) {
+    errors::ThrowTypeError(env, "numberOfFrames must be greater than 0");
+    return;
+  }
+
+  // Required: numberOfChannels (must be > 0)
+  if (!init.Has("numberOfChannels") || !init.Get("numberOfChannels").IsNumber()) {
+    errors::ThrowTypeError(env, "numberOfChannels is required and must be a number");
+    return;
+  }
+  int num_channels = init.Get("numberOfChannels").As<Napi::Number>().Int32Value();
+  if (num_channels <= 0) {
+    errors::ThrowTypeError(env, "numberOfChannels must be greater than 0");
+    return;
+  }
+
+  // Required: timestamp
+  if (!init.Has("timestamp") || !init.Get("timestamp").IsNumber()) {
+    errors::ThrowTypeError(env, "timestamp is required and must be a number");
+    return;
+  }
+  int64_t timestamp = init.Get("timestamp").As<Napi::Number>().Int64Value();
+
+  // Required: data (BufferSource)
+  if (!init.Has("data")) {
+    errors::ThrowTypeError(env, "data is required");
+    return;
+  }
+
+  Napi::Value data_value = init.Get("data");
+  const uint8_t* src_data = nullptr;
+  size_t data_size = 0;
+
+  if (data_value.IsArrayBuffer()) {
+    Napi::ArrayBuffer ab = data_value.As<Napi::ArrayBuffer>();
+    src_data = static_cast<const uint8_t*>(ab.Data());
+    data_size = ab.ByteLength();
+  } else if (data_value.IsTypedArray()) {
+    Napi::TypedArray ta = data_value.As<Napi::TypedArray>();
+    Napi::ArrayBuffer ab = ta.ArrayBuffer();
+    src_data = static_cast<const uint8_t*>(ab.Data()) + ta.ByteOffset();
+    data_size = ta.ByteLength();
+  } else if (data_value.IsDataView()) {
+    Napi::DataView dv = data_value.As<Napi::DataView>();
+    Napi::ArrayBuffer ab = dv.ArrayBuffer();
+    src_data = static_cast<const uint8_t*>(ab.Data()) + dv.ByteOffset();
+    data_size = dv.ByteLength();
+  } else {
+    errors::ThrowTypeError(env, "data must be a BufferSource (ArrayBuffer, TypedArray, or DataView)");
+    return;
+  }
+
+  // [SPEC] Validate data has enough bytes
+  // totalSamples = numberOfFrames * numberOfChannels
+  // bytesPerSample = bytes per sample for format
+  // totalSize = bytesPerSample * totalSamples
+  int bytes_per_sample = av_get_bytes_per_sample(av_fmt);
+  size_t total_samples = static_cast<size_t>(num_frames) * static_cast<size_t>(num_channels);
+  size_t required_size = static_cast<size_t>(bytes_per_sample) * total_samples;
+
+  if (data_size < required_size) {
+    errors::ThrowTypeError(env, "data buffer is too small");
+    return;
+  }
+
+  // [SPEC] Step 4: Create the AudioData
+  // Create AVFrame with audio parameters
+  frame_ = raii::MakeAvFrame();
+  if (!frame_) {
+    errors::ThrowTypeError(env, "Failed to allocate audio frame");
+    return;
+  }
+
+  frame_->format = av_fmt;
+  frame_->sample_rate = sample_rate;
+  frame_->nb_samples = num_frames;
+
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+  // FFmpeg 5.1+ uses ch_layout
+  av_channel_layout_default(&frame_->ch_layout, num_channels);
+#else
+  // Older FFmpeg uses channels and channel_layout
+  frame_->channels = num_channels;
+  frame_->channel_layout = av_get_default_channel_layout(num_channels);
+#endif
+
+  // Allocate frame buffer
+  int ret = av_frame_get_buffer(frame_.get(), 0);
+  if (ret < 0) {
+    errors::ThrowTypeError(env, "Failed to allocate audio frame buffer");
+    frame_.reset();
+    return;
+  }
+
+  // Copy data into frame
+  bool is_planar = av_sample_fmt_is_planar(av_fmt);
+
+  if (is_planar) {
+    // For planar formats, data is arranged as [ch0_samples][ch1_samples]...
+    size_t plane_size = static_cast<size_t>(num_frames) * static_cast<size_t>(bytes_per_sample);
+    for (int ch = 0; ch < num_channels; ch++) {
+      std::memcpy(frame_->data[ch], src_data + ch * plane_size, plane_size);
+    }
+  } else {
+    // For interleaved formats, all data is in data[0]
+    std::memcpy(frame_->data[0], src_data, required_size);
+  }
+
+  // Set internal state
+  format_ = format_str;
+  timestamp_ = timestamp;
 }
 
 AudioData::~AudioData() { Release(); }
