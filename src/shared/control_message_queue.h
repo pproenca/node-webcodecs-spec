@@ -329,10 +329,15 @@ using AudioControlQueue = ControlMessageQueue<raii::AVPacketPtr, raii::AVFramePt
 /**
  * Configure message for ImageDecoder.
  * Contains the image data and configuration options.
+ *
+ * For BufferSource input: data contains the full encoded data, is_streaming = false
+ * For ReadableStream input: data is empty, is_streaming = true
+ *   Data chunks will arrive via ImageStreamDataMessage.
  */
 struct ImageConfigureMessage {
   std::string type;  // MIME type (e.g., "image/jpeg")
-  std::vector<uint8_t> data;  // Encoded image data
+  std::vector<uint8_t> data;  // Encoded image data (empty if streaming)
+  bool is_streaming = false;  // true if data comes from ReadableStream
   std::string color_space_conversion;
   std::optional<uint32_t> desired_width;
   std::optional<uint32_t> desired_height;
@@ -370,10 +375,36 @@ struct ImageUpdateTrackMessage {
 };
 
 /**
+ * Stream data message for ImageDecoder.
+ * Contains a chunk of data received from a ReadableStream.
+ * Per W3C spec "Fetch Stream Data Loop" algorithm.
+ */
+struct ImageStreamDataMessage {
+  std::vector<uint8_t> chunk;  // Chunk of encoded image data
+};
+
+/**
+ * Stream end message for ImageDecoder.
+ * Signals that the ReadableStream has closed (no more data).
+ * Per W3C spec, this triggers [[complete]] = true and resolves [[completed promise]].
+ */
+struct ImageStreamEndMessage {};
+
+/**
+ * Stream error message for ImageDecoder.
+ * Signals that an error occurred reading the ReadableStream.
+ * Per W3C spec, this triggers Close ImageDecoder with NotReadableError.
+ */
+struct ImageStreamErrorMessage {
+  std::string message;
+};
+
+/**
  * Variant type for all ImageDecoder messages.
  */
 using ImageMessage = std::variant<ImageConfigureMessage, ImageDecodeMessage, ImageResetMessage,
-                                   ImageCloseMessage, ImageUpdateTrackMessage>;
+                                   ImageCloseMessage, ImageUpdateTrackMessage,
+                                   ImageStreamDataMessage, ImageStreamEndMessage, ImageStreamErrorMessage>;
 
 /**
  * Thread-safe control message queue for ImageDecoder.

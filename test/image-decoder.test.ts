@@ -148,6 +148,116 @@ describe('ImageDecoder', () => {
     });
   });
 
+  describe('ReadableStream support', () => {
+    it('should accept ReadableStream as data source', async () => {
+      // Minimal JPEG: SOI, APP0 JFIF, EOI
+      const jpegData = new Uint8Array([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
+        0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x00, 0xff, 0xd9
+      ]);
+
+      // Create a ReadableStream that yields the JPEG data in chunks
+      let chunkIndex = 0;
+      const chunkSize = 8;
+      const stream = new ReadableStream({
+        pull(controller) {
+          const start = chunkIndex * chunkSize;
+          if (start >= jpegData.length) {
+            controller.close();
+            return;
+          }
+          const end = Math.min(start + chunkSize, jpegData.length);
+          controller.enqueue(jpegData.slice(start, end));
+          chunkIndex++;
+        }
+      });
+
+      // Create decoder with ReadableStream - should not throw
+      const decoder = new ImageDecoder({
+        data: stream as unknown as BufferSource,
+        type: 'image/jpeg'
+      });
+
+      expect(decoder).toBeDefined();
+      expect(decoder.type).toBe('image/jpeg');
+
+      // Cleanup
+      decoder.close();
+    });
+
+    it('should reject locked ReadableStream', () => {
+      const stream = new ReadableStream({
+        pull(controller) {
+          controller.close();
+        }
+      });
+
+      // Lock the stream by getting a reader
+      stream.getReader();
+
+      // Should throw because stream is locked
+      expect(() => {
+        new ImageDecoder({
+          data: stream as unknown as BufferSource,
+          type: 'image/jpeg'
+        });
+      }).toThrow(/locked/i);
+    });
+
+    it('should handle stream completion (may error with invalid data)', async () => {
+      // Minimal JPEG header (not a valid complete image, just for testing stream mechanics)
+      const jpegData = new Uint8Array([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
+        0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x00, 0xff, 0xd9
+      ]);
+
+      // Create a stream that delivers data in small chunks
+      const chunks = [
+        jpegData.slice(0, 8),
+        jpegData.slice(8, 16),
+        jpegData.slice(16)
+      ];
+      let chunkIndex = 0;
+
+      const stream = new ReadableStream({
+        pull(controller) {
+          if (chunkIndex >= chunks.length) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(chunks[chunkIndex]);
+          chunkIndex++;
+        }
+      });
+
+      const decoder = new ImageDecoder({
+        data: stream as unknown as BufferSource,
+        type: 'image/jpeg'
+      });
+
+      // Wait for completed promise (with timeout)
+      // Note: With invalid JPEG data, the promise may reject with EncodingError
+      // or similar. We're just testing that the stream is consumed and completion
+      // is signaled (either success or error).
+      const completedPromise = Promise.race([
+        decoder.completed
+          .then(() => 'resolved')
+          .catch(() => 'rejected'),
+        new Promise<string>((resolve) =>
+          setTimeout(() => resolve('timeout'), 2000)
+        )
+      ]);
+
+      const result = await completedPromise;
+      // Should complete (either resolve or reject) - not timeout
+      expect(result).not.toBe('timeout');
+
+      decoder.close();
+    });
+  });
+
   // Note: Full constructor tests with actual image decoding are in integration tests
   // These unit tests just validate the API surface and error handling
 });

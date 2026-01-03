@@ -166,6 +166,24 @@ class ImageDecoderWorker {
    */
   void OnUpdateTrack(const ImageUpdateTrackMessage& msg);
 
+  /**
+   * Handle StreamData message (streaming mode).
+   * Appends data chunk to accumulated buffer.
+   */
+  void OnStreamData(const ImageStreamDataMessage& msg);
+
+  /**
+   * Handle StreamEnd message (streaming mode).
+   * Signals that all data has been received.
+   */
+  void OnStreamEnd();
+
+  /**
+   * Handle StreamError message (streaming mode).
+   * Signals that an error occurred reading the stream.
+   */
+  void OnStreamError(const ImageStreamErrorMessage& msg);
+
   // =========================================================================
   // HELPERS
   // =========================================================================
@@ -252,6 +270,20 @@ class ImageDecoderWorker {
   std::string type_;
   std::optional<uint32_t> desired_width_;
   std::optional<uint32_t> desired_height_;
+
+  // Streaming mode state
+  bool is_streaming_ = false;       // true if data comes from ReadableStream
+  bool stream_complete_ = false;    // true when stream has closed
+  bool configured_ = false;         // true when codec is initialized (after enough data received)
+  std::optional<bool> prefer_animation_;  // Stored for deferred configuration
+  std::string color_space_conversion_;    // Stored for deferred configuration
+
+  /**
+   * Try to configure the decoder with accumulated data.
+   * For streaming mode, called when enough data has accumulated.
+   * Returns true if configuration succeeded.
+   */
+  bool TryConfigureFromBuffer();
 };
 
 }  // namespace webcodecs

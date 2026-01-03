@@ -181,6 +181,15 @@ void ImageDecoderWorker::WorkerLoop() {
             [this](ImageUpdateTrackMessage& m) {
               OnUpdateTrack(m);
             },
+            [this](ImageStreamDataMessage& m) {
+              OnStreamData(m);
+            },
+            [this](ImageStreamEndMessage&) {
+              OnStreamEnd();
+            },
+            [this](ImageStreamErrorMessage& m) {
+              OnStreamError(m);
+            },
         },
         msg);
   }
@@ -195,14 +204,39 @@ bool ImageDecoderWorker::OnConfigure(const ImageConfigureMessage& msg) {
   type_ = msg.type;
   desired_width_ = msg.desired_width;
   desired_height_ = msg.desired_height;
+  is_streaming_ = msg.is_streaming;
+  prefer_animation_ = msg.prefer_animation;
+  color_space_conversion_ = msg.color_space_conversion;
+  stream_complete_ = false;
+  configured_ = false;
 
-  // Copy image data for memory-based I/O
+  // For streaming mode, we wait for data to arrive via ImageStreamDataMessage
+  if (is_streaming_) {
+    image_data_.clear();
+    read_position_ = 0;
+    // Don't try to configure yet - wait for enough data
+    return true;
+  }
+
+  // Non-streaming mode: copy image data for memory-based I/O
   image_data_ = msg.data;
   read_position_ = 0;
 
   if (image_data_.empty()) {
     OutputError(0, AVERROR_INVALIDDATA, "Empty image data");
     return false;
+  }
+
+  return TryConfigureFromBuffer();
+}
+
+bool ImageDecoderWorker::TryConfigureFromBuffer() {
+  if (configured_) {
+    return true;  // Already configured
+  }
+
+  if (image_data_.empty()) {
+    return false;  // No data yet
   }
 
   // Create custom I/O context for reading from memory
@@ -296,10 +330,10 @@ bool ImageDecoderWorker::OnConfigure(const ImageConfigureMessage& msg) {
 
     // Score this stream for selection
     int score = 0;
-    if (msg.prefer_animation.has_value()) {
-      if (msg.prefer_animation.value() && track.animated) {
+    if (prefer_animation_.has_value()) {
+      if (prefer_animation_.value() && track.animated) {
         score += 100;
-      } else if (!msg.prefer_animation.value() && !track.animated) {
+      } else if (!prefer_animation_.value() && !track.animated) {
         score += 100;
       }
     }
@@ -356,14 +390,75 @@ bool ImageDecoderWorker::OnConfigure(const ImageConfigureMessage& msg) {
   }
 
   current_frame_index_ = 0;
+  configured_ = true;
 
   // Signal track info to ImageDecoder
   OutputTrackInfo(tracks_, best_stream);
 
   // For BufferSource (non-streaming), signal completed immediately
-  OutputCompleted();
+  // For streaming mode, OutputCompleted is called from OnStreamEnd
+  if (!is_streaming_) {
+    OutputCompleted();
+  }
 
   return true;
+}
+
+void ImageDecoderWorker::OnStreamData(const ImageStreamDataMessage& msg) {
+  // [SPEC] Fetch Stream Data Loop - chunk steps:
+  // 1. If [[closed]] is true, abort
+  // 2. If chunk is not Uint8Array, close with DataError (handled in JS)
+  // 3. Append bytes to [[encoded data]]
+  // 4. If [[tracks established]] is false, run Establish Tracks
+  // 5. Otherwise, run Update Tracks
+
+  // Append chunk to accumulated data
+  image_data_.insert(image_data_.end(), msg.chunk.begin(), msg.chunk.end());
+
+  // Try to configure if not yet done
+  if (!configured_) {
+    // Try to configure with accumulated data
+    // This may fail if not enough data yet - that's OK, we'll try again
+    // when more data arrives
+    bool success = TryConfigureFromBuffer();
+    if (!success && !image_data_.empty()) {
+      // Failed to configure - clear the I/O context we may have partially created
+      // The error will be reported when stream ends or more data doesn't help
+      io_ctx_.reset();
+      fmt_ctx_.reset();
+      codec_ctx_.reset();
+    }
+  }
+  // Note: For streaming mode, we don't support updating tracks after initial
+  // configuration (progressive decoding) - this is a simplification.
+}
+
+void ImageDecoderWorker::OnStreamEnd() {
+  // [SPEC] Fetch Stream Data Loop - close steps:
+  // 1. Assign true to [[complete]]
+  // 2. Resolve [[completed promise]]
+
+  stream_complete_ = true;
+
+  if (!configured_) {
+    // Try one last time to configure with all accumulated data
+    bool success = TryConfigureFromBuffer();
+    if (!success) {
+      // Not enough data to decode - signal error
+      OutputError(0, AVERROR_INVALIDDATA,
+                  "Stream ended with insufficient data to decode image");
+      return;
+    }
+  }
+
+  // Signal that stream is complete
+  OutputCompleted();
+}
+
+void ImageDecoderWorker::OnStreamError(const ImageStreamErrorMessage& msg) {
+  // [SPEC] Fetch Stream Data Loop - error steps:
+  // Close ImageDecoder with NotReadableError
+  OutputError(0, AVERROR(EIO), "Stream error: " + msg.message);
 }
 
 void ImageDecoderWorker::OnDecode(const ImageDecodeMessage& msg) {

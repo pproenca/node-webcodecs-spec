@@ -4,6 +4,34 @@ This document tracks the progress of implementing W3C WebCodecs spec compliance.
 
 ## Completed
 
+### ImageDecoder ReadableStream Support (2026-01-03)
+**Commit:** (pending)
+
+Implemented ReadableStream support for ImageDecoder per W3C WebCodecs spec section 10.2.2 (constructor) and 10.2.5 (Fetch Stream Data Loop algorithm).
+
+Changes:
+- Added `IsReadableStream()` helper to detect WHATWG ReadableStream input
+- Added `IsStreamDisturbedOrLocked()` to validate stream state per spec
+- Added `ImageStreamDataMessage`, `ImageStreamEndMessage`, `ImageStreamErrorMessage` to control_message_queue.h
+- Modified `ImageConfigureMessage` to support streaming mode (`is_streaming` flag)
+- Implemented `StartStreamReadLoop()` and `ContinueStreamRead()` in ImageDecoder
+  - Gets reader from stream via `getReader()`
+  - Reads chunks asynchronously via `reader.read().then()`
+  - Validates chunk is Uint8Array per spec
+  - Sends `ImageStreamDataMessage` to worker for each chunk
+  - Sends `ImageStreamEndMessage` when stream closes
+  - Sends `ImageStreamErrorMessage` on stream error
+- Modified `ImageDecoderWorker` to handle streaming:
+  - `OnStreamData()`: Appends chunk to accumulated buffer, tries to configure decoder
+  - `OnStreamEnd()`: Marks stream complete, signals completion
+  - `OnStreamError()`: Signals error to decoder
+  - `TryConfigureFromBuffer()`: Attempts to configure decoder from accumulated data
+- Added streaming mode state tracking in ImageDecoderWorker
+- Added tests for ReadableStream input:
+  - Accept ReadableStream as data source
+  - Reject locked ReadableStream
+  - Handle stream completion
+
 ### VideoFrame.metadata() (2026-01-03)
 **Commit:** `199d01a`
 
@@ -73,10 +101,14 @@ Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 
 ## Remaining TODOs
 
-### ImageDecoder ReadableStream Support
-**Files:** `src/image_decoder.cpp:124,217`
-
-The ImageDecoder constructor currently does not support ReadableStream input. Only static image data (ArrayBuffer/TypedArray) is supported.
-
 ### Spec Compliance Gaps
 Run `npm run scaffold` to regenerate spec infrastructure and identify any remaining gaps.
+
+### AudioData
+- Full copyTo options support (format conversion)
+
+### VideoFrame
+- Constructor from CanvasImageSource (not applicable in Node.js)
+- Constructor from BufferSource with full options (layout, rotation, flip)
+- copyTo with rect, layout, format, colorSpace options
+- 12 additional pixel formats (I420P10, I420P12, I422P10, I422P12, I444P10, I444P12, NV12P10, RGB565, RGBF16, BGRF16, RGBAF16, BGRAF16)

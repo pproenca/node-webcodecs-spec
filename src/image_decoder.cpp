@@ -34,6 +34,41 @@ static bool IsSupportedType(const std::string& type) {
 }
 
 // =============================================================================
+// ReadableStream Detection Helpers
+// =============================================================================
+
+// Helper to check if a value is a ReadableStream
+static bool IsReadableStream(Napi::Env env, const Napi::Value& value) {
+  if (!value.IsObject()) {
+    return false;
+  }
+
+  Napi::Object obj = value.As<Napi::Object>();
+
+  // Check for getReader method (ReadableStream interface)
+  if (!obj.Has("getReader") || !obj.Get("getReader").IsFunction()) {
+    return false;
+  }
+
+  // Check for locked property (ReadableStream interface)
+  if (!obj.Has("locked")) {
+    return false;
+  }
+
+  return true;
+}
+
+// Helper to check if a ReadableStream is disturbed or locked
+static bool IsStreamDisturbedOrLocked(Napi::Env env, const Napi::Object& stream) {
+  // [SPEC] If data is ReadableStream and is disturbed or locked, return false
+  Napi::Value locked = stream.Get("locked");
+  if (locked.IsBoolean() && locked.As<Napi::Boolean>().Value()) {
+    return true;
+  }
+  return false;
+}
+
+// =============================================================================
 // IMAGEDECODER IMPLEMENTATION
 // =============================================================================
 
@@ -103,34 +138,10 @@ ImageDecoder::ImageDecoder(const Napi::CallbackInfo& info)
 
   // Extract data and enqueue configure message
   Napi::Value data_value = init.Get("data");
-  std::vector<uint8_t> encoded_data;
-
-  if (data_value.IsArrayBuffer()) {
-    Napi::ArrayBuffer buffer = data_value.As<Napi::ArrayBuffer>();
-    encoded_data.resize(buffer.ByteLength());
-    std::memcpy(encoded_data.data(), buffer.Data(), buffer.ByteLength());
-  } else if (data_value.IsTypedArray()) {
-    Napi::TypedArray typed_array = data_value.As<Napi::TypedArray>();
-    Napi::ArrayBuffer buffer = typed_array.ArrayBuffer();
-    size_t offset = typed_array.ByteOffset();
-    size_t length = typed_array.ByteLength();
-    encoded_data.resize(length);
-    std::memcpy(encoded_data.data(), static_cast<uint8_t*>(buffer.Data()) + offset, length);
-  } else if (data_value.IsBuffer()) {
-    Napi::Buffer<uint8_t> buffer = data_value.As<Napi::Buffer<uint8_t>>();
-    encoded_data.resize(buffer.Length());
-    std::memcpy(encoded_data.data(), buffer.Data(), buffer.Length());
-  } else {
-    // TODO: Handle ReadableStream
-    Napi::TypeError::New(env, "data must be ArrayBuffer, TypedArray, or Buffer")
-        .ThrowAsJavaScriptException();
-    return;
-  }
 
   // Build configure message
   ImageConfigureMessage msg;
   msg.type = type_;
-  msg.data = std::move(encoded_data);
 
   // Optional: colorSpaceConversion
   if (init.Has("colorSpaceConversion") && init.Get("colorSpaceConversion").IsString()) {
@@ -152,8 +163,59 @@ ImageDecoder::ImageDecoder(const Napi::CallbackInfo& info)
     msg.prefer_animation = init.Get("preferAnimation").As<Napi::Boolean>().Value();
   }
 
-  // Enqueue configure message
-  (void)queue_.Enqueue(std::move(msg));
+  // [SPEC 10.2.2] Step 17-18: Handle data based on type
+  if (IsReadableStream(env, data_value)) {
+    // [SPEC 10.2.2] Step 17: ReadableStream handling
+    is_streaming_ = true;
+    msg.is_streaming = true;
+    msg.data.clear();  // Data will come via stream
+
+    // Enqueue configure message first
+    (void)queue_.Enqueue(std::move(msg));
+
+    // [SPEC 10.2.2] Step 17.5: Get a reader for data
+    Napi::Object stream = data_value.As<Napi::Object>();
+    Napi::Function getReader = stream.Get("getReader").As<Napi::Function>();
+    Napi::Object reader = getReader.Call(stream, {}).As<Napi::Object>();
+
+    // Store reader reference
+    stream_reader_ref_ = Napi::Reference<Napi::Object>::New(reader, 1);
+
+    // [SPEC 10.2.2] Step 17.6: In parallel, perform Fetch Stream Data Loop
+    StartStreamReadLoop(env);
+  } else {
+    // [SPEC 10.2.2] Step 18: BufferSource handling
+    is_streaming_ = false;
+    msg.is_streaming = false;
+
+    std::vector<uint8_t> encoded_data;
+
+    if (data_value.IsArrayBuffer()) {
+      Napi::ArrayBuffer buffer = data_value.As<Napi::ArrayBuffer>();
+      encoded_data.resize(buffer.ByteLength());
+      std::memcpy(encoded_data.data(), buffer.Data(), buffer.ByteLength());
+    } else if (data_value.IsTypedArray()) {
+      Napi::TypedArray typed_array = data_value.As<Napi::TypedArray>();
+      Napi::ArrayBuffer buffer = typed_array.ArrayBuffer();
+      size_t offset = typed_array.ByteOffset();
+      size_t length = typed_array.ByteLength();
+      encoded_data.resize(length);
+      std::memcpy(encoded_data.data(), static_cast<uint8_t*>(buffer.Data()) + offset, length);
+    } else if (data_value.IsBuffer()) {
+      Napi::Buffer<uint8_t> buffer = data_value.As<Napi::Buffer<uint8_t>>();
+      encoded_data.resize(buffer.Length());
+      std::memcpy(encoded_data.data(), buffer.Data(), buffer.Length());
+    } else {
+      Napi::TypeError::New(env, "data must be ArrayBuffer, TypedArray, Buffer, or ReadableStream")
+          .ThrowAsJavaScriptException();
+      return;
+    }
+
+    msg.data = std::move(encoded_data);
+
+    // Enqueue configure message
+    (void)queue_.Enqueue(std::move(msg));
+  }
 }
 
 ImageDecoder::~ImageDecoder() {
@@ -195,6 +257,11 @@ void ImageDecoder::Release() {
     pending_decodes_.clear();
   }
 
+  // Release stream reader if in streaming mode
+  if (!stream_reader_ref_.IsEmpty()) {
+    stream_reader_ref_.Reset();
+  }
+
   // Clear track list reference
   if (!tracks_ref_.IsEmpty()) {
     ImageTrackList* track_list = ImageTrackList::Unwrap(tracks_ref_.Value());
@@ -213,8 +280,16 @@ bool ImageDecoder::ValidateInit(Napi::Env env, const Napi::Object& init) {
   }
 
   Napi::Value data = init.Get("data");
-  if (!data.IsArrayBuffer() && !data.IsTypedArray() && !data.IsBuffer()) {
-    // TODO: Also allow ReadableStream
+
+  // [SPEC 10.3] Valid ImageDecoderInit validation
+  if (IsReadableStream(env, data)) {
+    // Check if stream is disturbed or locked
+    if (IsStreamDisturbedOrLocked(env, data.As<Napi::Object>())) {
+      Napi::TypeError::New(env, "ReadableStream is disturbed or locked")
+          .ThrowAsJavaScriptException();
+      return false;
+    }
+  } else if (!data.IsArrayBuffer() && !data.IsTypedArray() && !data.IsBuffer()) {
     Napi::TypeError::New(env, "data must be BufferSource or ReadableStream")
         .ThrowAsJavaScriptException();
     return false;
@@ -681,6 +756,135 @@ void ImageDecoder::OnTrackSelectionChanged(int32_t selected_index) {
   ImageUpdateTrackMessage msg;
   msg.selected_index = selected_index;
   (void)queue_.Enqueue(std::move(msg));
+}
+
+// =============================================================================
+// Streaming Support
+// =============================================================================
+
+void ImageDecoder::StartStreamReadLoop(Napi::Env env) {
+  // [SPEC 10.2.5] Fetch Stream Data Loop
+  // Start reading from the stream
+  ContinueStreamRead(env);
+}
+
+void ImageDecoder::ContinueStreamRead(Napi::Env env) {
+  // [SPEC 10.2.5] Fetch Stream Data Loop - read a chunk from reader
+  if (closed_.load(std::memory_order_acquire)) {
+    return;
+  }
+
+  if (stream_reader_ref_.IsEmpty()) {
+    return;
+  }
+
+  Napi::Object reader = stream_reader_ref_.Value();
+  Napi::Function read = reader.Get("read").As<Napi::Function>();
+
+  // reader.read() returns a Promise
+  Napi::Value readPromise = read.Call(reader, {});
+
+  if (!readPromise.IsPromise()) {
+    // Error - close with NotReadableError
+    ImageStreamErrorMessage msg;
+    msg.message = "reader.read() did not return a Promise";
+    (void)queue_.Enqueue(std::move(msg));
+    return;
+  }
+
+  // Set up then/catch handlers on the promise
+  Napi::Promise promise = readPromise.As<Napi::Promise>();
+
+  // Get promise.then
+  Napi::Function thenFn = promise.Get("then").As<Napi::Function>();
+
+  // Create callback functions with 'this' captured in the lambda
+  // Note: We capture 'this' which keeps the ImageDecoder alive
+  auto onFulfilled = Napi::Function::New(env, [this](const Napi::CallbackInfo& info) -> Napi::Value {
+    Napi::Env env = info.Env();
+
+    // Check if closed
+    if (closed_.load(std::memory_order_acquire)) {
+      return env.Undefined();
+    }
+
+    // Parse the read result { value, done }
+    if (info.Length() < 1 || !info[0].IsObject()) {
+      ImageStreamErrorMessage msg;
+      msg.message = "Invalid read result";
+      (void)queue_.Enqueue(std::move(msg));
+      return env.Undefined();
+    }
+
+    Napi::Object result = info[0].As<Napi::Object>();
+    bool done = false;
+    if (result.Has("done") && result.Get("done").IsBoolean()) {
+      done = result.Get("done").As<Napi::Boolean>().Value();
+    }
+
+    if (done) {
+      // [SPEC] close steps: stream ended
+      (void)queue_.Enqueue(ImageStreamEndMessage{});
+      // Release reader reference
+      stream_reader_ref_.Reset();
+      return env.Undefined();
+    }
+
+    // [SPEC] chunk steps
+    Napi::Value valueVal = result.Get("value");
+
+    // [SPEC] If chunk is not a Uint8Array object, close with DataError
+    if (!valueVal.IsTypedArray()) {
+      ImageStreamErrorMessage msg;
+      msg.message = "Stream chunk is not a Uint8Array";
+      (void)queue_.Enqueue(std::move(msg));
+      stream_reader_ref_.Reset();
+      return env.Undefined();
+    }
+
+    Napi::TypedArray typedArray = valueVal.As<Napi::TypedArray>();
+    if (typedArray.TypedArrayType() != napi_uint8_array) {
+      ImageStreamErrorMessage msg;
+      msg.message = "Stream chunk is not a Uint8Array";
+      (void)queue_.Enqueue(std::move(msg));
+      stream_reader_ref_.Reset();
+      return env.Undefined();
+    }
+
+    // [SPEC] Append bytes to [[encoded data]]
+    Napi::Uint8Array uint8Array = valueVal.As<Napi::Uint8Array>();
+    ImageStreamDataMessage dataMsg;
+    dataMsg.chunk.resize(uint8Array.ByteLength());
+    std::memcpy(dataMsg.chunk.data(), uint8Array.Data(), uint8Array.ByteLength());
+    (void)queue_.Enqueue(std::move(dataMsg));
+
+    // [SPEC] Continue the loop
+    ContinueStreamRead(env);
+
+    return env.Undefined();
+  });
+
+  auto onRejected = Napi::Function::New(env, [this](const Napi::CallbackInfo& info) -> Napi::Value {
+    Napi::Env env = info.Env();
+
+    // [SPEC] error steps: close with NotReadableError
+    std::string errorMsg = "Stream read error";
+    if (info.Length() > 0 && info[0].IsObject()) {
+      Napi::Object errorObj = info[0].As<Napi::Object>();
+      if (errorObj.Has("message") && errorObj.Get("message").IsString()) {
+        errorMsg = errorObj.Get("message").As<Napi::String>().Utf8Value();
+      }
+    }
+
+    ImageStreamErrorMessage msg;
+    msg.message = errorMsg;
+    (void)queue_.Enqueue(std::move(msg));
+    stream_reader_ref_.Reset();
+
+    return env.Undefined();
+  });
+
+  thenFn.Call(promise, {onFulfilled, onRejected});
 }
 
 // =============================================================================

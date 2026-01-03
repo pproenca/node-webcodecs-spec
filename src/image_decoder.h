@@ -148,6 +148,23 @@ class ImageDecoder : public Napi::ObjectWrap<ImageDecoder> {
   // --- Configuration (deep copy from init) ---
   std::string type_;
 
+  // --- Streaming Mode State ---
+  bool is_streaming_{false};  // true if data comes from ReadableStream
+  Napi::ObjectReference stream_reader_ref_;  // ReadableStreamDefaultReader
+
+  /**
+   * Start the stream reading loop.
+   * Called when init.data is a ReadableStream.
+   * Reads chunks and sends them to the worker via ImageStreamDataMessage.
+   */
+  void StartStreamReadLoop(Napi::Env env);
+
+  /**
+   * Continue reading from the stream.
+   * Called after each chunk is processed to read the next one.
+   */
+  void ContinueStreamRead(Napi::Env env);
+
   // Attributes
   Napi::Value GetType(const Napi::CallbackInfo& info);
   Napi::Value GetComplete(const Napi::CallbackInfo& info);
