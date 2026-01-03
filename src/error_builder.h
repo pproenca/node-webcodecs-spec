@@ -156,6 +156,17 @@ inline void ThrowAbortError(Napi::Env env, const std::string& message) {
 }
 
 /**
+ * Throw a DataCloneError DOMException.
+ * Used when: attempting to transfer/serialize a detached object.
+ * @see https://www.w3.org/TR/webcodecs/#videoframe-transfer
+ */
+inline void ThrowDataCloneError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "DataCloneError: " + message);
+  error.Set("name", Napi::String::New(env, "DataCloneError"));
+  error.ThrowAsJavaScriptException();
+}
+
+/**
  * Throw a TypeError.
  * Used when: argument type/value is invalid.
  */
@@ -236,6 +247,16 @@ inline Napi::Error CreateEncodingError(Napi::Env env, const std::string& message
 inline Napi::Error CreateDataError(Napi::Env env, const std::string& message) {
   Napi::Error error = Napi::Error::New(env, "DataError: " + message);
   error.Set("name", Napi::String::New(env, "DataError"));
+  return error;
+}
+
+/**
+ * Create a DataCloneError DOMException without throwing.
+ * Used for Promise rejections in transfer/serialization.
+ */
+inline Napi::Error CreateDataCloneError(Napi::Env env, const std::string& message) {
+  Napi::Error error = Napi::Error::New(env, "DataCloneError: " + message);
+  error.Set("name", Napi::String::New(env, "DataCloneError"));
   return error;
 }
 

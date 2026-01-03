@@ -1,5 +1,6 @@
 #pragma once
 #include <napi.h>
+#include <atomic>
 #include <optional>
 #include <string>
 #include "shared/utils.h"
@@ -29,8 +30,8 @@ class AudioData : public Napi::ObjectWrap<AudioData> {
   // Access underlying frame (for encoders)
   const AVFrame* frame() const { return frame_.get(); }
 
-  // Check if closed
-  bool IsClosed() const { return closed_; }
+  // Check if closed (thread-safe)
+  bool IsClosed() const { return closed_.load(std::memory_order_acquire); }
 
   // Public for InstanceOf checks in encoder
   static Napi::FunctionReference constructor;
@@ -41,7 +42,7 @@ class AudioData : public Napi::ObjectWrap<AudioData> {
   raii::AVFramePtr frame_;  // Owns decoded audio samples
   std::string format_;      // WebCodecs AudioSampleFormat
   int64_t timestamp_;       // WebCodecs timestamp (microseconds)
-  bool closed_{false};      // Whether Close() has been called
+  std::atomic<bool> closed_{false};  // [[Detached]] state, thread-safe
 
   // Attributes
   Napi::Value GetFormat(const Napi::CallbackInfo& info);
@@ -56,6 +57,12 @@ class AudioData : public Napi::ObjectWrap<AudioData> {
   Napi::Value CopyTo(const Napi::CallbackInfo& info);
   Napi::Value Clone(const Napi::CallbackInfo& info);
   Napi::Value Close(const Napi::CallbackInfo& info);
+
+  // --- Transfer/Serialization Support ---
+  // W3C WebCodecs spec 9.2.6: Transfer and Serialization
+  // serializeForTransfer(transfer: boolean) - creates a transferable clone
+  // If transfer=true, this AudioData becomes detached (closed)
+  Napi::Value SerializeForTransfer(const Napi::CallbackInfo& info);
 };
 
 }  // namespace webcodecs

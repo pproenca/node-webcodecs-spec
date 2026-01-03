@@ -83,6 +83,11 @@ class ImageDecoder : public Napi::ObjectWrap<ImageDecoder> {
   std::atomic<bool> complete_{false};
   std::atomic<bool> tracks_established_{false};
 
+  // --- Callback Mutex ---
+  // Protects TSFN callback execution against concurrent Release()
+  // MUST be acquired BEFORE checking closed_ in TSFN callbacks
+  mutable std::mutex callback_mutex_;
+
   // --- Data structs for TSFN callbacks ---
   struct DecodeResultData {
     uint32_t promise_id;

@@ -161,10 +161,23 @@ ImageDecoder::~ImageDecoder() {
 }
 
 void ImageDecoder::Release() {
-  // Mark as closed
-  closed_.store(true, std::memory_order_release);
+  // CRITICAL: Proper destructor ordering to prevent TSFN callback race
+  //
+  // The race condition occurs when:
+  // 1. TSFN callback starts executing on JS thread
+  // 2. Destructor runs concurrently, sets closed_, releases resources
+  // 3. Callback accesses freed resources → crash
+  //
+  // Solution: Acquire callback_mutex before setting closed_ and cleaning up.
+  // Any TSFN callback that has already started will complete before we proceed.
 
-  // Stop the worker thread first
+  {
+    std::lock_guard<std::mutex> lock(callback_mutex_);
+    // Mark as closed - TSFN callbacks will see this and exit early
+    closed_.store(true, std::memory_order_release);
+  }
+
+  // Stop the worker thread first (no more callbacks will be enqueued)
   if (worker_) {
     worker_->Stop();
     worker_.reset();
@@ -173,7 +186,7 @@ void ImageDecoder::Release() {
   // Shutdown the queue
   queue_.Shutdown();
 
-  // Release TSFNs
+  // Release TSFNs (safe now - worker is stopped, no callbacks in flight)
   ReleaseTSFNs();
 
   // Reject pending decode promises
@@ -328,7 +341,19 @@ void ImageDecoder::OnDecodeResult(Napi::Env env, Napi::Function /*jsCallback*/,
   // Take ownership of data
   std::unique_ptr<DecodeResultData> data_ptr(data);
 
-  if (!context || context->closed_.load(std::memory_order_acquire)) {
+  // Context pointer check - must be valid
+  if (!context) {
+    if (data->frame) {
+      av_frame_free(&data->frame);
+    }
+    return;
+  }
+
+  // CRITICAL: Acquire callback mutex BEFORE checking closed_
+  // This prevents race with Release() which sets closed_ then cleans up
+  std::lock_guard<std::mutex> callback_lock(context->callback_mutex_);
+
+  if (context->closed_.load(std::memory_order_acquire)) {
     if (data->frame) {
       av_frame_free(&data->frame);
     }
@@ -374,7 +399,15 @@ void ImageDecoder::OnError(Napi::Env env, Napi::Function /*jsCallback*/,
 
   std::unique_ptr<ErrorData> data_ptr(data);
 
-  if (!context || context->closed_.load(std::memory_order_acquire)) {
+  // Context pointer check - must be valid
+  if (!context) {
+    return;
+  }
+
+  // CRITICAL: Acquire callback mutex BEFORE checking closed_
+  std::lock_guard<std::mutex> callback_lock(context->callback_mutex_);
+
+  if (context->closed_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -410,7 +443,15 @@ void ImageDecoder::OnTracksReady(Napi::Env env, Napi::Function /*jsCallback*/,
 
   std::unique_ptr<TracksReadyData> data_ptr(data);
 
-  if (!context || context->closed_.load(std::memory_order_acquire)) {
+  // Context pointer check - must be valid
+  if (!context) {
+    return;
+  }
+
+  // CRITICAL: Acquire callback mutex BEFORE checking closed_
+  std::lock_guard<std::mutex> callback_lock(context->callback_mutex_);
+
+  if (context->closed_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -457,7 +498,15 @@ void ImageDecoder::OnTracksReady(Napi::Env env, Napi::Function /*jsCallback*/,
 
 void ImageDecoder::OnCompleted(Napi::Env env, Napi::Function /*jsCallback*/,
                                 ImageDecoder* context, void** /*data*/) {
-  if (!context || context->closed_.load(std::memory_order_acquire)) {
+  // Context pointer check - must be valid
+  if (!context) {
+    return;
+  }
+
+  // CRITICAL: Acquire callback mutex BEFORE checking closed_
+  std::lock_guard<std::mutex> callback_lock(context->callback_mutex_);
+
+  if (context->closed_.load(std::memory_order_acquire)) {
     return;
   }
 

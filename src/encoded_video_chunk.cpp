@@ -16,6 +16,7 @@ Napi::Object EncodedVideoChunk::Init(Napi::Env env, Napi::Object exports) {
                                         InstanceAccessor<&EncodedVideoChunk::GetDuration>("duration"),
                                         InstanceAccessor<&EncodedVideoChunk::GetByteLength>("byteLength"),
                                         InstanceMethod<&EncodedVideoChunk::CopyTo>("copyTo"),
+                                        InstanceMethod<&EncodedVideoChunk::SerializeForTransfer>("serializeForTransfer"),
                                     });
 
   constructor = Napi::Persistent(func);
@@ -238,6 +239,27 @@ Napi::Value EncodedVideoChunk::CopyTo(const Napi::CallbackInfo& info) {
   std::memcpy(dest_data, packet_->data, required_size);
 
   return env.Undefined();
+}
+
+Napi::Value EncodedVideoChunk::SerializeForTransfer(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // EncodedVideoChunk is immutable - it doesn't have close() or [[Detached]]
+  // Transfer/serialization both just create a clone (via av_packet_ref)
+  //
+  // The 'transfer' parameter is accepted for API consistency but has no effect
+  // since EncodedVideoChunk doesn't support detachment.
+
+  if (!packet_ || !packet_->data) {
+    errors::ThrowDataCloneError(env, "EncodedVideoChunk has no data");
+    return env.Undefined();
+  }
+
+  // Clone via CreateFromPacket (which creates a new EncodedVideoChunk)
+  // This uses av_new_packet and memcpy internally - we could optimize with
+  // av_packet_ref if we add an internal factory, but this works correctly
+  bool is_key = (packet_->flags & AV_PKT_FLAG_KEY) != 0;
+  return CreateFromPacket(env, packet_.get(), is_key, timestamp_);
 }
 
 }  // namespace webcodecs

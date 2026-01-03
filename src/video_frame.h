@@ -49,6 +49,11 @@ class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
   // Once closed, all accessors return null/throw
   std::atomic<bool> closed_{false};
 
+  // --- Metadata Internal Slot ---
+  // [SPEC] [[metadata]] - VideoFrameMetadata dictionary
+  // Stored as persistent reference to allow structured cloning on access
+  Napi::Reference<Napi::Object> metadata_;
+
   // Attributes
   Napi::Value GetFormat(const Napi::CallbackInfo& info);
   Napi::Value GetCodedWidth(const Napi::CallbackInfo& info);
@@ -69,6 +74,12 @@ class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
   Napi::Value CopyTo(const Napi::CallbackInfo& info);
   Napi::Value Clone(const Napi::CallbackInfo& info);
   Napi::Value Close(const Napi::CallbackInfo& info);
+
+  // --- Transfer/Serialization Support ---
+  // W3C WebCodecs spec 9.4.7: Transfer and Serialization
+  // serializeForTransfer(transfer: boolean) - creates a transferable clone
+  // If transfer=true, this frame becomes detached (closed)
+  Napi::Value SerializeForTransfer(const Napi::CallbackInfo& info);
 };
 
 }  // namespace webcodecs

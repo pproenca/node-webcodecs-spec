@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "error_builder.h"
 #include "shared/buffer_utils.h"
 
 namespace webcodecs {
@@ -16,6 +17,7 @@ Napi::Object EncodedAudioChunk::Init(Napi::Env env, Napi::Object exports) {
                                         InstanceAccessor<&EncodedAudioChunk::GetDuration>("duration"),
                                         InstanceAccessor<&EncodedAudioChunk::GetByteLength>("byteLength"),
                                         InstanceMethod<&EncodedAudioChunk::CopyTo>("copyTo"),
+                                        InstanceMethod<&EncodedAudioChunk::SerializeForTransfer>("serializeForTransfer"),
                                     });
 
   constructor = Napi::Persistent(func);
@@ -30,7 +32,12 @@ EncodedAudioChunk::EncodedAudioChunk(const Napi::CallbackInfo& info) : Napi::Obj
   // [SPEC] Constructor accepts EncodedAudioChunkInit
   // { type: "key"|"delta", timestamp: number, duration?: number, data: BufferSource }
 
-  if (info.Length() < 1 || !info[0].IsObject()) {
+  // Internal construction - packet_ will be set by CreateFromPacket
+  if (info.Length() == 0) {
+    return;
+  }
+
+  if (!info[0].IsObject()) {
     Napi::TypeError::New(env, "EncodedAudioChunkInit is required").ThrowAsJavaScriptException();
     return;
   }
@@ -221,6 +228,25 @@ Napi::Value EncodedAudioChunk::CopyTo(const Napi::CallbackInfo& info) {
 
   std::memcpy(dest_data, packet_->data, required);
   return env.Undefined();
+}
+
+Napi::Value EncodedAudioChunk::SerializeForTransfer(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // EncodedAudioChunk is immutable - it doesn't have close() or [[Detached]]
+  // Transfer/serialization both just create a clone (via av_packet_ref)
+  //
+  // The 'transfer' parameter is accepted for API consistency but has no effect
+  // since EncodedAudioChunk doesn't support detachment.
+
+  if (!packet_ || !packet_->data) {
+    errors::ThrowDataCloneError(env, "EncodedAudioChunk has no data");
+    return env.Undefined();
+  }
+
+  // Clone via CreateFromPacket (which uses av_packet_ref)
+  bool is_key = (packet_->flags & AV_PKT_FLAG_KEY) != 0;
+  return CreateFromPacket(env, packet_.get(), is_key, timestamp_);
 }
 
 }  // namespace webcodecs

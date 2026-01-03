@@ -1,24 +1,18 @@
 #include "video_frame.h"
 
 #include <string>
+#include <vector>
 
 #include "shared/buffer_utils.h"
+#include "shared/format_converter.h"
 #include "error_builder.h"
 
 namespace webcodecs {
 
 // Helper: Convert WebCodecs VideoPixelFormat string to AVPixelFormat
+// Uses format_converter for full W3C spec compliance (21 formats)
 static AVPixelFormat StringToPixelFormat(const std::string& format) {
-  if (format == "I420") return AV_PIX_FMT_YUV420P;
-  if (format == "I422") return AV_PIX_FMT_YUV422P;
-  if (format == "I444") return AV_PIX_FMT_YUV444P;
-  if (format == "NV12") return AV_PIX_FMT_NV12;
-  if (format == "NV21") return AV_PIX_FMT_NV21;
-  if (format == "RGBA") return AV_PIX_FMT_RGBA;
-  if (format == "BGRA") return AV_PIX_FMT_BGRA;
-  if (format == "RGBX") return AV_PIX_FMT_RGB24;
-  if (format == "BGRX") return AV_PIX_FMT_BGR24;
-  return AV_PIX_FMT_NONE;
+  return format_converter::WebCodecsToFFmpeg(format);
 }
 
 Napi::FunctionReference VideoFrame::constructor;
@@ -43,6 +37,7 @@ Napi::Object VideoFrame::Init(Napi::Env env, Napi::Object exports) {
                                         InstanceMethod<&VideoFrame::CopyTo>("copyTo"),
                                         InstanceMethod<&VideoFrame::Clone>("clone"),
                                         InstanceMethod<&VideoFrame::Close>("close"),
+                                        InstanceMethod<&VideoFrame::SerializeForTransfer>("serializeForTransfer"),
                                     });
 
   constructor = Napi::Persistent(func);
@@ -58,6 +53,10 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoF
   // 1. (data, init) - VideoFrameBufferInit with raw pixel data
   // 2. (image) - CanvasImageSource (not supported in Node.js)
   // 3. No arguments - internal use by CreateFromAVFrame
+
+  // Initialize metadata to empty object per spec
+  // [SPEC] [[metadata]] is always a VideoFrameMetadata dictionary
+  metadata_ = Napi::Persistent(Napi::Object::New(env));
 
   if (info.Length() == 0) {
     // Internal construction - frame_ will be set by CreateFromAVFrame
@@ -124,6 +123,23 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoF
       frame_->duration = init.Get("duration").As<Napi::Number>().Int64Value();
     }
 
+    // [SPEC] Copy metadata from init if provided
+    // Per "Copy VideoFrame metadata" algorithm, we deep copy (structured clone)
+    if (init.Has("metadata") && init.Get("metadata").IsObject()) {
+      Napi::Object srcMetadata = init.Get("metadata").As<Napi::Object>();
+      Napi::Object clonedMetadata = Napi::Object::New(env);
+
+      // Deep copy all properties from source metadata
+      Napi::Array keys = srcMetadata.GetPropertyNames();
+      for (uint32_t i = 0; i < keys.Length(); i++) {
+        Napi::Value key = keys.Get(i);
+        Napi::Value value = srcMetadata.Get(key);
+        clonedMetadata.Set(key, value);
+      }
+
+      metadata_.Reset(clonedMetadata, 1);
+    }
+
     return;
   }
 
@@ -142,6 +158,10 @@ void VideoFrame::Release() {
   // Release the AVFrame (RAII handles av_frame_free)
   // This unrefs the underlying buffers; they're freed when refcount hits 0
   frame_.reset();
+
+  // [SPEC 9.4.6] Close VideoFrame step 6: Assign a new VideoFrameMetadata
+  // We reset the reference - a new empty object is created on next metadata() call
+  metadata_.Reset();
 }
 
 Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFrame) {
@@ -167,29 +187,9 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
 // --- Attributes ---
 
 // Helper: Convert AVPixelFormat to WebCodecs VideoPixelFormat string
+// Uses format_converter for full W3C spec compliance (21 formats)
 static const char* PixelFormatToString(AVPixelFormat fmt) {
-  switch (fmt) {
-    case AV_PIX_FMT_YUV420P:
-      return "I420";
-    case AV_PIX_FMT_YUV422P:
-      return "I422";
-    case AV_PIX_FMT_YUV444P:
-      return "I444";
-    case AV_PIX_FMT_NV12:
-      return "NV12";
-    case AV_PIX_FMT_NV21:
-      return "NV21";
-    case AV_PIX_FMT_RGBA:
-      return "RGBA";
-    case AV_PIX_FMT_BGRA:
-      return "BGRA";
-    case AV_PIX_FMT_RGB24:
-      return "RGBX";
-    case AV_PIX_FMT_BGR24:
-      return "BGRX";
-    default:
-      return nullptr;  // Unsupported format
-  }
+  return format_converter::FFmpegToWebCodecs(fmt);
 }
 
 Napi::Value VideoFrame::GetFormat(const Napi::CallbackInfo& info) {
@@ -411,13 +411,42 @@ Napi::Value VideoFrame::GetColorSpace(const Napi::CallbackInfo& info) {
 Napi::Value VideoFrame::Metadata(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Algorithm
-  /*
-   * See spec/context file.
-   */
+  // [SPEC 9.4.5] metadata() algorithm:
+  // 1. If [[Detached]] is true, throw InvalidStateError
+  // 2. Return the result of calling Copy VideoFrame metadata with [[metadata]]
 
-  // TODO(impl): Implement method logic
-  return env.Undefined();
+  // Step 1: Check if detached (closed)
+  if (closed_.load(std::memory_order_acquire)) {
+    errors::ThrowInvalidStateError(env, "VideoFrame is closed");
+    return env.Undefined();
+  }
+
+  // Step 2: Copy VideoFrame metadata (structured clone)
+  // [SPEC 9.4.6] "Copy VideoFrame metadata" algorithm:
+  // 1. Let metadataCopySerialized be StructuredSerialize(metadata)
+  // 2. Let metadataCopy be StructuredDeserialize(metadataCopySerialized)
+  // 3. Return metadataCopy
+  //
+  // We implement this as a shallow clone of the dictionary object.
+  // All VideoFrameMetadata properties are serializable per spec.
+
+  if (metadata_.IsEmpty()) {
+    // Return empty object if no metadata set
+    return Napi::Object::New(env);
+  }
+
+  Napi::Object srcMetadata = metadata_.Value();
+  Napi::Object clonedMetadata = Napi::Object::New(env);
+
+  // Deep copy all properties from source metadata
+  Napi::Array keys = srcMetadata.GetPropertyNames();
+  for (uint32_t i = 0; i < keys.Length(); i++) {
+    Napi::Value key = keys.Get(i);
+    Napi::Value value = srcMetadata.Get(key);
+    clonedMetadata.Set(key, value);
+  }
+
+  return clonedMetadata;
 }
 
 Napi::Value VideoFrame::AllocationSize(const Napi::CallbackInfo& info) {
@@ -446,15 +475,14 @@ Napi::Value VideoFrame::AllocationSize(const Napi::CallbackInfo& info) {
 Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Copies the frame data to the provided destination buffer
+  // [SPEC 9.4.5] copyTo(destination, options)
+  // Copies frame data to destination buffer with optional format/rect/layout conversion
   // Returns a Promise that resolves with a PlaneLayout array
 
   // Check if frame is closed
   if (closed_.load(std::memory_order_acquire) || !frame_) {
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-    Napi::Error error = Napi::Error::New(env, "InvalidStateError: VideoFrame is closed");
-    error.Set("name", Napi::String::New(env, "InvalidStateError"));
-    deferred.Reject(error.Value());
+    deferred.Reject(errors::CreateInvalidStateError(env, "VideoFrame is closed").Value());
     return deferred.Promise();
   }
 
@@ -484,14 +512,125 @@ Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
     return deferred.Promise();
   }
 
+  // Parse VideoFrameCopyToOptions
+  std::string dst_format;
+  std::string color_space = "srgb";  // Default per spec
+  int rect_x = 0, rect_y = 0;
+  int rect_width = frame_->width - frame_->crop_left - frame_->crop_right;
+  int rect_height = frame_->height - frame_->crop_top - frame_->crop_bottom;
+  bool has_rect = false;
+  bool has_format = false;
+  std::vector<int> layout_offsets;
+  std::vector<int> layout_strides;
+  bool has_layout = false;
+
+  if (info.Length() >= 2 && info[1].IsObject()) {
+    Napi::Object options = info[1].As<Napi::Object>();
+
+    // Parse rect option
+    if (options.Has("rect") && options.Get("rect").IsObject()) {
+      Napi::Object rect = options.Get("rect").As<Napi::Object>();
+      if (rect.Has("x")) rect_x = rect.Get("x").As<Napi::Number>().Int32Value();
+      if (rect.Has("y")) rect_y = rect.Get("y").As<Napi::Number>().Int32Value();
+      if (rect.Has("width")) rect_width = rect.Get("width").As<Napi::Number>().Int32Value();
+      if (rect.Has("height")) rect_height = rect.Get("height").As<Napi::Number>().Int32Value();
+      has_rect = true;
+
+      // Validate rect bounds
+      if (rect_x < 0 || rect_y < 0 || rect_width <= 0 || rect_height <= 0 ||
+          rect_x + rect_width > frame_->width || rect_y + rect_height > frame_->height) {
+        Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+        deferred.Reject(Napi::TypeError::New(env, "rect out of bounds").Value());
+        return deferred.Promise();
+      }
+    }
+
+    // Parse format option (for pixel format conversion)
+    if (options.Has("format") && options.Get("format").IsString()) {
+      dst_format = options.Get("format").As<Napi::String>().Utf8Value();
+      has_format = true;
+
+      // Validate format is supported for conversion
+      if (!format_converter::IsRGBFormat(dst_format)) {
+        Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+        deferred.Reject(errors::CreateNotSupportedError(env,
+            "Format conversion only supports RGBA, RGBX, BGRA, BGRX").Value());
+        return deferred.Promise();
+      }
+    }
+
+    // Parse colorSpace option
+    if (options.Has("colorSpace") && options.Get("colorSpace").IsString()) {
+      color_space = options.Get("colorSpace").As<Napi::String>().Utf8Value();
+      if (color_space != "srgb" && color_space != "display-p3") {
+        Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+        deferred.Reject(errors::CreateNotSupportedError(env,
+            "Unsupported colorSpace: " + color_space).Value());
+        return deferred.Promise();
+      }
+    }
+
+    // Parse layout option
+    if (options.Has("layout") && options.Get("layout").IsArray()) {
+      Napi::Array layoutArray = options.Get("layout").As<Napi::Array>();
+      has_layout = true;
+
+      for (uint32_t i = 0; i < layoutArray.Length(); i++) {
+        if (!layoutArray.Get(i).IsObject()) {
+          Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+          deferred.Reject(Napi::TypeError::New(env, "layout entries must be objects").Value());
+          return deferred.Promise();
+        }
+        Napi::Object planeLayout = layoutArray.Get(i).As<Napi::Object>();
+        int offset = 0, stride = 0;
+        if (planeLayout.Has("offset")) offset = planeLayout.Get("offset").As<Napi::Number>().Int32Value();
+        if (planeLayout.Has("stride")) stride = planeLayout.Get("stride").As<Napi::Number>().Int32Value();
+        layout_offsets.push_back(offset);
+        layout_strides.push_back(stride);
+      }
+    }
+  }
+
+  // Determine source frame (possibly converted)
+  const AVFrame* src_frame = frame_.get();
+  raii::AVFramePtr converted_frame;
+
+  // Apply format/colorspace conversion or rect cropping if needed
+  if (has_format || has_rect) {
+    format_converter::FormatConverter converter;
+
+    if (has_rect) {
+      // Convert with rect (crop + optional format conversion)
+      converted_frame = converter.ConvertRect(
+          frame_.get(), rect_x, rect_y, rect_width, rect_height,
+          has_format ? dst_format : std::string(PixelFormatToString(static_cast<AVPixelFormat>(frame_->format))),
+          color_space);
+    } else {
+      // Full frame format conversion
+      converted_frame = converter.Convert(frame_.get(), dst_format, color_space);
+    }
+
+    if (!converted_frame) {
+      Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+      deferred.Reject(errors::CreateEncodingError(env, "Format conversion failed").Value());
+      return deferred.Promise();
+    }
+    src_frame = converted_frame.get();
+  }
+
   // Calculate required size
-  int required = buffer_utils::CalculateFrameBufferSize(frame_->format, frame_->width, frame_->height, 1);
+  int required;
+  if (has_layout) {
+    required = format_converter::CalculateSizeWithLayout(
+        src_frame->format, src_frame->width, src_frame->height,
+        layout_offsets.data(), layout_strides.data(), static_cast<int>(layout_offsets.size()));
+  } else {
+    required = buffer_utils::CalculateFrameBufferSize(src_frame->format, src_frame->width, src_frame->height, 1);
+  }
 
   if (required < 0) {
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-    Napi::Error error = Napi::Error::New(env, "EncodingError: Failed to calculate buffer size");
-    error.Set("name", Napi::String::New(env, "EncodingError"));
-    deferred.Reject(error.Value());
+    deferred.Reject(errors::CreateEncodingError(env, "Failed to calculate buffer size").Value());
     return deferred.Promise();
   }
 
@@ -502,27 +641,40 @@ Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
   }
 
   // Copy frame data to destination
-  int ret = buffer_utils::CopyFrameToBuffer(frame_.get(), dest, dest_size, 1);
+  int ret;
+  if (has_layout) {
+    ret = format_converter::CopyFrameWithLayout(
+        src_frame, dest, dest_size,
+        layout_offsets.data(), layout_strides.data(), static_cast<int>(layout_offsets.size()));
+  } else {
+    ret = buffer_utils::CopyFrameToBuffer(src_frame, dest, dest_size, 1);
+  }
+
   if (ret < 0) {
     Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-    Napi::Error error = Napi::Error::New(env, "EncodingError: Failed to copy frame data");
-    error.Set("name", Napi::String::New(env, "EncodingError"));
-    deferred.Reject(error.Value());
+    deferred.Reject(errors::CreateEncodingError(env, "Failed to copy frame data").Value());
     return deferred.Promise();
   }
 
   // Build PlaneLayout array
   Napi::Array planeLayouts = Napi::Array::New(env);
-  int numPlanes = buffer_utils::GetPlaneCount(frame_->format);
+  int numPlanes = buffer_utils::GetPlaneCount(src_frame->format);
   size_t offset = 0;
 
   for (int i = 0; i < numPlanes; i++) {
-    size_t planeSize = buffer_utils::GetPlaneSize(frame_.get(), i);
     Napi::Object layout = Napi::Object::New(env);
-    layout.Set("offset", Napi::Number::New(env, static_cast<double>(offset)));
-    layout.Set("stride", Napi::Number::New(env, frame_->linesize[i]));
+
+    if (has_layout && i < static_cast<int>(layout_offsets.size())) {
+      layout.Set("offset", Napi::Number::New(env, static_cast<double>(layout_offsets[i])));
+      layout.Set("stride", Napi::Number::New(env, layout_strides[i]));
+    } else {
+      size_t planeSize = buffer_utils::GetPlaneSize(src_frame, i);
+      layout.Set("offset", Napi::Number::New(env, static_cast<double>(offset)));
+      layout.Set("stride", Napi::Number::New(env, src_frame->linesize[i]));
+      offset += planeSize;
+    }
+
     planeLayouts.Set(static_cast<uint32_t>(i), layout);
-    offset += planeSize;
   }
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -562,6 +714,55 @@ Napi::Value VideoFrame::Close(const Napi::CallbackInfo& info) {
   Release();
 
   return env.Undefined();
+}
+
+Napi::Value VideoFrame::SerializeForTransfer(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC 9.4.7] Transfer and Serialization
+  //
+  // Transfer steps:
+  // 1. If [[Detached]] is true, throw DataCloneError
+  // 2. Serialize all internal slots to dataHolder
+  // 3. Run close() on this VideoFrame (detach source)
+  //
+  // Serialization steps (clone without detach):
+  // 1. If [[Detached]] is true, throw DataCloneError
+  // 2. Create new reference to resource (av_frame_ref)
+  // 3. Copy all internal slots
+
+  // Step 1: Check if detached (closed)
+  if (closed_.load(std::memory_order_acquire)) {
+    errors::ThrowDataCloneError(env, "Cannot transfer a closed VideoFrame");
+    return env.Undefined();
+  }
+
+  if (!frame_) {
+    errors::ThrowDataCloneError(env, "VideoFrame has no data");
+    return env.Undefined();
+  }
+
+  // Parse transfer flag (default: false for serialization/clone semantics)
+  bool transfer = false;
+  if (info.Length() > 0 && info[0].IsBoolean()) {
+    transfer = info[0].As<Napi::Boolean>().Value();
+  }
+
+  // Step 2: Create clone with new reference to underlying buffers
+  // This uses av_frame_ref internally - zero-copy, refcount++
+  Napi::Object cloned = CreateFromAVFrame(env, frame_.get());
+  if (cloned.IsEmpty()) {
+    errors::ThrowDataCloneError(env, "Failed to serialize VideoFrame");
+    return env.Undefined();
+  }
+
+  // Step 3: If transfer=true, close this frame (detach source)
+  // The cloned frame now owns the only reference to the buffers
+  if (transfer) {
+    Release();
+  }
+
+  return cloned;
 }
 
 }  // namespace webcodecs

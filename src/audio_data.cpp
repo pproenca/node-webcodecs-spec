@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "error_builder.h"
+
 namespace webcodecs {
 
 Napi::FunctionReference AudioData::constructor;
@@ -44,6 +46,7 @@ Napi::Object AudioData::Init(Napi::Env env, Napi::Object exports) {
                                         InstanceMethod<&AudioData::CopyTo>("copyTo"),
                                         InstanceMethod<&AudioData::Clone>("clone"),
                                         InstanceMethod<&AudioData::Close>("close"),
+                                        InstanceMethod<&AudioData::SerializeForTransfer>("serializeForTransfer"),
                                     });
 
   constructor = Napi::Persistent(func);
@@ -70,9 +73,10 @@ AudioData::AudioData(const Napi::CallbackInfo& info) : Napi::ObjectWrap<AudioDat
 AudioData::~AudioData() { Release(); }
 
 void AudioData::Release() {
+  // Mark as closed (atomic, thread-safe)
+  closed_.store(true, std::memory_order_release);
   // Release frame (RAII handles av_frame_unref)
   frame_.reset();
-  closed_ = true;
 }
 
 Napi::Object AudioData::CreateFromFrame(Napi::Env env, const AVFrame* frame, int64_t timestamp_us) {
@@ -103,21 +107,21 @@ Napi::Object AudioData::CreateFromFrame(Napi::Env env, const AVFrame* frame, int
 // --- Attributes ---
 
 Napi::Value AudioData::GetFormat(const Napi::CallbackInfo& info) {
-  if (closed_ || !frame_) {
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
     return info.Env().Null();
   }
   return Napi::String::New(info.Env(), format_);
 }
 
 Napi::Value AudioData::GetSampleRate(const Napi::CallbackInfo& info) {
-  if (closed_ || !frame_) {
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
     return info.Env().Null();
   }
   return Napi::Number::New(info.Env(), frame_->sample_rate);
 }
 
 Napi::Value AudioData::GetNumberOfFrames(const Napi::CallbackInfo& info) {
-  if (closed_ || !frame_) {
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
     return info.Env().Null();
   }
   // In FFmpeg, nb_samples is the number of audio samples per channel
@@ -125,7 +129,7 @@ Napi::Value AudioData::GetNumberOfFrames(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value AudioData::GetNumberOfChannels(const Napi::CallbackInfo& info) {
-  if (closed_ || !frame_) {
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
     return info.Env().Null();
   }
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
@@ -136,7 +140,7 @@ Napi::Value AudioData::GetNumberOfChannels(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value AudioData::GetDuration(const Napi::CallbackInfo& info) {
-  if (closed_ || !frame_) {
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
     return info.Env().Null();
   }
   // Duration in microseconds = (nb_samples / sample_rate) * 1_000_000
@@ -148,7 +152,7 @@ Napi::Value AudioData::GetDuration(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value AudioData::GetTimestamp(const Napi::CallbackInfo& info) {
-  if (closed_) {
+  if (closed_.load(std::memory_order_acquire)) {
     return info.Env().Null();
   }
   return Napi::Number::New(info.Env(), static_cast<double>(timestamp_));
@@ -159,8 +163,8 @@ Napi::Value AudioData::GetTimestamp(const Napi::CallbackInfo& info) {
 Napi::Value AudioData::AllocationSize(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  if (closed_ || !frame_) {
-    Napi::Error::New(env, "InvalidStateError: AudioData is closed").ThrowAsJavaScriptException();
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
+    errors::ThrowInvalidStateError(env, "AudioData is closed");
     return env.Undefined();
   }
 
@@ -183,8 +187,8 @@ Napi::Value AudioData::AllocationSize(const Napi::CallbackInfo& info) {
 Napi::Value AudioData::CopyTo(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  if (closed_ || !frame_) {
-    Napi::Error::New(env, "InvalidStateError: AudioData is closed").ThrowAsJavaScriptException();
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
+    errors::ThrowInvalidStateError(env, "AudioData is closed");
     return env.Undefined();
   }
 
@@ -254,8 +258,8 @@ Napi::Value AudioData::CopyTo(const Napi::CallbackInfo& info) {
 Napi::Value AudioData::Clone(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  if (closed_ || !frame_) {
-    Napi::Error::New(env, "InvalidStateError: AudioData is closed").ThrowAsJavaScriptException();
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
+    errors::ThrowInvalidStateError(env, "AudioData is closed");
     return env.Undefined();
   }
 
@@ -269,6 +273,55 @@ Napi::Value AudioData::Close(const Napi::CallbackInfo& info) {
   Release();
 
   return env.Undefined();
+}
+
+Napi::Value AudioData::SerializeForTransfer(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // [SPEC 9.2.6] Transfer and Serialization
+  //
+  // Transfer steps:
+  // 1. If [[Detached]] is true, throw DataCloneError
+  // 2. Serialize all internal slots to dataHolder
+  // 3. Run close() on this AudioData (detach source)
+  //
+  // Serialization steps (clone without detach):
+  // 1. If [[Detached]] is true, throw DataCloneError
+  // 2. Create new reference to resource (av_frame_ref)
+  // 3. Copy all internal slots
+
+  // Step 1: Check if detached (closed)
+  if (closed_.load(std::memory_order_acquire)) {
+    errors::ThrowDataCloneError(env, "Cannot transfer a closed AudioData");
+    return env.Undefined();
+  }
+
+  if (!frame_) {
+    errors::ThrowDataCloneError(env, "AudioData has no data");
+    return env.Undefined();
+  }
+
+  // Parse transfer flag (default: false for serialization/clone semantics)
+  bool transfer = false;
+  if (info.Length() > 0 && info[0].IsBoolean()) {
+    transfer = info[0].As<Napi::Boolean>().Value();
+  }
+
+  // Step 2: Create clone with new reference to underlying buffers
+  // This uses av_frame_ref internally - zero-copy, refcount++
+  Napi::Object cloned = CreateFromFrame(env, frame_.get(), timestamp_);
+  if (cloned.IsEmpty()) {
+    errors::ThrowDataCloneError(env, "Failed to serialize AudioData");
+    return env.Undefined();
+  }
+
+  // Step 3: If transfer=true, close this AudioData (detach source)
+  // The cloned AudioData now owns the only reference to the buffers
+  if (transfer) {
+    Release();
+  }
+
+  return cloned;
 }
 
 }  // namespace webcodecs

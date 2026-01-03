@@ -47,6 +47,11 @@ class EncodedVideoChunk : public Napi::ObjectWrap<EncodedVideoChunk> {
 
   // Methods
   Napi::Value CopyTo(const Napi::CallbackInfo& info);
+
+  // --- Transfer/Serialization Support ---
+  // EncodedVideoChunk is immutable, so transfer = serialization (clone)
+  // Unlike VideoFrame/AudioData, there's no close() and no [[Detached]] state
+  Napi::Value SerializeForTransfer(const Napi::CallbackInfo& info);
 };
 
 }  // namespace webcodecs
