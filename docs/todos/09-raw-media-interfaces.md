@@ -49,7 +49,7 @@
 - [x] Write failing tests for AudioData
 - [x] Confirm tests fail (RED)
 - [x] Implement AudioData:
-  - [ ] Constructor(init: AudioDataInit) - **NOT IMPLEMENTED**
+  - [x] Constructor(init: AudioDataInit) - **IMPLEMENTED (2026-01-03)**
   - [x] Internal slots:
     - [x] `[[resource reference]]`
     - [x] `[[format]]` (AudioSampleFormat or null)
@@ -77,7 +77,7 @@
   - [x] `s16` (signed 16-bit)
   - [x] `s32` (signed 32-bit)
   - [x] `f32` (float 32-bit)
-  - [ ] `u8-planar`, `s16-planar`, `s32-planar`, `f32-planar` - **NOT DISTINCT in format string**
+  - [x] `u8-planar`, `s16-planar`, `s32-planar`, `f32-planar` - **IMPLEMENTED (2026-01-03)**
 - [x] Map to FFmpeg AV_SAMPLE_FMT_*
 - [x] Confirm tests pass (GREEN)
 - [x] Refactor if needed (BLUE)
@@ -200,26 +200,26 @@
 - [x] Write artifact summary
 
 ### 3.12 Transfer and Serialization
-- [ ] Write failing tests for transfer/serialize
-- [ ] Confirm tests fail (RED)
-- [ ] Implement Transferable:
-  - [ ] Transfer moves resource reference to destination - **NOT IMPLEMENTED**
-  - [ ] Source becomes closed after transfer
-- [ ] Implement Serializable:
-  - [ ] Serialize clones the resource reference - **NOT IMPLEMENTED**
-  - [ ] Both objects share same underlying resource
-- [ ] Confirm tests pass (GREEN)
-- [ ] Refactor if needed (BLUE)
-- [ ] Write artifact summary
+- [x] Write failing tests for transfer/serialize
+- [x] Confirm tests fail (RED)
+- [x] Implement Transferable:
+  - [x] Transfer moves resource reference to destination - **IMPLEMENTED (2026-01-03)**
+  - [x] Source becomes closed after transfer
+- [x] Implement Serializable:
+  - [x] Serialize clones the resource reference - **IMPLEMENTED (2026-01-03)**
+  - [x] Both objects share same underlying resource
+- [x] Confirm tests pass (GREEN)
+- [x] Refactor if needed (BLUE)
+- [x] Write artifact summary
 
 ### 3.13 metadata() Method
-- [ ] Write failing tests for metadata
-- [ ] Confirm tests fail (RED)
-- [ ] Implement VideoFrame.metadata():
-  - [ ] Return VideoFrameMetadata dictionary - **STUB (returns undefined)**
-- [ ] Confirm tests pass (GREEN)
-- [ ] Refactor if needed (BLUE)
-- [ ] Write artifact summary
+- [x] Write failing tests for metadata
+- [x] Confirm tests fail (RED)
+- [x] Implement VideoFrame.metadata():
+  - [x] Return VideoFrameMetadata dictionary - **IMPLEMENTED (2026-01-03)**
+- [x] Confirm tests pass (GREEN)
+- [x] Refactor if needed (BLUE)
+- [x] Write artifact summary
 
 ## Phase 4: Integration
 - [ ] Verify all components work together
@@ -254,17 +254,17 @@
 ## Missing Features (P3)
 
 ### AudioData
-- Constructor from AudioDataInit
-- Planar format string distinction (u8-planar vs u8)
+- ~~Constructor from AudioDataInit~~ **DONE**
+- ~~Planar format string distinction (u8-planar vs u8)~~ **DONE**
 - Full copyTo options support (format conversion)
 
 ### VideoFrame
 - Constructor from CanvasImageSource (not applicable in Node.js)
 - Constructor from BufferSource with full options (layout, rotation, flip)
 - copyTo with rect, layout, format, colorSpace options
-- metadata() method (currently returns undefined)
+- ~~metadata() method~~ **DONE**
 - 12 additional pixel formats
-- Transfer and Serialization support
+- ~~Transfer and Serialization support~~ **DONE**
 
 ## Notes
 - Use RAII from `ffmpeg_raii.h` for AVFrame management
