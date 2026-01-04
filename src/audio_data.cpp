@@ -325,6 +325,103 @@ Napi::Value AudioData::GetTimestamp(const Napi::CallbackInfo& info) {
 
 // --- Methods ---
 
+/**
+ * Helper: Compute Copy Element Count (with options)
+ * Per W3C WebCodecs spec section 9.2.5
+ *
+ * Returns the element count, or -1 on error (throws JS exception).
+ */
+static int ComputeCopyElementCount(Napi::Env env, const AVFrame* frame,
+                                   const std::string& src_format,
+                                   const Napi::Object& options,
+                                   std::string& out_dest_format) {
+  // Get number of channels
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+  int num_channels = frame->ch_layout.nb_channels;
+#else
+  int num_channels = frame->channels;
+#endif
+  int num_frames = frame->nb_samples;
+
+  // Step 1-2: destFormat defaults to [[format]], may be overridden by options.format
+  out_dest_format = src_format;
+  if (options.Has("format") && options.Get("format").IsString()) {
+    out_dest_format = options.Get("format").As<Napi::String>().Utf8Value();
+  }
+
+  // Determine if dest format is planar or interleaved
+  bool dest_is_planar = (out_dest_format.find("-planar") != std::string::npos);
+
+  // Step 3: Validate planeIndex (required)
+  if (!options.Has("planeIndex") || !options.Get("planeIndex").IsNumber()) {
+    Napi::TypeError::New(env, "planeIndex is required").ThrowAsJavaScriptException();
+    return -1;
+  }
+  int plane_index = options.Get("planeIndex").As<Napi::Number>().Int32Value();
+
+  // Step 3: If destFormat is interleaved and planeIndex > 0, throw RangeError
+  if (!dest_is_planar && plane_index > 0) {
+    Napi::RangeError::New(env, "planeIndex must be 0 for interleaved format").ThrowAsJavaScriptException();
+    return -1;
+  }
+
+  // Step 4: If destFormat is planar and planeIndex >= numberOfChannels, throw RangeError
+  if (dest_is_planar && plane_index >= num_channels) {
+    Napi::RangeError::New(env, "planeIndex exceeds number of channels").ThrowAsJavaScriptException();
+    return -1;
+  }
+
+  // Step 5: Check format conversion support
+  // Per spec: conversion to f32-planar MUST always be supported
+  // We support all conversions via libswresample
+  AVSampleFormat dest_av_fmt = WebCodecsToAvFormat(out_dest_format);
+  if (dest_av_fmt == AV_SAMPLE_FMT_NONE) {
+    errors::ThrowNotSupportedError(env, "Unsupported destination format: " + out_dest_format);
+    return -1;
+  }
+
+  // Step 6: frameCount is the total frames in the source (plane)
+  int total_frame_count = num_frames;
+
+  // Step 7: Get frameOffset (default 0)
+  int frame_offset = 0;
+  if (options.Has("frameOffset") && options.Get("frameOffset").IsNumber()) {
+    frame_offset = options.Get("frameOffset").As<Napi::Number>().Int32Value();
+  }
+
+  // Step 7: If frameOffset >= frameCount, throw RangeError
+  if (frame_offset >= total_frame_count) {
+    Napi::RangeError::New(env, "frameOffset exceeds number of frames").ThrowAsJavaScriptException();
+    return -1;
+  }
+
+  // Step 8: copyFrameCount = frameCount - frameOffset
+  int copy_frame_count = total_frame_count - frame_offset;
+
+  // Step 9: If options.frameCount exists
+  if (options.Has("frameCount") && options.Get("frameCount").IsNumber()) {
+    int requested_frame_count = options.Get("frameCount").As<Napi::Number>().Int32Value();
+    // Step 9.1: If requested > available, throw RangeError
+    if (requested_frame_count > copy_frame_count) {
+      Napi::RangeError::New(env, "frameCount exceeds available frames").ThrowAsJavaScriptException();
+      return -1;
+    }
+    // Step 9.2: Use requested count
+    copy_frame_count = requested_frame_count;
+  }
+
+  // Step 10: elementCount = copyFrameCount
+  int element_count = copy_frame_count;
+
+  // Step 11: If destFormat is interleaved, multiply by numberOfChannels
+  if (!dest_is_planar) {
+    element_count *= num_channels;
+  }
+
+  // Step 12: return elementCount
+  return element_count;
+}
+
 Napi::Value AudioData::AllocationSize(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
@@ -333,18 +430,30 @@ Napi::Value AudioData::AllocationSize(const Napi::CallbackInfo& info) {
     return env.Undefined();
   }
 
-  // Calculate total size needed for the audio data
-  AVSampleFormat fmt = static_cast<AVSampleFormat>(frame_->format);
-  int bytes_per_sample = GetBytesPerSample(fmt);
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
-  int channels = frame_->ch_layout.nb_channels;
-#else
-  int channels = frame_->channels;
-#endif
+  // [SPEC 9.2.4] allocationSize(options)
+  // Step 1: If [[Detached]], throw InvalidStateError (handled above)
 
-  // For interleaved formats, size = nb_samples * channels * bytes_per_sample
-  // For planar formats, same total size but organized differently
-  int64_t total_size = static_cast<int64_t>(frame_->nb_samples) * channels * bytes_per_sample;
+  // Parse options
+  if (info.Length() < 1 || !info[0].IsObject()) {
+    Napi::TypeError::New(env, "options object is required").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  Napi::Object options = info[0].As<Napi::Object>();
+
+  // Step 2: Compute copy element count
+  std::string dest_format;
+  int element_count = ComputeCopyElementCount(env, frame_.get(), format_, options, dest_format);
+  if (element_count < 0) {
+    return env.Undefined();  // Exception already thrown
+  }
+
+  // Step 3-4: Get dest format (already computed)
+  // Step 5: Get bytes per sample
+  AVSampleFormat dest_av_fmt = WebCodecsToAvFormat(dest_format);
+  int bytes_per_sample = GetBytesPerSample(dest_av_fmt);
+
+  // Step 6: Return bytesPerSample * elementCount
+  int64_t total_size = static_cast<int64_t>(bytes_per_sample) * element_count;
 
   return Napi::Number::New(env, static_cast<double>(total_size));
 }
@@ -352,13 +461,16 @@ Napi::Value AudioData::AllocationSize(const Napi::CallbackInfo& info) {
 Napi::Value AudioData::CopyTo(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
+  // [SPEC 9.2.4] copyTo(destination, options)
+  // Step 1: If [[Detached]], throw InvalidStateError
   if (closed_.load(std::memory_order_acquire) || !frame_) {
     errors::ThrowInvalidStateError(env, "AudioData is closed");
     return env.Undefined();
   }
 
-  if (info.Length() < 1) {
-    Napi::TypeError::New(env, "destination is required").ThrowAsJavaScriptException();
+  // Validate arguments
+  if (info.Length() < 2) {
+    Napi::TypeError::New(env, "destination and options are required").ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -381,39 +493,171 @@ Napi::Value AudioData::CopyTo(const Napi::CallbackInfo& info) {
     dest_size = ta.ByteLength();
   }
 
-  // Calculate required size
-  AVSampleFormat fmt = static_cast<AVSampleFormat>(frame_->format);
-  int bytes_per_sample = GetBytesPerSample(fmt);
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
-  int channels = frame_->ch_layout.nb_channels;
-#else
-  int channels = frame_->channels;
-#endif
+  // Parse options (required)
+  if (!info[1].IsObject()) {
+    Napi::TypeError::New(env, "options object is required").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  Napi::Object options = info[1].As<Napi::Object>();
 
-  size_t required_size = static_cast<size_t>(frame_->nb_samples) * channels * bytes_per_sample;
+  // Step 2: Compute copy element count
+  std::string dest_format;
+  int element_count = ComputeCopyElementCount(env, frame_.get(), format_, options, dest_format);
+  if (element_count < 0) {
+    return env.Undefined();  // Exception already thrown
+  }
 
+  // Step 3-5: Get dest format and bytes per sample
+  AVSampleFormat dest_av_fmt = WebCodecsToAvFormat(dest_format);
+  int dest_bytes_per_sample = GetBytesPerSample(dest_av_fmt);
+
+  // Step 6: Check destination size
+  size_t required_size = static_cast<size_t>(dest_bytes_per_sample) * element_count;
   if (dest_size < required_size) {
     Napi::RangeError::New(env, "destination buffer too small").ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
-  // Copy data based on format (planar vs interleaved)
-  bool is_planar = av_sample_fmt_is_planar(fmt);
+  // Get copy parameters
+  int plane_index = options.Get("planeIndex").As<Napi::Number>().Int32Value();
+  int frame_offset = 0;
+  if (options.Has("frameOffset") && options.Get("frameOffset").IsNumber()) {
+    frame_offset = options.Get("frameOffset").As<Napi::Number>().Int32Value();
+  }
 
-  if (is_planar) {
-    // For planar formats, data is in frame_->data[channel][sample]
-    // We need to interleave it for copyTo output
-    uint8_t* dest = dest_data;
+  // Determine frame count to copy
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+  int num_channels = frame_->ch_layout.nb_channels;
+#else
+  int num_channels = frame_->channels;
+#endif
+  int copy_frame_count = frame_->nb_samples - frame_offset;
+  if (options.Has("frameCount") && options.Get("frameCount").IsNumber()) {
+    copy_frame_count = options.Get("frameCount").As<Napi::Number>().Int32Value();
+  }
 
-    for (int sample = 0; sample < frame_->nb_samples; sample++) {
-      for (int ch = 0; ch < channels; ch++) {
-        std::memcpy(dest, frame_->data[ch] + sample * bytes_per_sample, bytes_per_sample);
-        dest += bytes_per_sample;
+  // Source format info
+  AVSampleFormat src_av_fmt = static_cast<AVSampleFormat>(frame_->format);
+  int src_bytes_per_sample = GetBytesPerSample(src_av_fmt);
+  bool src_is_planar = av_sample_fmt_is_planar(src_av_fmt);
+  bool dest_is_planar = av_sample_fmt_is_planar(dest_av_fmt);
+
+  // Step 7-9: Copy with optional format conversion
+  // Check if format conversion is needed
+  bool needs_conversion = (src_av_fmt != dest_av_fmt);
+
+  if (!needs_conversion) {
+    // No conversion needed - direct copy with offset handling
+    if (dest_is_planar) {
+      // Planar destination: copy single plane
+      const uint8_t* src_ptr = frame_->data[plane_index] + frame_offset * src_bytes_per_sample;
+      std::memcpy(dest_data, src_ptr, copy_frame_count * src_bytes_per_sample);
+    } else {
+      // Interleaved destination
+      if (src_is_planar) {
+        // Planar source -> Interleaved destination (interleave)
+        uint8_t* dest = dest_data;
+        for (int sample = 0; sample < copy_frame_count; sample++) {
+          for (int ch = 0; ch < num_channels; ch++) {
+            const uint8_t* src_ptr = frame_->data[ch] + (frame_offset + sample) * src_bytes_per_sample;
+            std::memcpy(dest, src_ptr, src_bytes_per_sample);
+            dest += src_bytes_per_sample;
+          }
+        }
+      } else {
+        // Interleaved source -> Interleaved destination (direct copy)
+        const uint8_t* src_ptr = frame_->data[0] + frame_offset * src_bytes_per_sample * num_channels;
+        std::memcpy(dest_data, src_ptr, copy_frame_count * src_bytes_per_sample * num_channels);
       }
     }
   } else {
-    // For interleaved formats, just copy directly
-    std::memcpy(dest_data, frame_->data[0], required_size);
+    // Format conversion needed - use libswresample
+    // Build channel layout
+    AVChannelLayout ch_layout;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+    av_channel_layout_copy(&ch_layout, &frame_->ch_layout);
+#else
+    av_channel_layout_default(&ch_layout, num_channels);
+#endif
+
+    // Create SwrContext for conversion
+    raii::SwrContextPtr swr = raii::MakeSwrContextInitialized(
+        &ch_layout, dest_av_fmt, frame_->sample_rate,
+        &ch_layout, src_av_fmt, frame_->sample_rate);
+
+    if (!swr) {
+      errors::ThrowNotSupportedError(env, "Failed to initialize audio format converter");
+      av_channel_layout_uninit(&ch_layout);
+      return env.Undefined();
+    }
+
+    // Prepare input pointers with offset
+    const uint8_t* in_data[AV_NUM_DATA_POINTERS];
+    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+      if (frame_->data[i]) {
+        if (src_is_planar) {
+          in_data[i] = frame_->data[i] + frame_offset * src_bytes_per_sample;
+        } else if (i == 0) {
+          in_data[i] = frame_->data[0] + frame_offset * src_bytes_per_sample * num_channels;
+        } else {
+          in_data[i] = nullptr;
+        }
+      } else {
+        in_data[i] = nullptr;
+      }
+    }
+
+    // Prepare output pointers
+    uint8_t* out_data[AV_NUM_DATA_POINTERS] = {nullptr};
+    if (dest_is_planar) {
+      // For planar output, we only populate the requested plane
+      // But swr_convert outputs all planes, so we need temporary buffers
+      // Actually, for copyTo we only copy ONE plane at a time for planar output
+      // So we need to handle this specially
+
+      // Allocate temporary buffer for all planes, then extract the one we need
+      int out_linesize;
+      uint8_t** temp_out = nullptr;
+      int ret = av_samples_alloc_array_and_samples(&temp_out, &out_linesize, num_channels,
+                                                    copy_frame_count, dest_av_fmt, 0);
+      if (ret < 0) {
+        errors::ThrowNotSupportedError(env, "Failed to allocate conversion buffer");
+        av_channel_layout_uninit(&ch_layout);
+        return env.Undefined();
+      }
+
+      // Convert
+      ret = swr_convert(swr.get(), temp_out, copy_frame_count,
+                        in_data, copy_frame_count);
+
+      if (ret < 0) {
+        av_freep(&temp_out[0]);
+        av_freep(&temp_out);
+        errors::ThrowNotSupportedError(env, "Audio format conversion failed");
+        av_channel_layout_uninit(&ch_layout);
+        return env.Undefined();
+      }
+
+      // Copy the requested plane to destination
+      std::memcpy(dest_data, temp_out[plane_index], copy_frame_count * dest_bytes_per_sample);
+
+      av_freep(&temp_out[0]);
+      av_freep(&temp_out);
+    } else {
+      // Interleaved output - output directly to destination
+      out_data[0] = dest_data;
+
+      int ret = swr_convert(swr.get(), out_data, copy_frame_count,
+                            in_data, copy_frame_count);
+
+      if (ret < 0) {
+        errors::ThrowNotSupportedError(env, "Audio format conversion failed");
+        av_channel_layout_uninit(&ch_layout);
+        return env.Undefined();
+      }
+    }
+
+    av_channel_layout_uninit(&ch_layout);
   }
 
   return env.Undefined();

@@ -4,8 +4,33 @@ This document tracks the progress of implementing W3C WebCodecs spec compliance.
 
 ## Completed
 
+### AudioData copyTo with Full Options Support (2026-01-04)
+**Commit:** `ed4a544`
+
+Implemented full `AudioDataCopyToOptions` support per W3C WebCodecs spec sections 9.2.4 (methods) and 9.2.5 (algorithms).
+
+Changes:
+- Added `ComputeCopyElementCount()` helper implementing spec algorithm
+- Updated `allocationSize(options)` to properly parse `AudioDataCopyToOptions`:
+  - `planeIndex` (required) - validates for interleaved vs planar formats
+  - `frameOffset` (optional, default 0) - validates against available frames
+  - `frameCount` (optional) - validates against remaining frames after offset
+  - `format` (optional) - calculates size for destination format
+- Updated `copyTo(destination, options)` with full options support:
+  - Validates destination buffer size against computed allocation
+  - Handles frameOffset/frameCount for partial copies
+  - Implements format conversion via libswresample
+  - Supports interleaved <-> planar conversions
+  - Supports sample type conversions (u8, s16, s32, f32)
+- Added comprehensive test suite (29 tests):
+  - Constructor tests for various formats
+  - allocationSize with planeIndex, frameOffset, frameCount, format
+  - copyTo with all option combinations
+  - Format conversion tests (f32<->s16, interleaved<->planar)
+  - Error handling (RangeError, InvalidStateError)
+
 ### ImageDecoder ReadableStream Support (2026-01-03)
-**Commit:** (pending)
+**Commit:** `9d569d5`
 
 Implemented ReadableStream support for ImageDecoder per W3C WebCodecs spec section 10.2.2 (constructor) and 10.2.5 (Fetch Stream Data Loop algorithm).
 
@@ -103,9 +128,6 @@ Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 
 ### Spec Compliance Gaps
 Run `npm run scaffold` to regenerate spec infrastructure and identify any remaining gaps.
-
-### AudioData
-- Full copyTo options support (format conversion)
 
 ### VideoFrame
 - Constructor from CanvasImageSource (not applicable in Node.js)
