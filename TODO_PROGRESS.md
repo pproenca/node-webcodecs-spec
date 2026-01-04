@@ -193,7 +193,7 @@ Implemented format conversion using libswscale for VideoFrame and libswresample 
 Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 
 ### Pixel Format Support per W3C Spec Section 9.8 (2026-01-04)
-**Commit:** `pending`
+**Commit:** `a93cff0`
 
 Updated `format_converter.h` to support all W3C WebCodecs pixel formats.
 
