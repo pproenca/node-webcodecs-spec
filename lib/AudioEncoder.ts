@@ -61,6 +61,21 @@ export class AudioEncoder {
   configure(config: AudioEncoderConfig): void {
     this.native.configure(config);
   }
+  /**
+   * Enqueues a control message to encode the given audio data.
+   *
+   * Per W3C WebCodecs spec section 5.5, the audio data is cloned before encoding
+   * to allow the caller to close the original data immediately after this call.
+   * The clone operation is performed in the native C++ layer using FFmpeg's
+   * av_frame_clone(), ensuring the audio data remains valid throughout
+   * the async encoding process.
+   *
+   * @param data - The AudioData to encode. May be closed after this call returns.
+   * @throws {InvalidStateError} If encoder state is not "configured".
+   * @throws {TypeError} If data is detached.
+   *
+   * @see https://www.w3.org/TR/webcodecs/#dom-audioencoder-encode
+   */
   encode(data: AudioData): void {
     this.native.encode(data);
   }
