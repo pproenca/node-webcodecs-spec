@@ -192,6 +192,28 @@ Implemented format conversion using libswscale for VideoFrame and libswresample 
 ### Missing Pixel Formats
 Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 
+### VideoEncoder scalabilityMode Support (2026-01-04)
+**Commit:** `5804721`
+
+Implemented `scalabilityMode` option for VideoEncoder per W3C WebCodecs spec section 7.8 (VideoEncoderConfig).
+
+Changes:
+- Added `ApplyScalabilityMode()` helper function to `video_encoder.cpp`
+- Supports temporal scalability modes for VP9:
+  - `L1T1` - Single temporal layer (default)
+  - `L1T2` - Two temporal layers
+  - `L1T3` - Three temporal layers
+- Uses FFmpeg `ts-parameters` option for VP9 encoder configuration
+- Validates mode format (LxTy pattern)
+- Validates spatial layers = 1 (FFmpeg VP9 only supports single spatial layer)
+- Validates temporal layers 1-3 range
+- Added `#include <libavutil/opt.h>` to ffmpeg_raii.h for av_opt_set
+
+Limitations:
+- Spatial scalability (L2T1, L2T2, L3T1, etc.) not supported by FFmpeg VP9
+- Only VP9 supports temporal scalability via ts-parameters
+- H.264/H.265/AV1 temporal layers require different encoder configuration
+
 ### Pixel Format Support per W3C Spec Section 9.8 (2026-01-04)
 **Commit:** `a93cff0`
 
