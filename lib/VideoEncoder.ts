@@ -63,7 +63,9 @@ export class VideoEncoder {
     this.native.configure(config);
   }
   encode(frame: VideoFrame, options: VideoEncoderEncodeOptions): void {
-    this.native.encode(frame, options);
+    // Extract native object from wrapper if present (for TypeScript wrapper classes)
+    const nativeFrame = (frame as { native?: unknown }).native ?? frame;
+    this.native.encode(nativeFrame, options);
   }
   flush(): Promise<void> {
     return this.native.flush();

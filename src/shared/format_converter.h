@@ -398,11 +398,14 @@ inline int CopyFrameWithLayout(const AVFrame* frame, uint8_t* dest, size_t dest_
     int dst_offset = offsets[plane];
     int dst_stride = strides[plane];
 
-    // Validate layout
-    if (dst_stride < row_bytes) {
-      return AVERROR(EINVAL);  // Stride too small
+    // Validate layout (use size_t arithmetic to prevent overflow)
+    if (dst_offset < 0 || dst_stride < row_bytes) {
+      return AVERROR(EINVAL);  // Stride too small or negative offset
     }
-    if (static_cast<size_t>(dst_offset + (height - 1) * dst_stride + row_bytes) > dest_size) {
+    size_t required_size = static_cast<size_t>(dst_offset) +
+                           static_cast<size_t>(height - 1) * static_cast<size_t>(dst_stride) +
+                           static_cast<size_t>(row_bytes);
+    if (required_size > dest_size) {
       return AVERROR(ENOSPC);  // Buffer too small
     }
 
@@ -413,8 +416,7 @@ inline int CopyFrameWithLayout(const AVFrame* frame, uint8_t* dest, size_t dest_
       memcpy(dst_row, src_row, row_bytes);
     }
 
-    total_written = std::max(total_written,
-                             static_cast<size_t>(dst_offset + (height - 1) * dst_stride + row_bytes));
+    total_written = std::max(total_written, required_size);
   }
 
   return static_cast<int>(total_written);
@@ -434,7 +436,7 @@ inline int CalculateSizeWithLayout(int format, int width, int height,
     return AVERROR(EINVAL);
   }
 
-  int max_size = 0;
+  size_t max_size = 0;
   for (int plane = 0; plane < num_planes; plane++) {
     int plane_height = height;
     int plane_width = width;
@@ -449,13 +451,27 @@ inline int CalculateSizeWithLayout(int format, int width, int height,
     }
 
     int bytes_per_sample = (desc->comp[plane].depth + 7) / 8;
-    int row_bytes = plane_width * bytes_per_sample;
+    size_t row_bytes = static_cast<size_t>(plane_width) * bytes_per_sample;
 
-    int plane_size = offsets[plane] + (plane_height - 1) * strides[plane] + row_bytes;
+    // Use size_t arithmetic to prevent integer overflow with large strides
+    size_t plane_size = static_cast<size_t>(offsets[plane]) +
+                        static_cast<size_t>(plane_height - 1) * static_cast<size_t>(strides[plane]) +
+                        row_bytes;
+
+    // Check for overflow: result must fit in int for return value
+    if (plane_size > static_cast<size_t>(INT32_MAX)) {
+      return AVERROR(EINVAL);  // Size would overflow int
+    }
+
     max_size = std::max(max_size, plane_size);
   }
 
-  return max_size;
+  // Final check: max_size must fit in int
+  if (max_size > static_cast<size_t>(INT32_MAX)) {
+    return AVERROR(EINVAL);
+  }
+
+  return static_cast<int>(max_size);
 }
 
 }  // namespace format_converter

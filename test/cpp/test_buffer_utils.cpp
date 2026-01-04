@@ -526,3 +526,225 @@ TEST(BufferUtilsTest, StressTest_ManyPacketCopies) {
     EXPECT_EQ(copied, 1024);
   }
 }
+
+// =============================================================================
+// CREATE FRAME FROM BUFFER WITH LAYOUT - EDGE CASES
+// =============================================================================
+
+using webcodecs::buffer_utils::CreateFrameFromBufferWithLayout;
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_ValidLayout) {
+  // Create a 4x4 YUV420P frame worth of data
+  // Y: 4*4 = 16 bytes, U: 2*2 = 4 bytes, V: 2*2 = 4 bytes = 24 bytes total
+  int width = 4;
+  int height = 4;
+
+  // Custom layout with padding between planes
+  int offsets[] = {0, 32, 48};   // Y at 0, U at 32, V at 48
+  int strides[] = {8, 4, 4};     // Y stride 8, U/V stride 4
+
+  // Buffer needs: Y: 4 rows * 8 stride = 32, U: 2 rows * 4 = 8, V: 2 rows * 4 = 8
+  // Layout: [Y@0..32][U@32..40][V@48..56]
+  std::vector<uint8_t> buffer(64, 0x80);  // Fill with gray
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), width, height, AV_PIX_FMT_YUV420P,
+      offsets, strides, 3);
+
+  ASSERT_NE(frame, nullptr);
+  EXPECT_EQ(frame->width, width);
+  EXPECT_EQ(frame->height, height);
+  EXPECT_EQ(frame->format, AV_PIX_FMT_YUV420P);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_NullData) {
+  int offsets[] = {0, 16, 20};
+  int strides[] = {4, 2, 2};
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      nullptr, 1024, 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_ZeroSize) {
+  int offsets[] = {0, 16, 20};
+  int strides[] = {4, 2, 2};
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), 0, 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_InvalidWidth) {
+  int offsets[] = {0, 16, 20};
+  int strides[] = {4, 2, 2};
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 0, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_NegativeOffset) {
+  int offsets[] = {-1, 16, 20};  // Negative offset
+  int strides[] = {4, 2, 2};
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);  // Should fail due to negative offset
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_ZeroStride) {
+  int offsets[] = {0, 16, 20};
+  int strides[] = {0, 2, 2};  // Zero stride
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);  // Should fail due to zero stride
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_NegativeStride) {
+  int offsets[] = {0, 16, 20};
+  int strides[] = {-4, 2, 2};  // Negative stride
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);  // Should fail due to negative stride
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_BufferTooSmall) {
+  int offsets[] = {0, 32, 48};
+  int strides[] = {8, 4, 4};
+  std::vector<uint8_t> buffer(32);  // Too small for layout
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);  // Should fail - buffer too small
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_OverflowPrevention) {
+  // Test that integer overflow in bounds calculation is prevented
+  // Large values that would overflow if multiplied as int32
+  int offsets[] = {0, 0, 0};
+  int strides[] = {INT32_MAX / 2, 1, 1};  // Large stride value
+  std::vector<uint8_t> buffer(1024);
+
+  // With a large stride and reasonable height, the calculation
+  // (height - 1) * stride would overflow a 32-bit int
+  // Our fix uses size_t arithmetic to prevent this
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 1000, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+
+  // Should return nullptr because the required size exceeds buffer
+  EXPECT_EQ(frame, nullptr);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_LayoutExceedsBuffer) {
+  // Layout offset + data would exceed buffer
+  int offsets[] = {0, 100, 200};  // Offsets exceed buffer size
+  int strides[] = {4, 2, 2};
+  std::vector<uint8_t> buffer(64);
+
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), 4, 4, AV_PIX_FMT_YUV420P, offsets, strides, 3);
+  EXPECT_EQ(frame, nullptr);
+}
+
+TEST(BufferUtilsTest, CreateFrameFromBufferWithLayout_NoLayoutProvided) {
+  // Test fallback to default (tightly packed) layout
+  int width = 4;
+  int height = 4;
+  int size = CalculateFrameBufferSize(AV_PIX_FMT_YUV420P, width, height, 1);
+  ASSERT_GT(size, 0);
+
+  std::vector<uint8_t> buffer(size, 0x80);
+
+  // Pass nullptr for layout arrays - should use default packing
+  AVFramePtr frame = CreateFrameFromBufferWithLayout(
+      buffer.data(), buffer.size(), width, height, AV_PIX_FMT_YUV420P,
+      nullptr, nullptr, 0);
+
+  ASSERT_NE(frame, nullptr);
+  EXPECT_EQ(frame->width, width);
+  EXPECT_EQ(frame->height, height);
+}
+
+// =============================================================================
+// FORMAT CONVERTER - CalculateSizeWithLayout OVERFLOW TESTS
+// =============================================================================
+
+#include "../../src/shared/format_converter.h"
+
+TEST(FormatConverterTest, CalculateSizeWithLayout_IntegerOverflowPrevention) {
+  // Test that integer overflow in CalculateSizeWithLayout is prevented
+  // Large stride values that would overflow int32 when multiplied by height
+  int offsets[] = {0, 0, 0};
+  int strides[] = {INT32_MAX / 100, 1, 1};  // Large stride
+
+  // With height=1000, (height-1) * stride = 999 * (INT32_MAX/100) would overflow int32
+  // The function should return an error since the result exceeds INT32_MAX
+  int result = webcodecs::format_converter::CalculateSizeWithLayout(
+      AV_PIX_FMT_YUV420P, 64, 1000, offsets, strides, 3);
+
+  // Function should return error (AVERROR(EINVAL)) for sizes that would overflow
+  EXPECT_LT(result, 0);  // Expect error code (negative)
+}
+
+TEST(FormatConverterTest, CalculateSizeWithLayout_ValidLayout) {
+  // Test normal operation with valid layout
+  int offsets[] = {0, 256, 320};  // Y at 0, U at 256, V at 320
+  int strides[] = {16, 8, 8};      // Y stride 16, U/V stride 8
+
+  int result = webcodecs::format_converter::CalculateSizeWithLayout(
+      AV_PIX_FMT_YUV420P, 16, 16, offsets, strides, 3);
+
+  // Should return positive valid size
+  EXPECT_GT(result, 0);
+  // Should be at least as big as the last plane's end
+  // V plane: offset(320) + (height/2-1)*stride(8) + row_bytes(8) = 320 + 7*8 + 8 = 384
+  EXPECT_GE(result, 384);
+}
+
+// =============================================================================
+// YUVA420P (4-PLANE) FORMAT TESTS
+// =============================================================================
+
+TEST(BufferUtilsTest, GetPlaneCount_YUVA420P) {
+  int planes = GetPlaneCount(AV_PIX_FMT_YUVA420P);
+  EXPECT_EQ(planes, 4);  // Y, U, V, A
+}
+
+TEST(BufferUtilsTest, CalculateFrameBufferSize_YUVA420P) {
+  int size = CalculateFrameBufferSize(AV_PIX_FMT_YUVA420P, 16, 16, 1);
+  EXPECT_GT(size, 0);
+  // YUVA420P: Y=16*16=256, U=8*8=64, V=8*8=64, A=16*16=256 = 640 minimum
+  EXPECT_GE(size, 640);
+}
+
+TEST(BufferUtilsTest, GetPlaneCount_YUV422P) {
+  int planes = GetPlaneCount(AV_PIX_FMT_YUV422P);
+  EXPECT_EQ(planes, 3);  // Y, U, V (horizontal subsampling only)
+}
+
+TEST(BufferUtilsTest, CalculateFrameBufferSize_YUV422P) {
+  int size = CalculateFrameBufferSize(AV_PIX_FMT_YUV422P, 16, 16, 1);
+  EXPECT_GT(size, 0);
+  // YUV422P: Y=16*16=256, U=8*16=128, V=8*16=128 = 512 minimum
+  EXPECT_GE(size, 512);
+}
+
+TEST(BufferUtilsTest, GetPlaneCount_YUV444P) {
+  int planes = GetPlaneCount(AV_PIX_FMT_YUV444P);
+  EXPECT_EQ(planes, 3);  // Y, U, V (no subsampling)
+}
+
+TEST(BufferUtilsTest, CalculateFrameBufferSize_YUV444P) {
+  int size = CalculateFrameBufferSize(AV_PIX_FMT_YUV444P, 16, 16, 1);
+  EXPECT_GT(size, 0);
+  // YUV444P: Y=16*16=256, U=16*16=256, V=16*16=256 = 768 minimum
+  EXPECT_GE(size, 768);
+}

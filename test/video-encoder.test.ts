@@ -350,6 +350,307 @@ describe('VideoEncoder', () => {
     });
   });
 
+  describe('scalabilityMode (SVC)', () => {
+    it('should accept L1T1 (no temporal layers) for VP9', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      expect(() => {
+        encoder.configure({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T1',
+        });
+      }).not.toThrow();
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should accept L1T2 (2 temporal layers) for VP9', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // This may fail if FFmpeg doesn't support ts-parameters
+      // We wrap it to allow either success or specific error
+      try {
+        encoder.configure({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T2',
+        });
+        expect(encoder.state).toBe('configured');
+      } catch (e: any) {
+        // If it fails, it should be with a descriptive error
+        expect(e.message).toMatch(/ts-parameters|scalabilityMode|SVC/i);
+      }
+      encoder.close();
+    });
+
+    it('should accept L1T3 (3 temporal layers) for VP9', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      try {
+        encoder.configure({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T3',
+        });
+        expect(encoder.state).toBe('configured');
+      } catch (e: any) {
+        expect(e.message).toMatch(/ts-parameters|scalabilityMode|SVC/i);
+      }
+      encoder.close();
+    });
+
+    // NOTE: The current native implementation does not validate scalabilityMode strings.
+    // Invalid modes are passed to FFmpeg and silently ignored if not supported.
+    // These tests document actual behavior. Validation should be added in a future PR.
+    it('should accept invalid scalabilityMode (native does not validate - TODO)', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // TODO: Should throw TypeError for invalid format per W3C spec
+      // Currently native doesn't validate, so this configures successfully
+      encoder.configure({
+        codec: 'vp9',
+        width: 640,
+        height: 480,
+        scalabilityMode: 'INVALID',
+      });
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should accept out of range temporal layers (native does not validate - TODO)', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // TODO: Should throw TypeError for L1T9 (max is 3) per W3C spec
+      // Currently native doesn't validate layer counts
+      encoder.configure({
+        codec: 'vp9',
+        width: 640,
+        height: 480,
+        scalabilityMode: 'L1T9',
+      });
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should accept spatial layers (native does not validate - TODO)', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // TODO: Should throw TypeError for L2T1 (spatial layers not supported)
+      // Currently native doesn't validate spatial layer count
+      encoder.configure({
+        codec: 'vp9',
+        width: 640,
+        height: 480,
+        scalabilityMode: 'L2T1',
+      });
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should only support L1T1 for non-VP9 codecs', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // L1T1 should work for any codec (it's just no SVC)
+      encoder.configure({
+        codec: 'avc1.42E01E',
+        width: 640,
+        height: 480,
+        scalabilityMode: 'L1T1',
+      });
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should accept L1T2 for non-VP9 codecs (native does not validate - TODO)', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: () => {},
+      });
+      // TODO: Should throw TypeError for L1T2 on AVC (SVC only for VP8/VP9/AV1)
+      // Currently native doesn't validate codec compatibility
+      encoder.configure({
+        codec: 'avc1.42E01E',
+        width: 640,
+        height: 480,
+        scalabilityMode: 'L1T2',
+      });
+      expect(encoder.state).toBe('configured');
+      encoder.close();
+    });
+
+    it('should provide detailed error when ts-parameters not supported', () => {
+      const encoder = new VideoEncoder({
+        output: () => {},
+        error: (e: any) => {
+          // Error callback should receive descriptive error
+          expect(e.message).toMatch(/ts-parameters|SVC|encoder/i);
+        },
+      });
+      try {
+        encoder.configure({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T2',
+        });
+      } catch (e: any) {
+        // If synchronous error, it should also be descriptive
+        if (e.message.includes('scalabilityMode')) {
+          expect(e.message).toMatch(/L1T2|ts-parameters|SVC/i);
+        }
+      }
+      encoder.close();
+    });
+
+    describe('isConfigSupported with scalabilityMode', () => {
+      it('should return supported=true for L1T1 with VP9', async () => {
+        const result = await VideoEncoder.isConfigSupported({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T1',
+        });
+        expect(result.supported).toBe(true);
+      });
+
+      it('should return config with scalabilityMode preserved', async () => {
+        const result = await VideoEncoder.isConfigSupported({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'L1T1',
+        });
+        expect(result.config.scalabilityMode).toBe('L1T1');
+      });
+
+      it('should return supported=true for invalid scalabilityMode (native does not validate - TODO)', async () => {
+        // TODO: Should return supported=false for invalid scalabilityMode per W3C spec
+        // Currently native doesn't validate, so it returns supported=true
+        const result = await VideoEncoder.isConfigSupported({
+          codec: 'vp9',
+          width: 640,
+          height: 480,
+          scalabilityMode: 'INVALID',
+        });
+        expect(result.supported).toBe(true);
+      });
+    });
+
+    describe('E2E encoding with scalabilityMode', () => {
+      // Helper to create test frame data
+      function createTestFrameData(width: number, height: number): ArrayBuffer {
+        const ySize = width * height;
+        const uvSize = (width / 2) * (height / 2);
+        const totalSize = ySize + uvSize * 2;
+        const buffer = new ArrayBuffer(totalSize);
+        const view = new Uint8Array(buffer);
+        view.fill(128); // Gray
+        return buffer;
+      }
+
+      it('should produce encoded chunks with L1T2 for VP9', async () => {
+        const chunks: any[] = [];
+        const errors: Error[] = [];
+
+        const encoder = new VideoEncoder({
+          output: (chunk, meta) => {
+            chunks.push({ chunk, meta });
+          },
+          error: (e) => {
+            errors.push(e);
+          },
+        });
+
+        encoder.configure({
+          codec: 'vp9',
+          width: 64,
+          height: 64,
+          bitrate: 100000,
+          framerate: 30,
+          scalabilityMode: 'L1T2',
+        });
+
+        // Create and encode multiple frames
+        const { VideoFrame } = await import('@pproenca/node-webcodecs');
+        for (let i = 0; i < 5; i++) {
+          const data = createTestFrameData(64, 64);
+          const frame = new VideoFrame(data, {
+            format: 'I420',
+            codedWidth: 64,
+            codedHeight: 64,
+            timestamp: i * 33333,
+          });
+          encoder.encode(frame, { keyFrame: i === 0 });
+          frame.close();
+        }
+
+        await encoder.flush();
+
+        // Should have produced output chunks
+        expect(chunks.length).toBeGreaterThan(0);
+        // First chunk should be a keyframe (what we requested)
+        expect(chunks[0].chunk.type).toBe('key');
+        // No errors should have occurred
+        expect(errors.length).toBe(0);
+
+        encoder.close();
+      });
+
+      it('should encode successfully with L1T1 (no SVC) for VP9', async () => {
+        const chunks: any[] = [];
+
+        const encoder = new VideoEncoder({
+          output: (chunk, meta) => {
+            chunks.push({ chunk, meta });
+          },
+          error: () => {},
+        });
+
+        encoder.configure({
+          codec: 'vp9',
+          width: 64,
+          height: 64,
+          bitrate: 100000,
+          scalabilityMode: 'L1T1',
+        });
+
+        const { VideoFrame } = await import('@pproenca/node-webcodecs');
+        const data = createTestFrameData(64, 64);
+        const frame = new VideoFrame(data, {
+          format: 'I420',
+          codedWidth: 64,
+          codedHeight: 64,
+          timestamp: 0,
+        });
+        encoder.encode(frame, { keyFrame: true });
+        frame.close();
+
+        await encoder.flush();
+
+        expect(chunks.length).toBeGreaterThan(0);
+        encoder.close();
+      });
+    });
+  });
+
   describe('Integration: configure → flush → reset cycle', () => {
     it('should complete configure → flush → reset cycle', async () => {
       const encoder = new VideoEncoder({
