@@ -17,7 +17,6 @@ interface ImageDecoder {
   static Promise<boolean> isTypeSupported(DOMString type);
 };
 ```
-
 ## Subsections
 
 - [10.2.1. Internal Slots](./10.2.1-internal-slots.md)
@@ -25,6 +24,7 @@ interface ImageDecoder {
 - [10.2.3. Attributes](./10.2.3-attributes.md)
 - [10.2.4. Methods](./10.2.4-methods.md)
 - [10.2.5. Algorithms](./10.2.5-algorithms.md)
+
 
 ---
 

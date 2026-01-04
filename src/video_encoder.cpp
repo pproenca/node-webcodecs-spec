@@ -726,9 +726,11 @@ Napi::Value VideoEncoder::IsConfigSupported(const Napi::CallbackInfo& info) {
  *
  * @param ctx AVCodecContext to configure
  * @param mode Scalability mode string (e.g., "L1T2", "L1T3")
+ * @param[out] error_msg Optional output for detailed error message
  * @return true if mode was applied, false if unsupported
  */
-static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
+static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode,
+                                  std::string* error_msg = nullptr) {
   if (mode.empty() || mode == "L1T1") {
     // L1T1 = no SVC, default behavior
     return true;
@@ -736,7 +738,8 @@ static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
 
   // Parse mode: LxTy format
   if (mode.length() != 4 || mode[0] != 'L' || mode[2] != 'T') {
-    return false;  // Invalid format
+    if (error_msg) *error_msg = "Invalid format: expected LxTy (e.g., L1T2)";
+    return false;
   }
 
   int spatial_layers = mode[1] - '0';
@@ -744,7 +747,8 @@ static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
 
   if (spatial_layers < 1 || spatial_layers > 3 ||
       temporal_layers < 1 || temporal_layers > 3) {
-    return false;  // Out of range
+    if (error_msg) *error_msg = "Layer count out of range (must be 1-3)";
+    return false;
   }
 
   // Check if this is a VP9 encoder (libvpx-vp9)
@@ -755,6 +759,9 @@ static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
   if (!is_vp9) {
     // For non-VP9 codecs, we only support L1T1 (no SVC)
     // AV1 SVC support in FFmpeg is limited
+    if (spatial_layers != 1 || temporal_layers != 1) {
+      if (error_msg) *error_msg = "SVC is only supported for VP9 (libvpx-vp9) codec";
+    }
     return spatial_layers == 1 && temporal_layers == 1;
   }
 
@@ -762,6 +769,7 @@ static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
   if (spatial_layers > 1) {
     // Full SVC with spatial layers requires special configuration
     // For now, only support L1Tx modes
+    if (error_msg) *error_msg = "Spatial layers (L2+) not yet supported, only L1Tx modes";
     return false;
   }
 
@@ -806,8 +814,14 @@ static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
   // Apply ts-parameters to the codec context
   int ret = av_opt_set(ctx->priv_data, "ts-parameters", ts_params.c_str(), 0);
   if (ret < 0) {
-    // ts-parameters not supported by this encoder, but that's OK for L1T1
-    return temporal_layers == 1;
+    // ts-parameters not supported by this encoder
+    if (error_msg) {
+      char errbuf[AV_ERROR_MAX_STRING_SIZE];
+      av_strerror(ret, errbuf, sizeof(errbuf));
+      *error_msg = "Encoder does not support ts-parameters for SVC: " + std::string(errbuf);
+    }
+    // L1T1 doesn't need SVC, but L1T2/L1T3 require ts-parameters support
+    return false;
   }
 
   return true;
@@ -928,8 +942,13 @@ bool VideoEncoderWorker::OnConfigure(const ConfigureMessage& msg) {
 
   // Apply scalability mode (SVC) for VP9 temporal layers
   if (!config.scalability_mode.empty()) {
-    if (!ApplyScalabilityMode(codec_ctx_.get(), config.scalability_mode)) {
-      OutputError(AVERROR(EINVAL), "Unsupported scalabilityMode: " + config.scalability_mode);
+    std::string svc_error;
+    if (!ApplyScalabilityMode(codec_ctx_.get(), config.scalability_mode, &svc_error)) {
+      std::string msg = "Unsupported scalabilityMode '" + config.scalability_mode + "'";
+      if (!svc_error.empty()) {
+        msg += ": " + svc_error;
+      }
+      OutputError(AVERROR(EINVAL), msg);
       codec_ctx_.reset();
       return false;
     }

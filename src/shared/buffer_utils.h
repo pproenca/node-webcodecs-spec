@@ -176,9 +176,14 @@ inline raii::AVFramePtr CreateFrameFromBufferWithLayout(
       int dst_stride = frame->linesize[plane];
       int row_bytes = plane_width * bytes_per_sample;
 
-      // Validate source fits in buffer
-      if (offsets[plane] < 0 ||
-          static_cast<size_t>(offsets[plane] + (plane_height - 1) * src_stride + row_bytes) > size) {
+      // Validate source fits in buffer (use size_t arithmetic to prevent overflow)
+      if (offsets[plane] < 0 || src_stride <= 0) {
+        return nullptr;
+      }
+      size_t required_size = static_cast<size_t>(offsets[plane]) +
+                             static_cast<size_t>(plane_height - 1) * static_cast<size_t>(src_stride) +
+                             static_cast<size_t>(row_bytes);
+      if (required_size > size) {
         return nullptr;
       }
 

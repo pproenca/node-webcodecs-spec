@@ -27,7 +27,6 @@ callback EncodedAudioChunkOutputCallback =
     undefined (EncodedAudioChunk output,
                optional EncodedAudioChunkMetadata metadata = {});
 ```
-
 ## Subsections
 
 - [5.1. Internal Slots](./5.1-internal-slots.md)
@@ -37,6 +36,7 @@ callback EncodedAudioChunkOutputCallback =
 - [5.5. Methods](./5.5-methods.md)
 - [5.6. Algorithms](./5.6-algorithms.md)
 - [5.7. EncodedAudioChunkMetadata](./5.7-encodedaudiochunkmetadata.md)
+
 
 ---
 

@@ -20,12 +20,12 @@ dictionary VideoColorSpaceInit {
   boolean? fullRange = null;
 };
 ```
-
 ## Subsections
 
 - [9.9.1. Internal Slots](./9.9.1-internal-slots.md)
 - [9.9.2. Constructors](./9.9.2-constructors.md)
 - [9.9.3. Attributes](./9.9.3-attributes.md)
+
 
 ---
 

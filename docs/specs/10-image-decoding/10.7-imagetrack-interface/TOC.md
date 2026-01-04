@@ -9,11 +9,11 @@ interface ImageTrack {
   attribute boolean selected;
 };
 ```
-
 ## Subsections
 
 - [10.7.1. Internal Slots](./10.7.1-internal-slots.md)
 - [10.7.2. Attributes](./10.7.2-attributes.md)
+
 
 ---
 

@@ -83,7 +83,6 @@ dictionary VideoFrameMetadata {
   // Possible members are recorded in the VideoFrame Metadata Registry.
 };
 ```
-
 ## Subsections
 
 - [9.4.1. Internal Slots](./9.4.1-internal-slots.md)
@@ -94,6 +93,7 @@ dictionary VideoFrameMetadata {
 - [9.4.6. Algorithms](./9.4.6-algorithms.md)
 - [9.4.7. Transfer and Serialization](./9.4.7-transfer-and-serialization.md)
 - [9.4.8. Rendering](./9.4.8-rendering.md)
+
 
 ---
 

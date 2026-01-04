@@ -11,11 +11,11 @@ interface ImageTrackList {
   readonly attribute ImageTrack? selectedTrack;
 };
 ```
-
 ## Subsections
 
 - [10.6.1. Internal Slots](./10.6.1-internal-slots.md)
 - [10.6.2. Attributes](./10.6.2-attributes.md)
+
 
 ---
 

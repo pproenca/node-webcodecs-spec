@@ -25,7 +25,6 @@ dictionary VideoDecoderInit {
 
 callback VideoFrameOutputCallback = undefined(VideoFrame output);
 ```
-
 ## Subsections
 
 - [4.1. Internal Slots](./4.1-internal-slots.md)
@@ -34,6 +33,7 @@ callback VideoFrameOutputCallback = undefined(VideoFrame output);
 - [4.4. Event Summary](./4.4-event-summary.md)
 - [4.5. Methods](./4.5-methods.md)
 - [4.6. Algorithms](./4.6-algorithms.md)
+
 
 ---
 

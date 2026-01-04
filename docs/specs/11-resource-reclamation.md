@@ -18,15 +18,15 @@ A User Agent _MUST_ only [reclaim a codec](#reclaim-a-codec) that is either an [
 
 Additionally, User Agents _MUST NOT_ reclaim an [active](#active-codec) [background](#background-codec) codec if it is:
 
-- An encoder, e.g. an [`AudioEncoder`](#audioencoder) or [`VideoEncoder`](#videoencoder).
-
-  NOTE: This prevents long running encode tasks from being interrupted.
-
-- An [`AudioDecoder`](#audiodecoder) or [`VideoDecoder`](#videodecoder), when there is, respectively, an [active](#active-codec) [`AudioEncoder`](#audioencoder) or [`VideoEncoder`](#videoencoder) in the same [global object](https://html.spec.whatwg.org/multipage/webappapis.html#global-object).
-
-  NOTE: This prevents prevents breaking long running transcoding tasks.
-
-- An [`AudioDecoder`](#audiodecoder), when its tab is audibly playing audio.
+-   An encoder, e.g. an [`AudioEncoder`](#audioencoder) or [`VideoEncoder`](#videoencoder).
+    
+    NOTE: This prevents long running encode tasks from being interrupted.
+    
+-   An [`AudioDecoder`](#audiodecoder) or [`VideoDecoder`](#videodecoder), when there is, respectively, an [active](#active-codec) [`AudioEncoder`](#audioencoder) or [`VideoEncoder`](#videoencoder) in the same [global object](https://html.spec.whatwg.org/multipage/webappapis.html#global-object).
+    
+    NOTE: This prevents prevents breaking long running transcoding tasks.
+    
+-   An [`AudioDecoder`](#audiodecoder), when its tab is audibly playing audio.
 
 ---
 

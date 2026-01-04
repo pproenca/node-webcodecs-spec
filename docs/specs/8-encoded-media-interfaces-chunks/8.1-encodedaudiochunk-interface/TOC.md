@@ -25,7 +25,6 @@ enum EncodedAudioChunkType {
     "delta",
 };
 ```
-
 ## Subsections
 
 - [8.1.1. Internal Slots](./8.1.1-internal-slots.md)
@@ -33,6 +32,7 @@ enum EncodedAudioChunkType {
 - [8.1.3. Attributes](./8.1.3-attributes.md)
 - [8.1.4. Methods](./8.1.4-methods.md)
 - [8.1.5. Serialization](./8.1.5-serialization.md)
+
 
 ---
 

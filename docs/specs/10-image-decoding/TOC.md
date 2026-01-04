@@ -1,5 +1,6 @@
 # 10. Image Decoding
 
+
 ## Subsections
 
 - [10.1. Background](./10.1-background.md)
@@ -9,6 +10,7 @@
 - [10.5. ImageDecodeResult Interface](./10.5-imagedecoderesult-interface.md)
 - [10.6. ImageTrackList Interface](./10.6-imagetracklist-interface/TOC.md)
 - [10.7. ImageTrack Interface](./10.7-imagetrack-interface/TOC.md)
+
 
 ---
 

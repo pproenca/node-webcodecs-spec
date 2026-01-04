@@ -9,6 +9,7 @@ import type {
   DOMRectReadOnly,
   PlaneLayout,
   VideoColorSpace,
+  VideoFrameBufferInit,
   VideoFrameCopyToOptions,
   VideoFrameInit,
   VideoFrameMetadata,
@@ -46,15 +47,38 @@ interface NativeVideoFrame {
 
 /** Native constructor interface for VideoFrame */
 interface NativeVideoFrameConstructor {
-  new (init: VideoFrameInit): NativeVideoFrame;
+  new (source: VideoFrame | AllowSharedBufferSource, init?: VideoFrameInit | VideoFrameBufferInit): NativeVideoFrame;
 }
 
 export class VideoFrame {
-  private readonly native: NativeVideoFrame;
+  /** @internal Native binding instance - exposed for native interop */
+  readonly native: NativeVideoFrame;
 
-  constructor(init: VideoFrameInit) {
+  /**
+   * Construct a VideoFrame from buffer data.
+   * @param data - The raw pixel data as an ArrayBuffer or typed array
+   * @param init - Initialization options specifying format, dimensions, etc.
+   */
+  constructor(data: AllowSharedBufferSource, init: VideoFrameBufferInit);
+
+  /**
+   * Construct a VideoFrame by cloning another VideoFrame.
+   * @param source - The VideoFrame to clone
+   * @param init - Optional initialization options to override values from source
+   */
+  constructor(source: VideoFrame, init?: VideoFrameInit);
+
+  constructor(
+    source: VideoFrame | AllowSharedBufferSource,
+    init?: VideoFrameInit | VideoFrameBufferInit
+  ) {
     const NativeClass = bindings.VideoFrame as NativeVideoFrameConstructor;
-    this.native = new NativeClass(init);
+    // Pass native object if source is a VideoFrame, otherwise pass the buffer directly
+    if (source instanceof VideoFrame) {
+      this.native = new NativeClass(source.native as any, init);
+    } else {
+      this.native = new NativeClass(source as any, init);
+    }
   }
 
   get format(): VideoPixelFormat | null {
@@ -97,17 +121,18 @@ export class VideoFrame {
   metadata(): VideoFrameMetadata {
     return this.native.metadata();
   }
-  allocationSize(options: VideoFrameCopyToOptions): number {
-    return this.native.allocationSize(options);
+  allocationSize(options?: VideoFrameCopyToOptions): number {
+    return this.native.allocationSize(options ?? {});
   }
   copyTo(
     destination: AllowSharedBufferSource,
-    options: VideoFrameCopyToOptions
+    options?: VideoFrameCopyToOptions
   ): Promise<PlaneLayout[]> {
-    return this.native.copyTo(destination, options);
+    return this.native.copyTo(destination, options ?? {});
   }
   clone(): VideoFrame {
-    return this.native.clone();
+    // Use the VideoFrame(VideoFrame, init) constructor to create a proper wrapper
+    return new VideoFrame(this, {});
   }
   close(): void {
     this.native.close();

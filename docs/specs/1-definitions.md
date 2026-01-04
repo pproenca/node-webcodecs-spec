@@ -31,24 +31,33 @@
 : A [`VideoColorSpace`](#videocolorspace) object, initialized as follows:
 
 1.  [`[[primaries]]`](#dom-videocolorspace-primaries-slot) is set to [`bt709`](#dom-videocolorprimaries-bt709),
+    
 2.  [`[[transfer]]`](#dom-videocolorspace-transfer-slot) is set to [`iec61966-2-1`](#dom-videotransfercharacteristics-iec61966-2-1),
+    
 3.  [`[[matrix]]`](#dom-videocolorspace-matrix-slot) is set to [`rgb`](#dom-videomatrixcoefficients-rgb),
+    
 4.  [`[[full range]]`](#dom-videocolorspace-full-range-slot) is set to `true`
 
 **Display P3 Color Space**
 : A [`VideoColorSpace`](#videocolorspace) object, initialized as follows:
 
 1.  [`[[primaries]]`](#dom-videocolorspace-primaries-slot) is set to [`smpte432`](#dom-videocolorprimaries-smpte432),
+    
 2.  [`[[transfer]]`](#dom-videocolorspace-transfer-slot) is set to [`iec61966-2-1`](#dom-videotransfercharacteristics-iec61966-2-1),
+    
 3.  [`[[matrix]]`](#dom-videocolorspace-matrix-slot) is set to [`rgb`](#dom-videomatrixcoefficients-rgb),
+    
 4.  [`[[full range]]`](#dom-videocolorspace-full-range-slot) is set to `true`
 
 **REC709 Color Space**
 : A [`VideoColorSpace`](#videocolorspace) object, initialized as follows:
 
 1.  [`[[primaries]]`](#dom-videocolorspace-primaries-slot) is set to [`bt709`](#dom-videocolorprimaries-bt709),
+    
 2.  [`[[transfer]]`](#dom-videocolorspace-transfer-slot) is set to [`bt709`](#dom-videotransfercharacteristics-bt709),
+    
 3.  [`[[matrix]]`](#dom-videocolorspace-matrix-slot) is set to [`bt709`](#dom-videomatrixcoefficients-bt709),
+    
 4.  [`[[full range]]`](#dom-videocolorspace-full-range-slot) is set to `false`
 
 **Codec Saturation**

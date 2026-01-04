@@ -27,7 +27,6 @@ callback EncodedVideoChunkOutputCallback =
     undefined (EncodedVideoChunk chunk,
                optional EncodedVideoChunkMetadata metadata = {});
 ```
-
 ## Subsections
 
 - [6.1. Internal Slots](./6.1-internal-slots.md)
@@ -37,6 +36,7 @@ callback EncodedVideoChunkOutputCallback =
 - [6.5. Methods](./6.5-methods.md)
 - [6.6. Algorithms](./6.6-algorithms.md)
 - [6.7. EncodedVideoChunkMetadata](./6.7-encodedvideochunkmetadata.md)
+
 
 ---
 

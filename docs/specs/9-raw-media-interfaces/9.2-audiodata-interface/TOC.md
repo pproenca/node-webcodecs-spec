@@ -28,7 +28,6 @@ dictionary AudioDataInit {
   sequence<ArrayBuffer> transfer = [];
 };
 ```
-
 ## Subsections
 
 - [9.2.1. Internal Slots](./9.2.1-internal-slots.md)
@@ -38,6 +37,7 @@ dictionary AudioDataInit {
 - [9.2.5. Algorithms](./9.2.5-algorithms.md)
 - [9.2.6. Transfer and Serialization](./9.2.6-transfer-and-serialization.md)
 - [9.2.7. AudioDataCopyToOptions](./9.2.7-audiodatacopytooptions.md)
+
 
 ---
 

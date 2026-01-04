@@ -25,7 +25,6 @@ enum EncodedVideoChunkType {
     "delta",
 };
 ```
-
 ## Subsections
 
 - [8.2.1. Internal Slots](./8.2.1-internal-slots.md)
@@ -33,6 +32,7 @@ enum EncodedVideoChunkType {
 - [8.2.3. Attributes](./8.2.3-attributes.md)
 - [8.2.4. Methods](./8.2.4-methods.md)
 - [8.2.5. Serialization](./8.2.5-serialization.md)
+
 
 ---
 

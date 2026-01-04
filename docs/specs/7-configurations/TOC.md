@@ -1,5 +1,6 @@
 # 7. Configurations
 
+
 ## Subsections
 
 - [7.1. Check Configuration Support (with config)](./7.1-check-configuration-support-with-config.md)
@@ -18,6 +19,7 @@
 - [7.14. VideoEncoderBitrateMode](./7.14-videoencoderbitratemode.md)
 - [7.15. CodecState](./7.15-codecstate.md)
 - [7.16. WebCodecsErrorCallback](./7.16-webcodecserrorcallback.md)
+
 
 ---
 

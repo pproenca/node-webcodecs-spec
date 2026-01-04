@@ -986,9 +986,33 @@ Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
           return deferred.Promise();
         }
         Napi::Object planeLayout = layoutArray.Get(i).As<Napi::Object>();
-        int offset = 0, stride = 0;
-        if (planeLayout.Has("offset")) offset = planeLayout.Get("offset").As<Napi::Number>().Int32Value();
-        if (planeLayout.Has("stride")) stride = planeLayout.Get("stride").As<Napi::Number>().Int32Value();
+
+        // Validate required properties
+        if (!planeLayout.Has("offset") || !planeLayout.Get("offset").IsNumber()) {
+          Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+          deferred.Reject(Napi::TypeError::New(env, "layout entry missing required 'offset' property").Value());
+          return deferred.Promise();
+        }
+        if (!planeLayout.Has("stride") || !planeLayout.Get("stride").IsNumber()) {
+          Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+          deferred.Reject(Napi::TypeError::New(env, "layout entry missing required 'stride' property").Value());
+          return deferred.Promise();
+        }
+
+        int offset = planeLayout.Get("offset").As<Napi::Number>().Int32Value();
+        int stride = planeLayout.Get("stride").As<Napi::Number>().Int32Value();
+
+        if (offset < 0) {
+          Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+          deferred.Reject(Napi::TypeError::New(env, "layout offset must be non-negative").Value());
+          return deferred.Promise();
+        }
+        if (stride <= 0) {
+          Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+          deferred.Reject(Napi::TypeError::New(env, "layout stride must be positive").Value());
+          return deferred.Promise();
+        }
+
         layout_offsets.push_back(offset);
         layout_strides.push_back(stride);
       }
