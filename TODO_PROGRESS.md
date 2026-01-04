@@ -192,6 +192,31 @@ Implemented format conversion using libswscale for VideoFrame and libswresample 
 ### Missing Pixel Formats
 Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 
+### Pixel Format Support per W3C Spec Section 9.8 (2026-01-04)
+**Commit:** `pending`
+
+Updated `format_converter.h` to support all W3C WebCodecs pixel formats.
+
+Changes:
+- Added alpha+10/12-bit YUV formats:
+  - `I420AP10` → `AV_PIX_FMT_YUVA420P10LE`
+  - `I422AP10` → `AV_PIX_FMT_YUVA422P10LE`
+  - `I422AP12` → `AV_PIX_FMT_YUVA422P12LE`
+  - `I444AP10` → `AV_PIX_FMT_YUVA444P10LE`
+  - `I444AP12` → `AV_PIX_FMT_YUVA444P12LE`
+- Note: `I420AP12` returns `AV_PIX_FMT_NONE` (FFmpeg lacks YUVA420P12)
+- Removed non-spec formats (NV21, NV12P10, RGBAF16, BGRAF16) from mappings
+- Updated `IsRGBFormat()` to match W3C spec exactly (RGBA, RGBX, BGRA, BGRX only)
+
+Supported formats (22 total):
+- 4:2:0: I420, I420A, I420P10, I420P12, I420AP10, NV12
+- 4:2:2: I422, I422A, I422P10, I422P12, I422AP10, I422AP12
+- 4:4:4: I444, I444A, I444P10, I444P12, I444AP10, I444AP12
+- RGB: RGBA, RGBX, BGRA, BGRX
+
+Limitation:
+- I420AP12 not supported (FFmpeg has no YUVA420P12 pixel format)
+
 ## Remaining TODOs
 
 ### Spec Compliance Gaps
@@ -202,4 +227,4 @@ Run `npm run specs` to regenerate spec infrastructure and identify any remaining
 - ~~Constructor from BufferSource with layout option~~ ✅ DONE
 - ~~Constructor from VideoFrame with init overrides~~ ✅ DONE
 - ~~Internal slots (rotation, flip, visibleRect, displayWidth/Height)~~ ✅ DONE
-- 12 additional pixel formats (I420P10, I420P12, I422P10, I422P12, I444P10, I444P12, NV12P10, RGB565, RGBF16, BGRF16, RGBAF16, BGRAF16)
+- ~~Pixel formats per W3C spec section 9.8~~ ✅ DONE (except I420AP12 - FFmpeg limitation)

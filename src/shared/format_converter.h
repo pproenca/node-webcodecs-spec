@@ -27,86 +27,94 @@ namespace format_converter {
 /**
  * Convert WebCodecs VideoPixelFormat string to FFmpeg AVPixelFormat.
  *
- * Supports all 21 W3C WebCodecs pixel formats.
+ * Supports all W3C WebCodecs pixel formats per section 9.8.
  * @see https://www.w3.org/TR/webcodecs/#enumdef-videopixelformat
  */
 inline AVPixelFormat WebCodecsToFFmpeg(const std::string& format) {
-  // YUV 4:2:0 formats
+  // YUV 4:2:0 formats (8-bit)
   if (format == "I420") return AV_PIX_FMT_YUV420P;
   if (format == "I420A") return AV_PIX_FMT_YUVA420P;
+  // YUV 4:2:0 formats (10/12-bit)
   if (format == "I420P10") return AV_PIX_FMT_YUV420P10LE;
   if (format == "I420P12") return AV_PIX_FMT_YUV420P12LE;
+  if (format == "I420AP10") return AV_PIX_FMT_YUVA420P10LE;
+  // Note: I420AP12 not supported by FFmpeg (no YUVA420P12 format exists)
+  if (format == "I420AP12") return AV_PIX_FMT_NONE;
+  // NV12 (semi-planar 4:2:0)
   if (format == "NV12") return AV_PIX_FMT_NV12;
-  if (format == "NV12P10") return AV_PIX_FMT_P010LE;
 
-  // YUV 4:2:2 formats
+  // YUV 4:2:2 formats (8-bit)
   if (format == "I422") return AV_PIX_FMT_YUV422P;
   if (format == "I422A") return AV_PIX_FMT_YUVA422P;
+  // YUV 4:2:2 formats (10/12-bit)
   if (format == "I422P10") return AV_PIX_FMT_YUV422P10LE;
   if (format == "I422P12") return AV_PIX_FMT_YUV422P12LE;
+  if (format == "I422AP10") return AV_PIX_FMT_YUVA422P10LE;
+  if (format == "I422AP12") return AV_PIX_FMT_YUVA422P12LE;
 
-  // YUV 4:4:4 formats
+  // YUV 4:4:4 formats (8-bit)
   if (format == "I444") return AV_PIX_FMT_YUV444P;
   if (format == "I444A") return AV_PIX_FMT_YUVA444P;
+  // YUV 4:4:4 formats (10/12-bit)
   if (format == "I444P10") return AV_PIX_FMT_YUV444P10LE;
   if (format == "I444P12") return AV_PIX_FMT_YUV444P12LE;
+  if (format == "I444AP10") return AV_PIX_FMT_YUVA444P10LE;
+  if (format == "I444AP12") return AV_PIX_FMT_YUVA444P12LE;
 
-  // NV21 (Android native)
-  if (format == "NV21") return AV_PIX_FMT_NV21;
-
-  // RGB/RGBA formats (packed)
+  // RGB/RGBA formats (packed, 8-bit per component)
   if (format == "RGBA") return AV_PIX_FMT_RGBA;
   if (format == "RGBX") return AV_PIX_FMT_RGB0;     // RGB with padding byte
   if (format == "BGRA") return AV_PIX_FMT_BGRA;
   if (format == "BGRX") return AV_PIX_FMT_BGR0;     // BGR with padding byte
-
-  // Float formats (HDR)
-  if (format == "RGBAF16") return AV_PIX_FMT_RGBAF16LE;
-  if (format == "BGRAF16") return AV_PIX_FMT_NONE;  // Not directly supported, needs conversion
 
   return AV_PIX_FMT_NONE;
 }
 
 /**
  * Convert FFmpeg AVPixelFormat to WebCodecs VideoPixelFormat string.
+ *
+ * Returns nullptr for unsupported formats.
  */
 inline const char* FFmpegToWebCodecs(AVPixelFormat format) {
   switch (format) {
-    // YUV 4:2:0 formats
-    case AV_PIX_FMT_YUV420P:     return "I420";
-    case AV_PIX_FMT_YUVA420P:    return "I420A";
-    case AV_PIX_FMT_YUV420P10LE: return "I420P10";
-    case AV_PIX_FMT_YUV420P12LE: return "I420P12";
-    case AV_PIX_FMT_NV12:        return "NV12";
-    case AV_PIX_FMT_P010LE:      return "NV12P10";
+    // YUV 4:2:0 formats (8-bit)
+    case AV_PIX_FMT_YUV420P:      return "I420";
+    case AV_PIX_FMT_YUVA420P:     return "I420A";
+    // YUV 4:2:0 formats (10/12-bit)
+    case AV_PIX_FMT_YUV420P10LE:  return "I420P10";
+    case AV_PIX_FMT_YUV420P12LE:  return "I420P12";
+    case AV_PIX_FMT_YUVA420P10LE: return "I420AP10";
+    // Note: I420AP12 not available - FFmpeg has no YUVA420P12 format
+    // NV12 (semi-planar 4:2:0)
+    case AV_PIX_FMT_NV12:         return "NV12";
 
-    // YUV 4:2:2 formats
-    case AV_PIX_FMT_YUV422P:     return "I422";
-    case AV_PIX_FMT_YUVA422P:    return "I422A";
-    case AV_PIX_FMT_YUV422P10LE: return "I422P10";
-    case AV_PIX_FMT_YUV422P12LE: return "I422P12";
+    // YUV 4:2:2 formats (8-bit)
+    case AV_PIX_FMT_YUV422P:      return "I422";
+    case AV_PIX_FMT_YUVA422P:     return "I422A";
+    // YUV 4:2:2 formats (10/12-bit)
+    case AV_PIX_FMT_YUV422P10LE:  return "I422P10";
+    case AV_PIX_FMT_YUV422P12LE:  return "I422P12";
+    case AV_PIX_FMT_YUVA422P10LE: return "I422AP10";
+    case AV_PIX_FMT_YUVA422P12LE: return "I422AP12";
 
-    // YUV 4:4:4 formats
-    case AV_PIX_FMT_YUV444P:     return "I444";
-    case AV_PIX_FMT_YUVA444P:    return "I444A";
-    case AV_PIX_FMT_YUV444P10LE: return "I444P10";
-    case AV_PIX_FMT_YUV444P12LE: return "I444P12";
+    // YUV 4:4:4 formats (8-bit)
+    case AV_PIX_FMT_YUV444P:      return "I444";
+    case AV_PIX_FMT_YUVA444P:     return "I444A";
+    // YUV 4:4:4 formats (10/12-bit)
+    case AV_PIX_FMT_YUV444P10LE:  return "I444P10";
+    case AV_PIX_FMT_YUV444P12LE:  return "I444P12";
+    case AV_PIX_FMT_YUVA444P10LE: return "I444AP10";
+    case AV_PIX_FMT_YUVA444P12LE: return "I444AP12";
 
-    // NV21 (Android native)
-    case AV_PIX_FMT_NV21:        return "NV21";
+    // RGB/RGBA formats (packed, 8-bit per component)
+    case AV_PIX_FMT_RGBA:         return "RGBA";
+    case AV_PIX_FMT_RGB0:         return "RGBX";
+    case AV_PIX_FMT_BGRA:         return "BGRA";
+    case AV_PIX_FMT_BGR0:         return "BGRX";
 
-    // RGB/RGBA formats
-    case AV_PIX_FMT_RGBA:        return "RGBA";
-    case AV_PIX_FMT_RGB0:        return "RGBX";
-    case AV_PIX_FMT_BGRA:        return "BGRA";
-    case AV_PIX_FMT_BGR0:        return "BGRX";
-
-    // Float formats
-    case AV_PIX_FMT_RGBAF16LE:   return "RGBAF16";
-
-    // Fallback for common decoder output formats
-    case AV_PIX_FMT_RGB24:       return "RGBX";  // Closest match
-    case AV_PIX_FMT_BGR24:       return "BGRX";  // Closest match
+    // Fallback for common decoder output formats (closest WebCodecs match)
+    case AV_PIX_FMT_RGB24:        return "RGBX";
+    case AV_PIX_FMT_BGR24:        return "BGRX";
 
     default:
       return nullptr;
@@ -115,11 +123,13 @@ inline const char* FFmpegToWebCodecs(AVPixelFormat format) {
 
 /**
  * Check if a pixel format is an RGB variant (supports colorSpace conversion).
+ *
+ * Per W3C WebCodecs spec section 9.8, RGB formats are:
+ * - RGBA, RGBX, BGRA, BGRX
  */
 inline bool IsRGBFormat(const std::string& format) {
   return format == "RGBA" || format == "RGBX" ||
-         format == "BGRA" || format == "BGRX" ||
-         format == "RGBAF16" || format == "BGRAF16";
+         format == "BGRA" || format == "BGRX";
 }
 
 // =============================================================================
