@@ -32,7 +32,7 @@ Changes:
   - `GetDisplayWidth()`/`GetDisplayHeight()` account for rotation swap
 
 ### VideoFrame Clone Copies Internal Slots (2026-01-04)
-**Commit:** (pending)
+**Commit:** `2417f2d`
 
 Fixed `clone()`, `serializeForTransfer()` to properly copy internal slots.
 
@@ -41,6 +41,22 @@ Changes:
 - Updated `clone()` to use CloneFrom instead of CreateFromAVFrame
 - Updated `serializeForTransfer()` to use CloneFrom
 - Copies rotation, flip, visible rect, display dimensions, and metadata
+
+### VideoFrame(VideoFrame, init) Constructor (2026-01-04)
+**Commit:** (pending)
+
+Implemented `VideoFrame(image, init?)` constructor overload for VideoFrame input.
+
+Per W3C spec section 9.4.2 and "Initialize Frame From Other Frame" algorithm:
+- Detects when first argument is a VideoFrame via InstanceOf check
+- Clones AVFrame (refcounted) and copies all internal slots from source
+- Supports optional `VideoFrameInit` parameter with overrides:
+  - `timestamp`, `duration` - override source values
+  - `visibleRect` - override visible rect with bounds validation
+  - `rotation` - additive per "Add Rotations" algorithm (respects flip)
+  - `flip` - XOR with source flip value
+  - `displayWidth`, `displayHeight` - override display dimensions
+  - `metadata` - override with new metadata dictionary
 
 ### AudioData copyTo with Full Options Support (2026-01-04)
 **Commit:** `c04a028`

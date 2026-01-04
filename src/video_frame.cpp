@@ -49,17 +49,147 @@ Napi::Object VideoFrame::Init(Napi::Env env, Napi::Object exports) {
 VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoFrame>(info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] VideoFrame constructor can be called with:
+  // [SPEC 9.4.2] VideoFrame constructor can be called with:
   // 1. (data, init) - VideoFrameBufferInit with raw pixel data
-  // 2. (image) - CanvasImageSource (not supported in Node.js)
-  // 3. No arguments - internal use by CreateFromAVFrame
+  // 2. (image, init?) - CanvasImageSource or VideoFrame
+  // 3. No arguments - internal use by CreateFromAVFrame/CloneFrom
 
   // Initialize metadata to empty object per spec
   // [SPEC] [[metadata]] is always a VideoFrameMetadata dictionary
   metadata_ = Napi::Persistent(Napi::Object::New(env));
 
   if (info.Length() == 0) {
-    // Internal construction - frame_ will be set by CreateFromAVFrame
+    // Internal construction - frame_ will be set by CreateFromAVFrame/CloneFrom
+    return;
+  }
+
+  // [SPEC 9.4.2] Check if first argument is a VideoFrame
+  // VideoFrame(image, init?) where image is VideoFrame
+  if (info[0].IsObject() && info[0].As<Napi::Object>().InstanceOf(constructor.Value())) {
+    VideoFrame* source = Napi::ObjectWrap<VideoFrame>::Unwrap(info[0].As<Napi::Object>());
+    if (!source || source->closed_.load(std::memory_order_acquire) || !source->frame_) {
+      errors::ThrowInvalidStateError(env, "Source VideoFrame is closed or invalid");
+      return;
+    }
+
+    // Clone the AVFrame (refcounted)
+    frame_ = raii::CloneAvFrame(source->frame_.get());
+    if (!frame_) {
+      errors::ThrowTypeError(env, "Failed to clone source VideoFrame");
+      return;
+    }
+
+    // [SPEC] Initialize Frame From Other Frame algorithm
+    // Copy internal slots from source as defaults
+    rotation_ = source->rotation_;
+    flip_ = source->flip_;
+    visible_left_ = source->visible_left_;
+    visible_top_ = source->visible_top_;
+    visible_width_ = source->visible_width_;
+    visible_height_ = source->visible_height_;
+    display_width_ = source->display_width_;
+    display_height_ = source->display_height_;
+
+    // Copy metadata from source as default
+    if (!source->metadata_.IsEmpty()) {
+      Napi::Object srcMeta = source->metadata_.Value();
+      Napi::Object clonedMeta = Napi::Object::New(env);
+      Napi::Array keys = srcMeta.GetPropertyNames();
+      for (uint32_t i = 0; i < keys.Length(); i++) {
+        Napi::Value key = keys.Get(i);
+        clonedMeta.Set(key, srcMeta.Get(key));
+      }
+      metadata_ = Napi::Persistent(clonedMeta);
+    }
+
+    // Parse optional init parameter (VideoFrameInit)
+    if (info.Length() >= 2 && info[1].IsObject()) {
+      Napi::Object init = info[1].As<Napi::Object>();
+
+      // [SPEC] Override timestamp if provided
+      if (init.Has("timestamp") && init.Get("timestamp").IsNumber()) {
+        frame_->pts = init.Get("timestamp").As<Napi::Number>().Int64Value();
+      }
+
+      // [SPEC] Override duration if provided
+      if (init.Has("duration") && init.Get("duration").IsNumber()) {
+        frame_->duration = init.Get("duration").As<Napi::Number>().Int64Value();
+      }
+
+      // [SPEC] Override visibleRect if provided
+      if (init.Has("visibleRect") && init.Get("visibleRect").IsObject()) {
+        Napi::Object rect = init.Get("visibleRect").As<Napi::Object>();
+        if (rect.Has("x")) visible_left_ = rect.Get("x").As<Napi::Number>().Int32Value();
+        if (rect.Has("y")) visible_top_ = rect.Get("y").As<Napi::Number>().Int32Value();
+        if (rect.Has("width")) visible_width_ = rect.Get("width").As<Napi::Number>().Int32Value();
+        if (rect.Has("height")) visible_height_ = rect.Get("height").As<Napi::Number>().Int32Value();
+
+        // Validate bounds
+        int width = frame_->width;
+        int height = frame_->height;
+        if (visible_left_ < 0 || visible_top_ < 0 ||
+            visible_width_ <= 0 || visible_height_ <= 0 ||
+            visible_width_ > width - visible_left_ ||
+            visible_height_ > height - visible_top_) {
+          errors::ThrowTypeError(env, "visibleRect out of bounds");
+          return;
+        }
+      }
+
+      // [SPEC] Override rotation if provided (additive per Add Rotations algorithm)
+      if (init.Has("rotation") && init.Get("rotation").IsNumber()) {
+        int newRotation = init.Get("rotation").As<Napi::Number>().Int32Value();
+        if (newRotation != 0 && newRotation != 90 && newRotation != 180 && newRotation != 270) {
+          errors::ThrowTypeError(env, "rotation must be 0, 90, 180, or 270");
+          return;
+        }
+        // [SPEC] Add Rotations: if flip, subtract; otherwise add
+        int combined;
+        if (flip_) {
+          combined = rotation_ - newRotation;
+        } else {
+          combined = rotation_ + newRotation;
+        }
+        // Normalize to [0, 360)
+        rotation_ = ((combined % 360) + 360) % 360;
+      }
+
+      // [SPEC] Override flip if provided (XOR with existing)
+      if (init.Has("flip") && init.Get("flip").IsBoolean()) {
+        bool newFlip = init.Get("flip").As<Napi::Boolean>().Value();
+        flip_ = (flip_ != newFlip);  // XOR
+      }
+
+      // [SPEC] Override display dimensions if provided
+      if (init.Has("displayWidth") && init.Get("displayWidth").IsNumber()) {
+        display_width_ = init.Get("displayWidth").As<Napi::Number>().Int32Value();
+        if (display_width_ <= 0) {
+          errors::ThrowTypeError(env, "displayWidth must be positive");
+          return;
+        }
+      }
+      if (init.Has("displayHeight") && init.Get("displayHeight").IsNumber()) {
+        display_height_ = init.Get("displayHeight").As<Napi::Number>().Int32Value();
+        if (display_height_ <= 0) {
+          errors::ThrowTypeError(env, "displayHeight must be positive");
+          return;
+        }
+      }
+
+      // [SPEC] Override metadata if provided
+      if (init.Has("metadata") && init.Get("metadata").IsObject()) {
+        Napi::Object srcMeta = init.Get("metadata").As<Napi::Object>();
+        Napi::Object clonedMeta = Napi::Object::New(env);
+        Napi::Array keys = srcMeta.GetPropertyNames();
+        for (uint32_t i = 0; i < keys.Length(); i++) {
+          Napi::Value key = keys.Get(i);
+          clonedMeta.Set(key, srcMeta.Get(key));
+        }
+        metadata_.Reset();
+        metadata_ = Napi::Persistent(clonedMeta);
+      }
+    }
+
     return;
   }
 
