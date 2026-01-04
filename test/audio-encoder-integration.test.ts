@@ -1,7 +1,7 @@
 // test/audio-encoder-integration.test.ts
 // Integration tests for AudioEncoder
-// NOTE: Full encoding tests require AudioData constructor implementation (TODO)
-//       Currently tests the configure/flush/lifecycle cycle like VideoEncoder tests
+// AudioData constructor from AudioDataInit is fully implemented (2026-01-03)
+// Tests cover configure/flush/lifecycle cycles
 import { describe, it, expect } from 'vitest';
 import { AudioEncoder, EncodedAudioChunk } from '@pproenca/node-webcodecs';
 
@@ -30,8 +30,7 @@ describe('AudioEncoder Integration', () => {
 
       expect(encoder.state).toBe('configured');
 
-      // Note: AudioData constructor from raw data is not yet implemented
-      // For now, test the configure/flush cycle works (like VideoEncoder tests)
+      // AudioData constructor is fully implemented - test the configure/flush cycle
       await encoder.flush();
 
       expect(encoder.state).toBe('configured');

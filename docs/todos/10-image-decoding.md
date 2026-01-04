@@ -76,16 +76,16 @@
 - [x] Write artifact summary
 
 ### 3.3 Streaming Data Support
-- [ ] Write failing tests for ReadableStream input
-- [ ] Confirm tests fail (RED)
-- [ ] Implement streaming decode:
-  - [ ] Handle ReadableStream as input - **NOT IMPLEMENTED**
-  - [ ] Progressive decoding as data arrives - **NOT IMPLEMENTED**
-  - [ ] Fire events on track discovery
-  - [ ] Handle incomplete data gracefully
-- [ ] Confirm tests pass (GREEN)
-- [ ] Refactor if needed (BLUE)
-- [ ] Write artifact summary
+- [x] Write failing tests for ReadableStream input
+- [x] Confirm tests fail (RED)
+- [x] Implement streaming decode:
+  - [x] Handle ReadableStream as input - **IMPLEMENTED (2026-01-03)**
+  - [x] Progressive decoding as data arrives - **IMPLEMENTED (2026-01-03)**
+  - [x] Fire events on track discovery
+  - [x] Handle incomplete data gracefully
+- [x] Confirm tests pass (GREEN)
+- [x] Refactor if needed (BLUE)
+- [x] Write artifact summary
 
 ### 3.4 ImageDecodeOptions Dictionary
 - [x] Write failing tests for decode options
@@ -254,8 +254,8 @@
 - Color space conversion uses libswscale
 
 ## Missing Features (P3)
-- ReadableStream support for constructor
-- Progressive image decoding
+- ~~ReadableStream support for constructor~~ **DONE (2026-01-03)**
+- ~~Progressive image decoding~~ **DONE (2026-01-03)** - via streaming
 - ArrayBuffer transfer semantics
 - colorSpaceConversion application
 - desiredWidth/Height application

@@ -29,9 +29,8 @@ describe('VideoEncoder Integration', () => {
 
       expect(encoder.state).toBe('configured');
 
-      // Create a simple video frame
-      // Note: VideoFrame construction from raw data requires proper implementation
-      // For now, test the configure/flush cycle works
+      // VideoFrame constructor from BufferSource is fully implemented (2026-01-04)
+      // Test the configure/flush cycle
       await encoder.flush();
       expect(encoder.state).toBe('configured');
       expect(errors.length).toBe(0);
