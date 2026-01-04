@@ -49,6 +49,27 @@ class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
   // Once closed, all accessors return null/throw
   std::atomic<bool> closed_{false};
 
+  // --- WebCodecs Internal Slots ---
+  // These store WebCodecs-specific properties not directly in AVFrame
+
+  // [SPEC] [[rotation]] - 0, 90, 180, or 270 degrees
+  int rotation_{0};
+
+  // [SPEC] [[flip]] - whether the frame is flipped vertically
+  bool flip_{false};
+
+  // [SPEC] [[visible left/top/width/height]] - visible rect (may differ from coded)
+  // We store these explicitly instead of using AVFrame crop fields for spec compliance
+  int visible_left_{0};
+  int visible_top_{0};
+  int visible_width_{0};   // 0 means use coded width
+  int visible_height_{0};  // 0 means use coded height
+
+  // [SPEC] [[display width/height]] - display dimensions (may differ from visible)
+  // 0 means use visible dimensions
+  int display_width_{0};
+  int display_height_{0};
+
   // --- Metadata Internal Slot ---
   // [SPEC] [[metadata]] - VideoFrameMetadata dictionary
   // Stored as persistent reference to allow structured cloning on access

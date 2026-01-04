@@ -4,8 +4,35 @@ This document tracks the progress of implementing W3C WebCodecs spec compliance.
 
 ## Completed
 
+### VideoFrame Internal Slots per W3C Spec (2026-01-04)
+**Commit:** (pending)
+
+Implemented WebCodecs internal slots for VideoFrame per W3C spec section 9.4.1 and constructor options per section 9.4.2.
+
+Changes:
+- Added internal slots to `video_frame.h`:
+  - `rotation_` (0, 90, 180, 270 degrees per spec)
+  - `flip_` (boolean for vertical flip)
+  - `visible_left_`, `visible_top_`, `visible_width_`, `visible_height_` (visible rect)
+  - `display_width_`, `display_height_` (display dimensions)
+- Updated constructor to parse VideoFrameBufferInit options:
+  - `visibleRect` (DOMRectInit) - validates bounds against coded dimensions (overflow-safe)
+  - `rotation` (VideoRotation) - validates 0, 90, 180, or 270
+  - `flip` (boolean) - sets flip state
+  - `displayWidth`/`displayHeight` - stores custom display dimensions
+  - `colorSpace` (VideoColorSpaceInit) - maps to AVFrame color fields
+- Updated `CreateFromAVFrame()` factory to initialize internal slots:
+  - Sets visible rect from AVFrame crop fields
+  - Applies sample aspect ratio (SAR) correction to display width
+  - Maintains backward compatibility with decoded frames
+- Updated getters to use internal slots with proper null checks:
+  - `GetVisibleRect()` returns visible rect or coded rect as fallback
+  - `GetRotation()` returns rotation value (with closed/null frame checks)
+  - `GetFlip()` returns flip state (with closed/null frame checks)
+  - `GetDisplayWidth()`/`GetDisplayHeight()` account for rotation swap
+
 ### AudioData copyTo with Full Options Support (2026-01-04)
-**Commit:** `ed4a544`
+**Commit:** `c04a028`
 
 Implemented full `AudioDataCopyToOptions` support per W3C WebCodecs spec sections 9.2.4 (methods) and 9.2.5 (algorithms).
 

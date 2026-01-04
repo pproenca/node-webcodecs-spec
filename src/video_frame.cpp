@@ -113,14 +113,147 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoF
       return;
     }
 
-    // Set timestamp if provided
-    if (init.Has("timestamp") && init.Get("timestamp").IsNumber()) {
-      frame_->pts = init.Get("timestamp").As<Napi::Number>().Int64Value();
+    // Required: timestamp
+    if (!init.Has("timestamp") || !init.Get("timestamp").IsNumber()) {
+      errors::ThrowTypeError(env, "timestamp is required");
+      return;
     }
+    frame_->pts = init.Get("timestamp").As<Napi::Number>().Int64Value();
 
-    // Set duration if provided
+    // Optional: duration
     if (init.Has("duration") && init.Get("duration").IsNumber()) {
       frame_->duration = init.Get("duration").As<Napi::Number>().Int64Value();
+    }
+
+    // [SPEC] Parse visibleRect option
+    // Default visible rect is the full coded rect
+    visible_left_ = 0;
+    visible_top_ = 0;
+    visible_width_ = width;
+    visible_height_ = height;
+
+    if (init.Has("visibleRect") && init.Get("visibleRect").IsObject()) {
+      Napi::Object rect = init.Get("visibleRect").As<Napi::Object>();
+      if (rect.Has("x") && rect.Get("x").IsNumber()) {
+        visible_left_ = rect.Get("x").As<Napi::Number>().Int32Value();
+      }
+      if (rect.Has("y") && rect.Get("y").IsNumber()) {
+        visible_top_ = rect.Get("y").As<Napi::Number>().Int32Value();
+      }
+      if (rect.Has("width") && rect.Get("width").IsNumber()) {
+        visible_width_ = rect.Get("width").As<Napi::Number>().Int32Value();
+      }
+      if (rect.Has("height") && rect.Get("height").IsNumber()) {
+        visible_height_ = rect.Get("height").As<Napi::Number>().Int32Value();
+      }
+
+      // Validate visible rect bounds (overflow-safe checks)
+      if (visible_left_ < 0 || visible_top_ < 0 ||
+          visible_width_ <= 0 || visible_height_ <= 0 ||
+          visible_width_ > width - visible_left_ ||
+          visible_height_ > height - visible_top_) {
+        errors::ThrowTypeError(env, "visibleRect out of bounds");
+        return;
+      }
+    }
+
+    // [SPEC] Parse rotation option (must be 0, 90, 180, or 270)
+    if (init.Has("rotation") && init.Get("rotation").IsNumber()) {
+      int rotation = init.Get("rotation").As<Napi::Number>().Int32Value();
+      if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
+        errors::ThrowTypeError(env, "rotation must be 0, 90, 180, or 270");
+        return;
+      }
+      rotation_ = rotation;
+    }
+
+    // [SPEC] Parse flip option
+    if (init.Has("flip") && init.Get("flip").IsBoolean()) {
+      flip_ = init.Get("flip").As<Napi::Boolean>().Value();
+    }
+
+    // [SPEC] Parse displayWidth and displayHeight options
+    // Default is visible dimensions (accounting for rotation)
+    if (init.Has("displayWidth") && init.Get("displayWidth").IsNumber()) {
+      display_width_ = init.Get("displayWidth").As<Napi::Number>().Int32Value();
+      if (display_width_ <= 0) {
+        errors::ThrowTypeError(env, "displayWidth must be positive");
+        return;
+      }
+    }
+    if (init.Has("displayHeight") && init.Get("displayHeight").IsNumber()) {
+      display_height_ = init.Get("displayHeight").As<Napi::Number>().Int32Value();
+      if (display_height_ <= 0) {
+        errors::ThrowTypeError(env, "displayHeight must be positive");
+        return;
+      }
+    }
+
+    // If display dimensions not explicitly set, compute from visible + rotation
+    if (display_width_ == 0 || display_height_ == 0) {
+      if (rotation_ == 90 || rotation_ == 270) {
+        // Swap dimensions for 90/270 rotation
+        display_width_ = (display_width_ == 0) ? visible_height_ : display_width_;
+        display_height_ = (display_height_ == 0) ? visible_width_ : display_height_;
+      } else {
+        display_width_ = (display_width_ == 0) ? visible_width_ : display_width_;
+        display_height_ = (display_height_ == 0) ? visible_height_ : display_height_;
+      }
+    }
+
+    // [SPEC] Parse colorSpace option
+    if (init.Has("colorSpace") && init.Get("colorSpace").IsObject()) {
+      Napi::Object colorSpace = init.Get("colorSpace").As<Napi::Object>();
+
+      // Map primaries
+      if (colorSpace.Has("primaries") && colorSpace.Get("primaries").IsString()) {
+        std::string primaries = colorSpace.Get("primaries").As<Napi::String>().Utf8Value();
+        if (primaries == "bt709") {
+          frame_->color_primaries = AVCOL_PRI_BT709;
+        } else if (primaries == "bt470bg") {
+          frame_->color_primaries = AVCOL_PRI_BT470BG;
+        } else if (primaries == "smpte170m") {
+          frame_->color_primaries = AVCOL_PRI_SMPTE170M;
+        } else if (primaries == "bt2020") {
+          frame_->color_primaries = AVCOL_PRI_BT2020;
+        }
+      }
+
+      // Map transfer
+      if (colorSpace.Has("transfer") && colorSpace.Get("transfer").IsString()) {
+        std::string transfer = colorSpace.Get("transfer").As<Napi::String>().Utf8Value();
+        if (transfer == "bt709") {
+          frame_->color_trc = AVCOL_TRC_BT709;
+        } else if (transfer == "smpte170m") {
+          frame_->color_trc = AVCOL_TRC_SMPTE170M;
+        } else if (transfer == "iec61966-2-1") {
+          frame_->color_trc = AVCOL_TRC_IEC61966_2_1;
+        } else if (transfer == "pq") {
+          frame_->color_trc = AVCOL_TRC_SMPTE2084;
+        } else if (transfer == "hlg") {
+          frame_->color_trc = AVCOL_TRC_ARIB_STD_B67;
+        }
+      }
+
+      // Map matrix
+      if (colorSpace.Has("matrix") && colorSpace.Get("matrix").IsString()) {
+        std::string matrix = colorSpace.Get("matrix").As<Napi::String>().Utf8Value();
+        if (matrix == "rgb") {
+          frame_->colorspace = AVCOL_SPC_RGB;
+        } else if (matrix == "bt709") {
+          frame_->colorspace = AVCOL_SPC_BT709;
+        } else if (matrix == "smpte170m") {
+          frame_->colorspace = AVCOL_SPC_SMPTE170M;
+        } else if (matrix == "bt2020-ncl") {
+          frame_->colorspace = AVCOL_SPC_BT2020_NCL;
+        }
+      }
+
+      // Map fullRange
+      if (colorSpace.Has("fullRange") && colorSpace.Get("fullRange").IsBoolean()) {
+        bool fullRange = colorSpace.Get("fullRange").As<Napi::Boolean>().Value();
+        frame_->color_range = fullRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+      }
     }
 
     // [SPEC] Copy metadata from init if provided
@@ -180,6 +313,25 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
     Napi::Error::New(env, "Failed to clone AVFrame").ThrowAsJavaScriptException();
     return Napi::Object();
   }
+
+  // [SPEC] Initialize internal slots from AVFrame properties
+  // Visible rect from AVFrame crop fields
+  frame->visible_left_ = srcFrame->crop_left;
+  frame->visible_top_ = srcFrame->crop_top;
+  frame->visible_width_ = srcFrame->width - srcFrame->crop_left - srcFrame->crop_right;
+  frame->visible_height_ = srcFrame->height - srcFrame->crop_top - srcFrame->crop_bottom;
+
+  // [SPEC] Display dimensions from visible dimensions with SAR correction
+  frame->display_width_ = frame->visible_width_;
+  frame->display_height_ = frame->visible_height_;
+
+  // Apply sample aspect ratio to display width
+  if (srcFrame->sample_aspect_ratio.num > 0 && srcFrame->sample_aspect_ratio.den > 0) {
+    frame->display_width_ = frame->visible_width_ * srcFrame->sample_aspect_ratio.num /
+                            srcFrame->sample_aspect_ratio.den;
+  }
+
+  // rotation_ and flip_ remain at defaults (0 and false) for decoded frames
 
   return jsFrame;
 }
@@ -242,12 +394,11 @@ Napi::Value VideoFrame::GetVisibleRect(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  // For now, visible rect equals coded rect (no cropping)
-  // AVFrame has crop_top, crop_bottom, crop_left, crop_right for actual crop
-  int x = frame_->crop_left;
-  int y = frame_->crop_top;
-  int width = frame_->width - frame_->crop_left - frame_->crop_right;
-  int height = frame_->height - frame_->crop_top - frame_->crop_bottom;
+  // Use our internal slots if set, otherwise derive from AVFrame crop
+  int x = visible_left_;
+  int y = visible_top_;
+  int width = (visible_width_ > 0) ? visible_width_ : (frame_->width - frame_->crop_left - frame_->crop_right);
+  int height = (visible_height_ > 0) ? visible_height_ : (frame_->height - frame_->crop_top - frame_->crop_bottom);
 
   Napi::Object rect = Napi::Object::New(env);
   rect.Set("x", Napi::Number::New(env, x));
@@ -258,14 +409,21 @@ Napi::Value VideoFrame::GetVisibleRect(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value VideoFrame::GetRotation(const Napi::CallbackInfo& info) {
-  // WebCodecs rotation is 0, 90, 180, 270
-  // FFmpeg stores rotation in side data, default to 0
-  return Napi::Number::New(info.Env(), 0);
+  Napi::Env env = info.Env();
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
+    return env.Null();
+  }
+  // Return our internal slot
+  return Napi::Number::New(env, rotation_);
 }
 
 Napi::Value VideoFrame::GetFlip(const Napi::CallbackInfo& info) {
-  // WebCodecs flip is boolean
-  return Napi::Boolean::New(info.Env(), false);
+  Napi::Env env = info.Env();
+  if (closed_.load(std::memory_order_acquire) || !frame_) {
+    return env.Null();
+  }
+  // Return our internal slot
+  return Napi::Boolean::New(env, flip_);
 }
 
 Napi::Value VideoFrame::GetDisplayWidth(const Napi::CallbackInfo& info) {
@@ -274,12 +432,20 @@ Napi::Value VideoFrame::GetDisplayWidth(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  // Display width accounts for sample aspect ratio
-  int display_width = frame_->width;
-  if (frame_->sample_aspect_ratio.num > 0 && frame_->sample_aspect_ratio.den > 0) {
-    display_width = frame_->width * frame_->sample_aspect_ratio.num / frame_->sample_aspect_ratio.den;
+  // Use our internal slot if set
+  if (display_width_ > 0) {
+    return Napi::Number::New(env, display_width_);
   }
-  return Napi::Number::New(env, display_width);
+
+  // Otherwise calculate from visible rect and rotation
+  int visible_w = (visible_width_ > 0) ? visible_width_ : frame_->width;
+  int visible_h = (visible_height_ > 0) ? visible_height_ : frame_->height;
+
+  // Swap for 90/270 rotation
+  if (rotation_ == 90 || rotation_ == 270) {
+    return Napi::Number::New(env, visible_h);
+  }
+  return Napi::Number::New(env, visible_w);
 }
 
 Napi::Value VideoFrame::GetDisplayHeight(const Napi::CallbackInfo& info) {
@@ -287,7 +453,21 @@ Napi::Value VideoFrame::GetDisplayHeight(const Napi::CallbackInfo& info) {
   if (closed_.load(std::memory_order_acquire) || !frame_) {
     return env.Null();
   }
-  return Napi::Number::New(env, frame_->height);
+
+  // Use our internal slot if set
+  if (display_height_ > 0) {
+    return Napi::Number::New(env, display_height_);
+  }
+
+  // Otherwise calculate from visible rect and rotation
+  int visible_w = (visible_width_ > 0) ? visible_width_ : frame_->width;
+  int visible_h = (visible_height_ > 0) ? visible_height_ : frame_->height;
+
+  // Swap for 90/270 rotation
+  if (rotation_ == 90 || rotation_ == 270) {
+    return Napi::Number::New(env, visible_w);
+  }
+  return Napi::Number::New(env, visible_h);
 }
 
 Napi::Value VideoFrame::GetDuration(const Napi::CallbackInfo& info) {
