@@ -59,7 +59,7 @@ Per W3C spec section 9.4.2 and "Initialize Frame From Other Frame" algorithm:
   - `metadata` - override with new metadata dictionary
 
 ### VideoFrame Constructor Layout Option (2026-01-04)
-**Commit:** (pending)
+**Commit:** `af60389`
 
 Implemented `layout` option in VideoFrameBufferInit for custom plane layouts.
 
