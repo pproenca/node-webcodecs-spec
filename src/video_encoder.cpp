@@ -1,5 +1,6 @@
 #include "video_encoder.h"
 
+#include <cstring>
 #include <string>
 
 #include "video_frame.h"
@@ -710,6 +711,109 @@ Napi::Value VideoEncoder::IsConfigSupported(const Napi::CallbackInfo& info) {
 }
 
 // =============================================================================
+// SCALABILITY MODE HELPERS
+// =============================================================================
+
+/**
+ * Apply scalabilityMode (SVC) settings to VP9/AV1 encoder context.
+ *
+ * Scalability mode format: LxTy where:
+ * - x = number of spatial layers (1-3)
+ * - y = number of temporal layers (1-3)
+ *
+ * For VP9 (libvpx-vp9), temporal layers are supported via ts-parameters.
+ * Spatial layers require SVC mode which is more complex.
+ *
+ * @param ctx AVCodecContext to configure
+ * @param mode Scalability mode string (e.g., "L1T2", "L1T3")
+ * @return true if mode was applied, false if unsupported
+ */
+static bool ApplyScalabilityMode(AVCodecContext* ctx, const std::string& mode) {
+  if (mode.empty() || mode == "L1T1") {
+    // L1T1 = no SVC, default behavior
+    return true;
+  }
+
+  // Parse mode: LxTy format
+  if (mode.length() != 4 || mode[0] != 'L' || mode[2] != 'T') {
+    return false;  // Invalid format
+  }
+
+  int spatial_layers = mode[1] - '0';
+  int temporal_layers = mode[3] - '0';
+
+  if (spatial_layers < 1 || spatial_layers > 3 ||
+      temporal_layers < 1 || temporal_layers > 3) {
+    return false;  // Out of range
+  }
+
+  // Check if this is a VP9 encoder (libvpx-vp9)
+  const char* codec_name = ctx->codec ? ctx->codec->name : nullptr;
+  bool is_vp9 = codec_name && (strcmp(codec_name, "libvpx-vp9") == 0 ||
+                                strcmp(codec_name, "vp9") == 0);
+
+  if (!is_vp9) {
+    // For non-VP9 codecs, we only support L1T1 (no SVC)
+    // AV1 SVC support in FFmpeg is limited
+    return spatial_layers == 1 && temporal_layers == 1;
+  }
+
+  // VP9 only supports temporal layers via ts-parameters (no spatial in basic SVC)
+  if (spatial_layers > 1) {
+    // Full SVC with spatial layers requires special configuration
+    // For now, only support L1Tx modes
+    return false;
+  }
+
+  // Build ts-parameters for temporal layers
+  // Format: ts_number_layers=N:ts_target_bitrate=B1,B2,...:ts_rate_decimator=D1,D2,...:
+  //         ts_periodicity=P:ts_layer_id=0,1,...:ts_layering_mode=M
+  std::string ts_params;
+
+  if (temporal_layers == 2) {
+    // L1T2: 2 temporal layers (15fps + 30fps at 30fps base)
+    // Layer 0: base layer at 1/2 frame rate
+    // Layer 1: enhancement layer at full frame rate
+    int base_bitrate = ctx->bit_rate > 0 ? static_cast<int>(ctx->bit_rate * 0.6) : 500000;
+    int total_bitrate = ctx->bit_rate > 0 ? static_cast<int>(ctx->bit_rate) : 1000000;
+
+    ts_params = "ts_number_layers=2:"
+                "ts_target_bitrate=" + std::to_string(base_bitrate) + "," +
+                std::to_string(total_bitrate) + ":"
+                "ts_rate_decimator=2,1:"
+                "ts_periodicity=2:"
+                "ts_layer_id=0,1:"
+                "ts_layering_mode=2";
+  } else if (temporal_layers == 3) {
+    // L1T3: 3 temporal layers (7.5fps + 15fps + 30fps at 30fps base)
+    int layer0_bitrate = ctx->bit_rate > 0 ? static_cast<int>(ctx->bit_rate * 0.4) : 400000;
+    int layer1_bitrate = ctx->bit_rate > 0 ? static_cast<int>(ctx->bit_rate * 0.7) : 700000;
+    int layer2_bitrate = ctx->bit_rate > 0 ? static_cast<int>(ctx->bit_rate) : 1000000;
+
+    ts_params = "ts_number_layers=3:"
+                "ts_target_bitrate=" + std::to_string(layer0_bitrate) + "," +
+                std::to_string(layer1_bitrate) + "," +
+                std::to_string(layer2_bitrate) + ":"
+                "ts_rate_decimator=4,2,1:"
+                "ts_periodicity=4:"
+                "ts_layer_id=0,2,1,2:"
+                "ts_layering_mode=3";
+  } else {
+    // L1T1 - no SVC needed
+    return true;
+  }
+
+  // Apply ts-parameters to the codec context
+  int ret = av_opt_set(ctx->priv_data, "ts-parameters", ts_params.c_str(), 0);
+  if (ret < 0) {
+    // ts-parameters not supported by this encoder, but that's OK for L1T1
+    return temporal_layers == 1;
+  }
+
+  return true;
+}
+
+// =============================================================================
 // VIDEOENCODERWORKER IMPLEMENTATION
 // =============================================================================
 
@@ -821,6 +925,15 @@ bool VideoEncoderWorker::OnConfigure(const ConfigureMessage& msg) {
   // Threading
   codec_ctx_->thread_count = 0;  // Auto-detect
   codec_ctx_->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+
+  // Apply scalability mode (SVC) for VP9 temporal layers
+  if (!config.scalability_mode.empty()) {
+    if (!ApplyScalabilityMode(codec_ctx_.get(), config.scalability_mode)) {
+      OutputError(AVERROR(EINVAL), "Unsupported scalabilityMode: " + config.scalability_mode);
+      codec_ctx_.reset();
+      return false;
+    }
+  }
 
   // Open encoder
   int ret = avcodec_open2(codec_ctx_.get(), encoder, nullptr);
