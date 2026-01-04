@@ -43,7 +43,7 @@ Changes:
 - Copies rotation, flip, visible rect, display dimensions, and metadata
 
 ### VideoFrame(VideoFrame, init) Constructor (2026-01-04)
-**Commit:** (pending)
+**Commit:** `c51ab16`
 
 Implemented `VideoFrame(image, init?)` constructor overload for VideoFrame input.
 
@@ -57,6 +57,20 @@ Per W3C spec section 9.4.2 and "Initialize Frame From Other Frame" algorithm:
   - `flip` - XOR with source flip value
   - `displayWidth`, `displayHeight` - override display dimensions
   - `metadata` - override with new metadata dictionary
+
+### VideoFrame Constructor Layout Option (2026-01-04)
+**Commit:** (pending)
+
+Implemented `layout` option in VideoFrameBufferInit for custom plane layouts.
+
+Per W3C spec section 9.4.2 and PlaneLayout interface (section 9.7):
+- Added `CreateFrameFromBufferWithLayout()` to buffer_utils.h
+- Parses `layout` array of PlaneLayout objects from constructor init
+- Each PlaneLayout has required `offset` and `stride` properties
+- Validates offsets are non-negative and strides are positive
+- Validates plane data fits within source buffer bounds
+- Handles chroma subsampling for multi-plane formats (I420, NV12, etc.)
+- Falls back to tightly-packed default when layout not specified
 
 ### AudioData copyTo with Full Options Support (2026-01-04)
 **Commit:** `c04a028`
@@ -181,10 +195,11 @@ Added support for all 21 W3C WebCodecs pixel formats in `format_converter.h`.
 ## Remaining TODOs
 
 ### Spec Compliance Gaps
-Run `npm run scaffold` to regenerate spec infrastructure and identify any remaining gaps.
+Run `npm run specs` to regenerate spec infrastructure and identify any remaining gaps.
 
 ### VideoFrame
-- Constructor from CanvasImageSource (not applicable in Node.js)
-- Constructor from BufferSource with full options (layout, rotation, flip)
-- copyTo with rect, layout, format, colorSpace options
+- Constructor from CanvasImageSource (not applicable in Node.js - browser-only)
+- ~~Constructor from BufferSource with layout option~~ ✅ DONE
+- ~~Constructor from VideoFrame with init overrides~~ ✅ DONE
+- ~~Internal slots (rotation, flip, visibleRect, displayWidth/Height)~~ ✅ DONE
 - 12 additional pixel formats (I420P10, I420P12, I422P10, I422P12, I444P10, I444P12, NV12P10, RGB565, RGBF16, BGRF16, RGBAF16, BGRAF16)

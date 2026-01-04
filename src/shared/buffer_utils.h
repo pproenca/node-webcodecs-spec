@@ -92,6 +92,122 @@ inline int CopyFrameToBuffer(const AVFrame* frame, uint8_t* dest, size_t dest_si
 }
 
 /**
+ * Create an AVFrame from a buffer with custom plane layout.
+ *
+ * @param data Source buffer
+ * @param size Size of source buffer
+ * @param width Frame width
+ * @param height Frame height
+ * @param format Pixel format (AVPixelFormat)
+ * @param offsets Array of offsets for each plane (nullptr = tightly packed)
+ * @param strides Array of strides for each plane (nullptr = use default)
+ * @param num_planes Number of planes in layout arrays
+ * @return New AVFrame, or nullptr on error
+ */
+inline raii::AVFramePtr CreateFrameFromBufferWithLayout(
+    const uint8_t* data, size_t size, int width, int height, int format,
+    const int* offsets, const int* strides, int num_planes) {
+  if (!data || size == 0 || width <= 0 || height <= 0) {
+    return nullptr;
+  }
+
+  AVPixelFormat pix_fmt = static_cast<AVPixelFormat>(format);
+  if (pix_fmt == AV_PIX_FMT_NONE) {
+    return nullptr;
+  }
+
+  // Allocate frame
+  raii::AVFramePtr frame = raii::MakeAvFrame();
+  if (!frame) {
+    return nullptr;
+  }
+
+  frame->width = width;
+  frame->height = height;
+  frame->format = format;
+
+  // Allocate frame buffer
+  int ret = av_frame_get_buffer(frame.get(), 0);
+  if (ret < 0) {
+    return nullptr;
+  }
+
+  // Make frame writable
+  ret = av_frame_make_writable(frame.get());
+  if (ret < 0) {
+    return nullptr;
+  }
+
+  // Get plane count
+  int plane_count = av_pix_fmt_count_planes(pix_fmt);
+  if (plane_count <= 0) {
+    return nullptr;
+  }
+
+  // Copy data from source buffer to frame planes
+  if (offsets && strides && num_planes > 0) {
+    // Use custom layout
+    const AVPixFmtDescriptor* desc = av_pix_fmt_desc_get(pix_fmt);
+    if (!desc) {
+      return nullptr;
+    }
+
+    for (int plane = 0; plane < plane_count && plane < num_planes; plane++) {
+      int plane_height = height;
+      int plane_width = width;
+
+      // Account for chroma subsampling
+      if (plane > 0) {
+        int h_shift = desc->log2_chroma_w;
+        int v_shift = desc->log2_chroma_h;
+        plane_width = (width + (1 << h_shift) - 1) >> h_shift;
+        plane_height = (height + (1 << v_shift) - 1) >> v_shift;
+      }
+
+      // Calculate bytes per sample for this plane
+      int bytes_per_sample = 1;  // Default for Y/U/V 8-bit
+      if (plane == 0 && desc->comp[0].depth > 8) {
+        bytes_per_sample = (desc->comp[0].depth + 7) / 8;
+      } else if (plane > 0 && desc->comp[1].depth > 8) {
+        bytes_per_sample = (desc->comp[1].depth + 7) / 8;
+      }
+
+      int src_stride = strides[plane];
+      int dst_stride = frame->linesize[plane];
+      int row_bytes = plane_width * bytes_per_sample;
+
+      // Validate source fits in buffer
+      if (offsets[plane] < 0 ||
+          static_cast<size_t>(offsets[plane] + (plane_height - 1) * src_stride + row_bytes) > size) {
+        return nullptr;
+      }
+
+      const uint8_t* src = data + offsets[plane];
+      uint8_t* dst = frame->data[plane];
+
+      for (int row = 0; row < plane_height; row++) {
+        memcpy(dst, src, row_bytes);
+        src += src_stride;
+        dst += dst_stride;
+      }
+    }
+  } else {
+    // Default: tightly packed
+    const uint8_t* src_data[4] = {nullptr};
+    int src_linesize[4] = {0};
+
+    ret = av_image_fill_arrays(const_cast<uint8_t**>(src_data), src_linesize, data, pix_fmt, width, height, 1);
+    if (ret < 0) {
+      return nullptr;
+    }
+
+    av_image_copy(frame->data, frame->linesize, src_data, src_linesize, pix_fmt, width, height);
+  }
+
+  return frame;
+}
+
+/**
  * Create an AVFrame from buffer data.
  *
  * Allocates a new frame and copies the buffer data into it.

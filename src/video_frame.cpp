@@ -236,8 +236,58 @@ VideoFrame::VideoFrame(const Napi::CallbackInfo& info) : Napi::ObjectWrap<VideoF
       return;
     }
 
-    // Create AVFrame from buffer data
-    frame_ = buffer_utils::CreateFrameFromBuffer(data, size, width, height, static_cast<int>(pix_fmt));
+    // [SPEC] Parse layout option for custom plane offsets and strides
+    std::vector<int> layout_offsets;
+    std::vector<int> layout_strides;
+    bool has_layout = false;
+
+    if (init.Has("layout") && init.Get("layout").IsArray()) {
+      Napi::Array layoutArray = init.Get("layout").As<Napi::Array>();
+      has_layout = true;
+
+      for (uint32_t i = 0; i < layoutArray.Length(); i++) {
+        if (!layoutArray.Get(i).IsObject()) {
+          errors::ThrowTypeError(env, "layout entries must be PlaneLayout objects");
+          return;
+        }
+        Napi::Object planeLayout = layoutArray.Get(i).As<Napi::Object>();
+
+        // [SPEC] PlaneLayout requires both offset and stride
+        if (!planeLayout.Has("offset") || !planeLayout.Get("offset").IsNumber()) {
+          errors::ThrowTypeError(env, "layout entry missing required 'offset' property");
+          return;
+        }
+        if (!planeLayout.Has("stride") || !planeLayout.Get("stride").IsNumber()) {
+          errors::ThrowTypeError(env, "layout entry missing required 'stride' property");
+          return;
+        }
+
+        int offset = planeLayout.Get("offset").As<Napi::Number>().Int32Value();
+        int stride = planeLayout.Get("stride").As<Napi::Number>().Int32Value();
+
+        if (offset < 0) {
+          errors::ThrowTypeError(env, "layout offset must be non-negative");
+          return;
+        }
+        if (stride <= 0) {
+          errors::ThrowTypeError(env, "layout stride must be positive");
+          return;
+        }
+
+        layout_offsets.push_back(offset);
+        layout_strides.push_back(stride);
+      }
+    }
+
+    // Create AVFrame from buffer data with optional custom layout
+    if (has_layout) {
+      frame_ = buffer_utils::CreateFrameFromBufferWithLayout(
+          data, size, width, height, static_cast<int>(pix_fmt),
+          layout_offsets.data(), layout_strides.data(), static_cast<int>(layout_offsets.size()));
+    } else {
+      frame_ = buffer_utils::CreateFrameFromBuffer(data, size, width, height, static_cast<int>(pix_fmt));
+    }
+
     if (!frame_) {
       errors::ThrowTypeError(env, "Failed to create frame from data");
       return;
