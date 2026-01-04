@@ -336,6 +336,50 @@ Napi::Object VideoFrame::CreateFromAVFrame(Napi::Env env, const AVFrame* srcFram
   return jsFrame;
 }
 
+Napi::Object VideoFrame::CloneFrom(Napi::Env env, VideoFrame* source) {
+  if (!source || !source->frame_) {
+    Napi::Error::New(env, "Cannot clone from null or empty VideoFrame").ThrowAsJavaScriptException();
+    return Napi::Object();
+  }
+
+  // Create a new JS VideoFrame object
+  Napi::Object jsFrame = constructor.New({});
+  VideoFrame* frame = Napi::ObjectWrap<VideoFrame>::Unwrap(jsFrame);
+
+  // Clone the AVFrame (refcounted - shares underlying buffers)
+  frame->frame_ = raii::CloneAvFrame(source->frame_.get());
+  if (!frame->frame_) {
+    Napi::Error::New(env, "Failed to clone AVFrame").ThrowAsJavaScriptException();
+    return Napi::Object();
+  }
+
+  // [SPEC] Copy all internal slots from source VideoFrame
+  // These may differ from AVFrame properties for constructed frames
+  frame->rotation_ = source->rotation_;
+  frame->flip_ = source->flip_;
+  frame->visible_left_ = source->visible_left_;
+  frame->visible_top_ = source->visible_top_;
+  frame->visible_width_ = source->visible_width_;
+  frame->visible_height_ = source->visible_height_;
+  frame->display_width_ = source->display_width_;
+  frame->display_height_ = source->display_height_;
+
+  // [SPEC] Copy metadata via structured clone
+  if (!source->metadata_.IsEmpty()) {
+    Napi::Object srcMetadata = source->metadata_.Value();
+    Napi::Object clonedMetadata = Napi::Object::New(env);
+    Napi::Array keys = srcMetadata.GetPropertyNames();
+    for (uint32_t i = 0; i < keys.Length(); i++) {
+      Napi::Value key = keys.Get(i);
+      Napi::Value value = srcMetadata.Get(key);
+      clonedMetadata.Set(key, value);
+    }
+    frame->metadata_ = Napi::Persistent(clonedMetadata);
+  }
+
+  return jsFrame;
+}
+
 // --- Attributes ---
 
 // Helper: Convert AVPixelFormat to WebCodecs VideoPixelFormat string
@@ -865,23 +909,22 @@ Napi::Value VideoFrame::CopyTo(const Napi::CallbackInfo& info) {
 Napi::Value VideoFrame::Clone(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-  // [SPEC] Clone creates a new VideoFrame referencing the same media resource
-  // The clone shares the underlying buffer memory via refcounting
+  // [SPEC 9.4.5] clone() algorithm:
+  // 1. If [[Detached]] is true, throw InvalidStateError
+  // 2. Return the result of running Clone VideoFrame with this
 
-  // Check if this frame is closed
   if (closed_.load(std::memory_order_acquire)) {
-    Napi::Error::New(env, "InvalidStateError: VideoFrame is closed").ThrowAsJavaScriptException();
+    errors::ThrowInvalidStateError(env, "VideoFrame is closed");
     return env.Undefined();
   }
 
   if (!frame_) {
-    Napi::Error::New(env, "InvalidStateError: VideoFrame has no data").ThrowAsJavaScriptException();
+    errors::ThrowInvalidStateError(env, "VideoFrame has no data");
     return env.Undefined();
   }
 
-  // Create a new VideoFrame that references the same underlying AVFrame buffers
-  // This uses av_frame_ref internally, which increments buffer refcounts
-  return CreateFromAVFrame(env, frame_.get());
+  // [SPEC] Clone VideoFrame copies all internal slots, not just AVFrame
+  return CloneFrom(env, this);
 }
 
 Napi::Value VideoFrame::Close(const Napi::CallbackInfo& info) {
@@ -929,8 +972,8 @@ Napi::Value VideoFrame::SerializeForTransfer(const Napi::CallbackInfo& info) {
   }
 
   // Step 2: Create clone with new reference to underlying buffers
-  // This uses av_frame_ref internally - zero-copy, refcount++
-  Napi::Object cloned = CreateFromAVFrame(env, frame_.get());
+  // This copies all internal slots and uses av_frame_ref - zero-copy, refcount++
+  Napi::Object cloned = CloneFrom(env, this);
   if (cloned.IsEmpty()) {
     errors::ThrowDataCloneError(env, "Failed to serialize VideoFrame");
     return env.Undefined();

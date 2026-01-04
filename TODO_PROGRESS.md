@@ -5,7 +5,7 @@ This document tracks the progress of implementing W3C WebCodecs spec compliance.
 ## Completed
 
 ### VideoFrame Internal Slots per W3C Spec (2026-01-04)
-**Commit:** (pending)
+**Commit:** `2af45e5`
 
 Implemented WebCodecs internal slots for VideoFrame per W3C spec section 9.4.1 and constructor options per section 9.4.2.
 
@@ -30,6 +30,17 @@ Changes:
   - `GetRotation()` returns rotation value (with closed/null frame checks)
   - `GetFlip()` returns flip state (with closed/null frame checks)
   - `GetDisplayWidth()`/`GetDisplayHeight()` account for rotation swap
+
+### VideoFrame Clone Copies Internal Slots (2026-01-04)
+**Commit:** (pending)
+
+Fixed `clone()`, `serializeForTransfer()` to properly copy internal slots.
+
+Changes:
+- Added `CloneFrom(VideoFrame*)` factory method that copies all internal slots
+- Updated `clone()` to use CloneFrom instead of CreateFromAVFrame
+- Updated `serializeForTransfer()` to use CloneFrom
+- Copies rotation, flip, visible rect, display dimensions, and metadata
 
 ### AudioData copyTo with Full Options Support (2026-01-04)
 **Commit:** `c04a028`

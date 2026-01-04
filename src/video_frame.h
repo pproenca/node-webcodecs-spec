@@ -33,6 +33,10 @@ class VideoFrame : public Napi::ObjectWrap<VideoFrame> {
   // The AVFrame is cloned (refcounted), so caller retains ownership
   static Napi::Object CreateFromAVFrame(Napi::Env env, const AVFrame* frame);
 
+  // Factory method to clone a VideoFrame, copying all internal slots
+  // Used by clone() and VideoFrame(VideoFrame, init) constructor
+  static Napi::Object CloneFrom(Napi::Env env, VideoFrame* source);
+
   // Get the underlying AVFrame (for internal use by decoder/encoder)
   AVFrame* GetAVFrame() const { return frame_.get(); }
 
