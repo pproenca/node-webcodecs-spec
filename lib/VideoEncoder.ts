@@ -11,8 +11,9 @@ import type {
   VideoEncoderEncodeOptions,
   VideoEncoderInit,
   VideoEncoderSupport,
-  VideoFrame,
+  VideoFrame as VideoFrameType,
 } from '../types/webcodecs.js';
+import { VideoFrame } from './VideoFrame.js';
 
 // Native binding loader - require() necessary for native addons in ESM
 // See: https://nodejs.org/api/esm.html#interoperability-with-commonjs
@@ -62,6 +63,23 @@ export class VideoEncoder {
   configure(config: VideoEncoderConfig): void {
     this.native.configure(config);
   }
+  /**
+   * Enqueues a control message to encode the given frame.
+   *
+   * Per W3C WebCodecs spec section 6.5, the frame is cloned before encoding
+   * to allow the caller to close the original frame immediately after this call.
+   * The clone operation is performed in the native C++ layer (video_encoder.cpp:505-510)
+   * using FFmpeg's av_frame_clone(), ensuring the frame data remains valid throughout
+   * the async encoding process.
+   *
+   * @param frame - The VideoFrame to encode. May be closed after this call returns.
+   * @param options - Encoding options, including keyFrame hint.
+   * @throws {InvalidStateError} If encoder state is not "configured".
+   * @throws {TypeError} If frame is detached.
+   * @throws {DataError} If frame orientation doesn't match active orientation.
+   *
+   * @see https://www.w3.org/TR/webcodecs/#dom-videoencoder-encode
+   */
   encode(frame: VideoFrame, options: VideoEncoderEncodeOptions): void {
     // Extract native object from wrapper if present (for TypeScript wrapper classes)
     const nativeFrame = (frame as { native?: unknown }).native ?? frame;
